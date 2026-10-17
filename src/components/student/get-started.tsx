@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { Crown, FileSignature, Send, UserCheck, X } from "lucide-react";
+import { Crown, Send, UserCheck } from "lucide-react";
 
 import { FacultyDirectory } from "@/components/shared/faculty-directory";
 import { InvitationCard } from "@/components/student/invitation-card";
@@ -10,6 +10,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { Field, Input, Textarea } from "@/components/ui/field";
+import { FileDrop } from "@/components/ui/file-drop";
 import * as repo from "@/lib/data/repository";
 import type { Faculty, GroupInvitation, Student } from "@/lib/types";
 
@@ -146,23 +147,15 @@ export function GetStarted({
             description="A team has 2 or 3 students. Teammates get an invitation to accept."
           />
           <CardBody className="space-y-5">
-            <Field label="Signed application" htmlFor="gs-form" help="PDF, or a clear scan or photo (PNG, JPG) - up to 25 MB.">
-              <input
+            <Field label="Signed application" htmlFor="gs-form">
+              <FileDrop
                 id="gs-form"
-                type="file"
+                files={form ? [form] : []}
+                onChange={(files) => setForm(files[0] ?? null)}
                 accept=".pdf,image/png,image/jpeg"
-                onChange={(e) => setForm(e.target.files?.[0] ?? null)}
-                className="block w-full text-[13px] text-stone-600 file:mr-3 file:rounded-lg file:border-0 file:bg-azure-50 file:px-3 file:py-2 file:text-[13px] file:font-medium file:text-azure-600"
+                specs="PDF, or a clear scan or photo (PNG, JPG) · up to 25 MB"
+                disabled={busy}
               />
-              {form ? (
-                <p className="mt-1.5 flex items-center gap-1.5 text-[13px] text-ink-800">
-                  <FileSignature className="size-4 text-azure-600" />
-                  {form.name}
-                  <button type="button" onClick={() => setForm(null)} aria-label="Remove file" className="text-stone-400 hover:text-clay-500">
-                    <X className="size-3.5" />
-                  </button>
-                </p>
-              ) : null}
             </Field>
 
             <Field label="Project title" htmlFor="gs-title">

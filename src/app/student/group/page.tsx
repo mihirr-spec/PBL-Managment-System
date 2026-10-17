@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { Field, Input, Textarea } from "@/components/ui/field";
+import { FileDrop } from "@/components/ui/file-drop";
 import { PageHeader } from "@/components/ui/page-header";
 import { PageSkeleton } from "@/components/ui/skeleton";
 import * as repo from "@/lib/data/repository";
@@ -314,14 +315,14 @@ function FormUpload({
 
   return (
     <form onSubmit={submit} className="mt-3 space-y-3">
-      <Field label="Signed PBL form" htmlFor={`${idPrefix}-form`} help="PDF, or a clear scan or photo (PNG, JPG) - up to 25 MB.">
-        <input
+      <Field label="Signed PBL form" htmlFor={`${idPrefix}-form`}>
+        <FileDrop
           id={`${idPrefix}-form`}
-          type="file"
-          required
+          files={file ? [file] : []}
+          onChange={(files) => setFile(files[0] ?? null)}
           accept=".pdf,image/png,image/jpeg"
-          onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-          className="block w-full text-[13px] text-stone-600 file:mr-3 file:rounded-lg file:border-0 file:bg-azure-50 file:px-3 file:py-2 file:text-[13px] file:font-medium file:text-azure-600"
+          specs="PDF, or a clear scan or photo (PNG, JPG) · up to 25 MB"
+          disabled={busy}
         />
       </Field>
       <Field label={messageLabel} htmlFor={`${idPrefix}-msg`} help={messageHelp}>

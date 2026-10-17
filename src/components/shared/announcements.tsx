@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { Megaphone, Send } from "lucide-react";
 
 import { FileLink } from "@/components/shared/file-link";
@@ -8,6 +8,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardHeader, EmptyState } from "@/components/ui/card";
 import { Field, Input, Textarea } from "@/components/ui/field";
+import { FileDrop } from "@/components/ui/file-drop";
 import { postAnnouncement } from "@/lib/data/repository";
 import type { Announcement, User } from "@/lib/types";
 import { formatDateTime, timeAgo } from "@/lib/utils";
@@ -56,7 +57,6 @@ export function AnnouncementFeed({ items }: { items: Announcement[] }) {
 
 /** Posting form for teachers (to their groups) and admins (to every student). */
 export function AnnouncementComposer({ user, onPosted }: { user: User; onPosted: () => void }) {
-  const fileRef = useRef<HTMLInputElement>(null);
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [file, setFile] = useState<File | null>(null);
@@ -73,7 +73,6 @@ export function AnnouncementComposer({ user, onPosted }: { user: User; onPosted:
       setTitle("");
       setBody("");
       setFile(null);
-      if (fileRef.current) fileRef.current.value = "";
       onPosted();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not post.");
@@ -95,13 +94,13 @@ export function AnnouncementComposer({ user, onPosted }: { user: User; onPosted:
           <Field label="Message" htmlFor="ann-body">
             <Textarea id="ann-body" rows={4} value={body} onChange={(e) => setBody(e.target.value)} />
           </Field>
-          <Field label="Attach a file (optional)" htmlFor="ann-file" help="PDF, slides, documents or images - up to 25 MB.">
-            <input
+          <Field label="Attach a file (optional)" htmlFor="ann-file">
+            <FileDrop
               id="ann-file"
-              ref={fileRef}
-              type="file"
-              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-              className="block w-full text-[13px] text-stone-600 file:mr-3 file:rounded-lg file:border-0 file:bg-azure-50 file:px-3 file:py-2 file:text-[13px] file:font-medium file:text-azure-600"
+              files={file ? [file] : []}
+              onChange={(files) => setFile(files[0] ?? null)}
+              specs="PDF, slides, documents or images · up to 25 MB"
+              disabled={busy}
             />
           </Field>
           {error ? <p role="alert" className="text-[13px] text-clay-500">{error}</p> : null}

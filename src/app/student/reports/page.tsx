@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { Upload } from "lucide-react";
 
 import { FileLink } from "@/components/shared/file-link";
@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { Card, CardBody, CardHeader, EmptyState } from "@/components/ui/card";
 import { Field, Textarea } from "@/components/ui/field";
+import { FileDrop } from "@/components/ui/file-drop";
 import { PageHeader } from "@/components/ui/page-header";
 import { PageSkeleton } from "@/components/ui/skeleton";
 import * as repo from "@/lib/data/repository";
@@ -143,7 +144,6 @@ function SubmitReport({
   replacing: boolean;
   onSubmitted: (week: number) => void;
 }) {
-  const fileRef = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
   const [summary, setSummary] = useState("");
   const [file, setFile] = useState<File | null>(null);
@@ -158,7 +158,6 @@ function SubmitReport({
       await repo.submitReport({ groupId, studentId, week, summary: summary.trim(), file: file ?? undefined });
       setSummary("");
       setFile(null);
-      if (fileRef.current) fileRef.current.value = "";
       setOpen(false);
       onSubmitted(week);
     } catch (e) {
@@ -179,14 +178,14 @@ function SubmitReport({
 
   return (
     <form onSubmit={submit} className="mt-3 grid gap-4 rounded-[14px] bg-white/60 p-4">
-      <Field label="Report file" htmlFor={`r-file-${week}`} help="PDF, Word, PowerPoint, ZIP or images - up to 25 MB.">
-        <input
+      <Field label="Report file (optional)" htmlFor={`r-file-${week}`}>
+        <FileDrop
           id={`r-file-${week}`}
-          ref={fileRef}
-          type="file"
+          files={file ? [file] : []}
+          onChange={(files) => setFile(files[0] ?? null)}
           accept=".pdf,.doc,.docx,.ppt,.pptx,.zip,image/png,image/jpeg"
-          onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-          className="block w-full text-[13px] text-stone-600 file:mr-3 file:rounded-lg file:border-0 file:bg-azure-50 file:px-3 file:py-2 file:text-[13px] file:font-medium file:text-azure-600"
+          specs="PDF, Word, PowerPoint, ZIP or images · up to 25 MB"
+          disabled={busy}
         />
       </Field>
       <Field label="What did the team do this week?" htmlFor={`r-summary-${week}`}>

@@ -1,12 +1,13 @@
 "use client";
 
-import { useRef, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { ArrowLeft, Plus, Trophy, Upload } from "lucide-react";
 
 import { AchievementCard } from "@/components/achievements/achievement-card";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { Card, CardBody, CardHeader, EmptyState } from "@/components/ui/card";
 import { Field, Input, Textarea } from "@/components/ui/field";
+import { FileDrop } from "@/components/ui/file-drop";
 import { PageHeader } from "@/components/ui/page-header";
 import { PageSkeleton } from "@/components/ui/skeleton";
 import { ACHIEVEMENT_CATEGORIES, findTemplate, MAX_BONUS_MARKS, type AchievementTemplate } from "@/lib/achievements";
@@ -148,7 +149,6 @@ function AchievementForm({
   const [achievedOn, setAchievedOn] = useState(existing?.achievedOn ?? "");
   const [note, setNote] = useState("");
   const [files, setFiles] = useState<File[]>([]);
-  const fileRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -294,19 +294,15 @@ function AchievementForm({
             <Textarea id="f-desc" rows={3} value={description} onChange={(e) => setDescription(e.target.value)} />
           </Field>
 
-          <Field
-            label={existing ? "Add more documents" : "Supporting documents"}
-            htmlFor="f-files"
-            help="Certificates, letters, results pages, screenshots - PDF, images, Word or PowerPoint, up to 15 MB each."
-          >
-            <input
+          <Field label={existing ? "Add more documents (optional)" : "Supporting documents"} htmlFor="f-files">
+            <FileDrop
               id="f-files"
-              ref={fileRef}
-              type="file"
               multiple
+              files={files}
+              onChange={setFiles}
               accept=".pdf,.doc,.docx,.ppt,.pptx,image/png,image/jpeg,image/webp"
-              onChange={(e) => setFiles(Array.from(e.target.files ?? []))}
-              className="block w-full text-[13px] text-stone-600 file:mr-3 file:rounded-lg file:border-0 file:bg-azure-50 file:px-3 file:py-2 file:text-[13px] file:font-medium file:text-azure-600"
+              specs="Certificates, letters, results pages, screenshots · PDF, images, Word or PowerPoint · up to 15 MB each"
+              disabled={busy}
             />
           </Field>
 
