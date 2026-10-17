@@ -20,6 +20,7 @@ const SCENES = {
   profile: { doodles: ["book", "bulb", "pencil"], tone: "azure" },
   settings: { doodles: ["triangle", "pencil", "bulb"], tone: "gold" },
   team: { doodles: ["cluster", "triangle", "plane"], tone: "sage" },
+  achievements: { doodles: ["bulb", "books", "plane"], tone: "gold" },
 } as const satisfies Record<string, { doodles: readonly DoodleKey[]; tone: string }>;
 
 export type SceneKey = keyof typeof SCENES;

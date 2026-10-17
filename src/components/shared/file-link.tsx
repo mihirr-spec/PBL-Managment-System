@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import { Paperclip } from "lucide-react";
 
 import { DocumentViewer } from "@/components/shared/document-viewer";
+import type { FileBucket } from "@/lib/data/repository";
 import { cn } from "@/lib/utils";
 
 /** A private storage file; clicking opens it in the in-portal viewer. */
@@ -13,7 +14,7 @@ export function FileLink({
   name,
   className,
 }: {
-  bucket: "submissions" | "announcements";
+  bucket: FileBucket;
   path: string;
   name: string;
   className?: string;

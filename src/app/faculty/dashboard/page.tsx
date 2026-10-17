@@ -1,6 +1,6 @@
 "use client";
 
-import { FileText, MessageCircleQuestion, UserPlus, UsersRound } from "lucide-react";
+import { FileText, MessageCircleQuestion, Trophy, UserPlus, UsersRound } from "lucide-react";
 
 import { StatTile } from "@/components/dashboard/stat-tile";
 import { GroupTable } from "@/components/staff/group-table";
@@ -18,13 +18,14 @@ const MAX_GROUPS = 7;
 export default function FacultyDashboardPage() {
   const { user } = useSession();
   const { data } = useLoad(async () => {
-    const [groups, requests, ungraded, tickets, changes] = await Promise.all([
+    const [groups, requests, ungraded, tickets, changes, achievements] = await Promise.all([
       repo.listGroups(user!.profileId),
       repo.listRequestsForFaculty(user!.profileId),
       repo.countUngradedReports(),
       repo.listTickets(),
       // Only changes involving this teacher are visible to them.
       repo.listSupervisorChanges(),
+      repo.listAchievements(),
     ]);
     const openTickets: Record<string, number> = {};
     for (const t of tickets) if (t.status === "open") openTickets[t.groupId] = (openTickets[t.groupId] ?? 0) + 1;
@@ -34,6 +35,7 @@ export default function FacultyDashboardPage() {
       ungraded,
       openTickets,
       changes,
+      achievementsToReview: achievements.filter((a) => a.status === "submitted").length,
     };
   }, user ? user.id : null);
 
@@ -52,11 +54,21 @@ export default function FacultyDashboardPage() {
         image="campus"
         imageClassName="object-[center_40%]"
         action={
-          data.pendingRequests > 0 ? (
-            <ButtonLink href="/faculty/requests" size="sm">
-              <UserPlus className="size-3.5" />
-              {data.pendingRequests} mentor request{data.pendingRequests > 1 ? "s" : ""}
-            </ButtonLink>
+          data.pendingRequests > 0 || data.achievementsToReview > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {data.pendingRequests > 0 ? (
+                <ButtonLink href="/faculty/requests" size="sm">
+                  <UserPlus className="size-3.5" />
+                  {data.pendingRequests} mentor request{data.pendingRequests > 1 ? "s" : ""}
+                </ButtonLink>
+              ) : null}
+              {data.achievementsToReview > 0 ? (
+                <ButtonLink href="/faculty/achievements" size="sm" variant="secondary">
+                  <Trophy className="size-3.5" />
+                  {data.achievementsToReview} achievement{data.achievementsToReview > 1 ? "s" : ""} to review
+                </ButtonLink>
+              ) : null}
+            </div>
           ) : null
         }
       />

@@ -6,6 +6,7 @@ import {
   Megaphone,
   MessageCircleQuestion,
   MessageSquareQuote,
+  Trophy,
   UserPlus,
   UserRound,
   UsersRound,
@@ -26,6 +27,7 @@ const STYLES: Record<NotificationKind, { icon: LucideIcon; className: string }> 
   deadline: { icon: CalendarClock, className: "bg-gold-50 text-gold-600" },
   submission: { icon: CheckCircle2, className: "bg-sage-100 text-sage-500" },
   feedback: { icon: MessageSquareQuote, className: "bg-plum-100 text-plum-500" },
+  achievement: { icon: Trophy, className: "bg-gold-50 text-gold-600" },
 };
 
 export function NotificationIcon({

@@ -4,10 +4,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Download, FileText, FileWarning, Loader2, X } from "lucide-react";
 
-import { getFileUrl } from "@/lib/data/repository";
+import { getFileUrl, type FileBucket } from "@/lib/data/repository";
 import { cn } from "@/lib/utils";
 
-type Bucket = "submissions" | "announcements";
+type Bucket = FileBucket;
 
 /** Files beyond this many pages are cut short so a huge PDF can't stall the tab. */
 const MAX_PAGES = 60;

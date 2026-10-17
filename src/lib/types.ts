@@ -237,7 +237,8 @@ export type NotificationKind =
   | "profile"
   | "deadline"
   | "submission"
-  | "feedback";
+  | "feedback"
+  | "achievement";
 
 export interface Notification {
   id: string;
@@ -249,4 +250,46 @@ export interface Notification {
   read: boolean;
   /** In-app destination for the notification's primary action. */
   href?: string;
+}
+
+/** submitted = with the supervisor; needs_info = the supervisor asked for more details. */
+export type AchievementStatus = "submitted" | "needs_info" | "approved" | "rejected";
+
+export interface AchievementDocument {
+  path: string;
+  name: string;
+}
+
+export interface AchievementEvent {
+  id: string;
+  actorName: string;
+  actorRole: Role;
+  action: "submitted" | "resubmitted" | "comment" | "needs_info" | "approved" | "rejected";
+  note: string;
+  createdAt: string;
+}
+
+/** Something one student achieved, reviewed by their group's supervisor. */
+export interface Achievement {
+  id: string;
+  studentId: string;
+  student?: Pick<Student, "fullName" | "registrationNumber" | "programme" | "branch" | "semester">;
+  groupNumber?: number;
+  facultyId?: string;
+  reviewerName?: string;
+  /** Keys into ACHIEVEMENT_CATEGORIES (src/lib/achievements.ts). */
+  category: string;
+  template: string;
+  title: string;
+  description: string;
+  answers: Record<string, string>;
+  achievedOn?: string;
+  documents: AchievementDocument[];
+  status: AchievementStatus;
+  /** Out of 5, set when approved. */
+  bonusMarks?: number;
+  reviewedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+  events: AchievementEvent[];
 }

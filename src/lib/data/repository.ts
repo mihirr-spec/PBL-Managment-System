@@ -1,5 +1,9 @@
+import { isAuthRetryableFetchError } from "@supabase/supabase-js";
+
 import { supabase } from "@/lib/supabase/client";
 import type {
+  Achievement,
+  AchievementDocument,
   Announcement,
   Faculty,
   Group,
@@ -196,6 +200,45 @@ const toNotification = (r: any): Notification => ({
   href: r.href ?? undefined,
 });
 
+const toAchievement = (r: any): Achievement => ({
+  id: r.id,
+  studentId: r.student_id,
+  student: r.students
+    ? {
+        fullName: r.students.full_name,
+        registrationNumber: r.students.registration_number,
+        programme: r.students.programme,
+        branch: r.students.branch,
+        semester: r.students.semester,
+      }
+    : undefined,
+  groupNumber: r.groups?.number,
+  facultyId: r.faculty_id ?? undefined,
+  reviewerName: r.faculty?.full_name ?? undefined,
+  category: r.category,
+  template: r.template,
+  title: r.title,
+  description: r.description ?? "",
+  answers: r.answers ?? {},
+  achievedOn: r.achieved_on ?? undefined,
+  documents: r.documents ?? [],
+  status: r.status,
+  bonusMarks: r.bonus_marks == null ? undefined : Number(r.bonus_marks),
+  reviewedAt: r.reviewed_at ?? undefined,
+  createdAt: r.created_at,
+  updatedAt: r.updated_at,
+  events: (r.achievement_events ?? [])
+    .map((e: any) => ({
+      id: e.id,
+      actorName: e.actor_name,
+      actorRole: e.actor_role,
+      action: e.action,
+      note: e.note ?? "",
+      createdAt: e.created_at,
+    }))
+    .sort((a: { createdAt: string }, b: { createdAt: string }) => a.createdAt.localeCompare(b.createdAt)),
+});
+
 const safeFileName = (name: string) => name.replace(/[^\w.\-]+/g, "_");
 
 /* ---------------------------------------------------------------- auth */
@@ -340,6 +383,14 @@ export async function authenticate({ email, password, roles }: Credentials): Pro
   });
   if (error?.code === "email_not_confirmed") {
     return { ok: false, error: "Verify your email first — open the link we sent to your inbox." };
+  }
+  // A paused or unreachable backend is not a wrong password — say so.
+  if (error && (isAuthRetryableFetchError(error) || error.status === 0 || (error.status ?? 0) >= 500)) {
+    return {
+      ok: false,
+      error:
+        "Can't reach the portal's server right now, so no account can sign in. If you run this portal, check that the Supabase project is active (not paused); otherwise try again in a few minutes.",
+    };
   }
   if (error || !data.user) {
     return { ok: false, error: "Incorrect email or password. Please try again." };
@@ -749,8 +800,10 @@ export async function gradeReport(reportId: string, grade: number, feedback: str
   fail(error);
 }
 
+export type FileBucket = "submissions" | "announcements" | "achievements";
+
 /** Short-lived link to a private file (report or announcement attachment). */
-export async function getFileUrl(bucket: "submissions" | "announcements", path: string): Promise<string> {
+export async function getFileUrl(bucket: FileBucket, path: string): Promise<string> {
   const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path, 60 * 10);
   fail(error);
   return data!.signedUrl;
@@ -883,6 +936,99 @@ export async function replyTicket(ticketId: string, reply: string, resolve: bool
     p_ticket: ticketId,
     p_reply: reply,
     p_resolve: resolve,
+  });
+  fail(error);
+}
+
+/* -------------------------------------------------------- achievements */
+
+const ACHIEVEMENT_SELECT =
+  "*, students(full_name, registration_number, programme, branch, semester), groups(number), faculty(full_name), achievement_events(*)";
+
+/** Every achievement the caller may see: their own, the ones they review, or all (PBL office). */
+export async function listAchievements(): Promise<Achievement[]> {
+  const { data, error } = await supabase
+    .from("achievements")
+    .select(ACHIEVEMENT_SELECT)
+    .order("created_at", { ascending: false });
+  fail(error);
+  return (data ?? []).map(toAchievement);
+}
+
+/** Uploads supporting documents to achievements/<student id>/. */
+export async function uploadAchievementFiles(studentId: string, files: File[]): Promise<AchievementDocument[]> {
+  const documents: AchievementDocument[] = [];
+  for (const file of files) {
+    const path = `${studentId}/${Date.now()}-${safeFileName(file.name)}`;
+    const upload = await supabase.storage.from("achievements").upload(path, file, { contentType: file.type });
+    fail(upload.error);
+    documents.push({ path, name: file.name });
+  }
+  return documents;
+}
+
+export interface AchievementInput {
+  title: string;
+  description: string;
+  answers: Record<string, string>;
+  achievedOn: string;
+}
+
+export async function submitAchievement(
+  studentId: string,
+  input: AchievementInput & { category: string; template: string; files: File[] },
+): Promise<string> {
+  const documents = await uploadAchievementFiles(studentId, input.files);
+  const { data, error } = await supabase.rpc("submit_achievement", {
+    p_category: input.category,
+    p_template: input.template,
+    p_title: input.title,
+    p_description: input.description,
+    p_answers: input.answers,
+    p_achieved_on: input.achievedOn || null,
+    p_documents: documents,
+  });
+  fail(error);
+  return data as string;
+}
+
+/** Edits the submission (adding any new files) and sends it back to the supervisor. */
+export async function updateAchievement(
+  studentId: string,
+  achievementId: string,
+  input: AchievementInput & { files: File[]; note: string },
+): Promise<void> {
+  const documents = await uploadAchievementFiles(studentId, input.files);
+  const { error } = await supabase.rpc("update_achievement", {
+    p_achievement: achievementId,
+    p_title: input.title,
+    p_description: input.description,
+    p_answers: input.answers,
+    p_achieved_on: input.achievedOn || null,
+    p_new_documents: documents,
+    p_note: input.note,
+  });
+  fail(error);
+}
+
+export async function commentAchievement(achievementId: string, note: string): Promise<void> {
+  const { error } = await supabase.rpc("comment_achievement", { p_achievement: achievementId, p_note: note });
+  fail(error);
+}
+
+export type AchievementDecision = "approve" | "needs_info" | "reject";
+
+export async function reviewAchievement(
+  achievementId: string,
+  decision: AchievementDecision,
+  note: string,
+  marks?: number,
+): Promise<void> {
+  const { error } = await supabase.rpc("review_achievement", {
+    p_achievement: achievementId,
+    p_decision: decision,
+    p_note: note,
+    p_marks: marks ?? null,
   });
   fail(error);
 }

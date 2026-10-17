@@ -8,6 +8,7 @@ import {
   Megaphone,
   MessageCircleQuestion,
   Settings,
+  Trophy,
   UserPlus,
   UserRound,
   UsersRound,
@@ -37,6 +38,7 @@ const teacherNav: NavSection[] = [
       { label: "My Groups", href: "/faculty/dashboard", icon: UsersRound, matchPrefix: "/faculty/groups" },
       { label: "Mentor Requests", href: "/faculty/requests", icon: UserPlus },
       { label: "Queries", href: "/faculty/queries", icon: MessageCircleQuestion },
+      { label: "Achievements", href: "/faculty/achievements", icon: Trophy },
       { label: "Announcements", href: "/faculty/announcements", icon: Megaphone },
     ],
   },
@@ -56,6 +58,7 @@ export const NAV_BY_ROLE: Record<Role, NavSection[]> = {
         { label: "Requests", href: "/student/requests", icon: Inbox, badge: "invitations" },
         { label: "Weekly Reports", href: "/student/reports", icon: FileText },
         { label: "Grades & Feedback", href: "/student/grades", icon: Award },
+        { label: "Achievements", href: "/student/achievements", icon: Trophy },
         { label: "Queries", href: "/student/queries", icon: MessageCircleQuestion },
       ],
     },
@@ -83,6 +86,7 @@ export const NAV_BY_ROLE: Record<Role, NavSection[]> = {
       items: [
         { label: "Overview", href: "/admin/dashboard", icon: LayoutDashboard, matchPrefix: "/admin/groups" },
         { label: "Announcements", href: "/admin/announcements", icon: Megaphone },
+        { label: "Excellence & LinkedIn", href: "/admin/achievements", icon: Trophy },
       ],
     },
     {

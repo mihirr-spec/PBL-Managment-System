@@ -91,14 +91,18 @@ export function LoginForm({ verified = false }: { verified?: boolean }) {
     if (!loading && user && !submitting) router.replace(HOME_BY_ROLE[user.role]);
   }, [loading, user, submitting, router]);
 
-  async function handleSubmit(event: FormEvent) {
+  function handleSubmit(event: FormEvent) {
     event.preventDefault();
+    void signInWith(email, password);
+  }
+
+  async function signInWith(address: string, secret: string) {
     setError(null);
     setNotice(null);
     setUnverified(false);
     setSubmitting(true);
 
-    const result = await signIn(email, password, [...tab.roles]);
+    const result = await signIn(address, secret, [...tab.roles]);
     if (result.ok) {
       router.replace(HOME_BY_ROLE[result.user.role]);
       return;
@@ -120,10 +124,11 @@ export function LoginForm({ verified = false }: { verified?: boolean }) {
     }
   }
 
-  function fillDemo(demo: { email: string; password: string }) {
+  /** One click: fill the demo login and sign straight in. */
+  function tryDemo(demo: { email: string; password: string }) {
     setEmail(demo.email);
     setPassword(demo.password);
-    setError(null);
+    void signInWith(demo.email, demo.password);
   }
 
   function chooseTab(key: TabKey) {
@@ -312,15 +317,17 @@ export function LoginForm({ verified = false }: { verified?: boolean }) {
             Create your account
           </Link>
         </p>
-        <div className="mt-3 flex flex-wrap justify-center gap-2">
+        <p className="mt-3 text-[12px] tracking-wide text-stone-400 uppercase">Try a demo account</p>
+        <div className="mt-2 flex flex-wrap justify-center gap-2">
           {tab.demos.map((demo) => (
             <button
               key={demo.email}
               type="button"
-              onClick={() => fillDemo(demo)}
-              className="rounded-full border border-[#dbe3ee] bg-white/70 px-3.5 py-1.5 text-[12.5px] text-stone-500 transition-colors hover:border-azure-100 hover:text-azure-600"
+              disabled={submitting}
+              onClick={() => tryDemo(demo)}
+              className="rounded-full border border-[#dbe3ee] bg-white/70 px-3.5 py-1.5 text-[12.5px] text-stone-500 transition-colors hover:border-azure-100 hover:text-azure-600 disabled:pointer-events-none disabled:opacity-60"
             >
-              Demo: {demo.label}
+              {demo.label}
             </button>
           ))}
         </div>
