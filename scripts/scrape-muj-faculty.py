@@ -103,7 +103,7 @@ def enrich(person: dict) -> dict:
         try:
             time.sleep(PAUSE)
             return {**person, **parse_detail(fetch(person["profile_url"]))}
-        except Exception as error:  # network hiccup — back off and retry
+        except Exception as error:  # network hiccup - back off and retry
             if attempt == 2:
                 print(f"  ! {person['name']}: {error}")
             time.sleep(2 * (attempt + 1))
