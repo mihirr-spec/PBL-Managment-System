@@ -117,7 +117,7 @@ function PdfPages({ data, onError }: { data: ArrayBuffer; onError: () => void })
       <div ref={host} className="py-4" />
       {pages && pages.shown < pages.total ? (
         <p className="pb-4 text-center text-[12.5px] text-stone-500">
-          Showing the first {pages.shown} of {pages.total} pages — download the file to read the rest.
+          Showing the first {pages.shown} of {pages.total} pages - download the file to read the rest.
         </p>
       ) : null}
     </div>
@@ -181,7 +181,7 @@ export function DocumentPreview({
     body = (
       <Status
         icon={<FileWarning className="size-6" />}
-        text="This file couldn't be displayed — it may be damaged or not a real PDF. Try downloading it instead."
+        text="This file couldn't be displayed - it may be damaged or not a real PDF. Try downloading it instead."
       >
         <DownloadLink url={doc.url} name={name} />
       </Status>

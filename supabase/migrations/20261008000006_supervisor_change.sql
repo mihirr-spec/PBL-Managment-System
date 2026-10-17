@@ -97,7 +97,7 @@ begin
         'Group ' || g.number || ': supervisor change approved by the supervisor',
         left(new.body, 140), '/admin/dashboard');
       perform app_private.notify(array[student_user], 'ticket',
-        'Your supervisor approved the change request — it is now with the PBL office',
+        'Your supervisor approved the change request - it is now with the PBL office',
         coalesce(new.reply, ''), '/student/queries');
     elsif new.status = 'declined' then
       perform app_private.notify(array[student_user], 'ticket',
@@ -176,7 +176,7 @@ begin
   end if;
   update public.tickets
   set status = case when p_approve then 'forwarded' else 'declined' end,
-      reply = coalesce(nullif(trim(p_note), ''), 'Approved — forwarded to the PBL office.'),
+      reply = coalesce(nullif(trim(p_note), ''), 'Approved - forwarded to the PBL office.'),
       replied_at = now(),
       forwarded_at = case when p_approve then now() else null end
   where id = t.id;

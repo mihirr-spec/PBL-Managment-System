@@ -54,7 +54,7 @@ export function ProfilePhotoCard({ student }: { student: Student }) {
 
   return (
     <Card>
-      {/* Watercolour cover — the campus the student belongs to */}
+      {/* Watercolour cover - the campus the student belongs to */}
       <div className="relative h-32 overflow-hidden bg-gradient-to-b from-wash-sky to-wash-low">
         <Art
           name="capitol"

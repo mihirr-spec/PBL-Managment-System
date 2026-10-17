@@ -54,7 +54,7 @@ export function relativeDays(iso: string): string {
   return `${Math.abs(days)} days ago`;
 }
 
-/** "4 hours ago" · "2 days ago" — for feeds. */
+/** "4 hours ago" · "2 days ago" - for feeds. */
 export function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
   const minutes = Math.floor(diff / 60_000);
@@ -67,7 +67,7 @@ export function timeAgo(iso: string): string {
   return formatDateShort(iso);
 }
 
-/** "MS" from "Mihir Sanghvi" — avatar fallback. */
+/** "MS" from "Mihir Sanghvi" - avatar fallback. */
 export function initials(name: string): string {
   return name
     .replace(/^(Dr|Prof|Mr|Ms|Mrs)\.?\s+/i, "")

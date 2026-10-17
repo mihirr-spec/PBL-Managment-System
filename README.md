@@ -3,7 +3,7 @@
 A university platform for managing the complete Project-Based Learning lifecycle
 for students, faculty coordinators and PBL supervisors.
 
-**This repository currently contains Version 1 — the Student Portal.**
+**This repository currently contains Version 1 - the Student Portal.**
 
 ---
 
@@ -55,8 +55,8 @@ src/
       layout.tsx              → <PortalShell role="student">
       dashboard/ profile/ project/ deadlines/
       announcements/ notifications/ settings/
-    faculty/                  V2    — add layout.tsx with role="faculty"
-    supervisor/               V2.5  — add layout.tsx with role="supervisor"
+    faculty/                  V2    - add layout.tsx with role="faculty"
+    supervisor/               V2.5  - add layout.tsx with role="supervisor"
 
   components/
     layout/                   Shell, sidebar, topbar, nav config, brand
@@ -92,7 +92,7 @@ Supabase or a REST API means rewriting those function bodies and nothing else.
 
 ## Design
 
-The palette is sampled from `public/coverpage.png` — ivory and warm sand
+The palette is sampled from `public/coverpage.webp` - ivory and warm sand
 surfaces, muted gold from the dome as the accent, soft stone for text. Status
 colours (clay, sage, sky, plum) are kept muted so they read as information
 rather than decoration. Type is Inter for the interface and Fraunces for
@@ -116,8 +116,8 @@ All tokens live in the `@theme` block at the top of `src/app/globals.css`.
 
 | Release | Scope |
 | --- | --- |
-| **V1** | Student portal — auth, dashboard, profile, project, deadlines, announcements, notifications |
+| **V1** | Student portal - auth, dashboard, profile, project, deadlines, announcements, notifications |
 | **V1.1** | Coordinator selection, team management, weekly progress submission, evidence uploads, faculty feedback |
-| **V2** | Faculty portal — student management, progress review, certificate verification, evaluation, marks |
-| **V2.5** | Supervisor — student allocation, faculty management, project monitoring, reports |
+| **V2** | Faculty portal - student management, progress review, certificate verification, evaluation, marks |
+| **V2.5** | Supervisor - student allocation, faculty management, project monitoring, reports |
 | **V3** | Project health score, at-risk detection, progress prediction, analytics |

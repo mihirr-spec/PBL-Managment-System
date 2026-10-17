@@ -44,7 +44,7 @@ export default function RequestsPage() {
             title="No invitations"
             description={
               group
-                ? `You are in Group ${group.number} — ${group.name}.`
+                ? `You are in Group ${group.number} - ${group.name}.`
                 : "Nobody has invited you yet. You can also start your own group."
             }
             scene="team"

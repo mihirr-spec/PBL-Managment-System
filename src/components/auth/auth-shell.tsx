@@ -6,7 +6,7 @@ import { GraduationCap } from "lucide-react";
 /**
  * Sign-in and sign-up screens: the campus watercolour sits on the right at full height and
  * the form sits in a frosted dialog over the open paper on the left. The page
- * is exactly one screen tall — nothing to scroll on a laptop.
+ * is exactly one screen tall - nothing to scroll on a laptop.
  */
 export function AuthShell({
   title,

@@ -62,14 +62,14 @@ export function GroupTable({
                     <td className="px-5 py-3.5">
                       <p className="flex items-center gap-1.5 text-[13.5px] font-medium text-ink-900">
                         <Crown className="size-3.5 text-gold-500" aria-hidden />
-                        {leader?.fullName ?? "—"}
+                        {leader?.fullName ?? "-"}
                       </p>
                       <p className="tnum text-[12px] text-stone-500">{leader?.registrationNumber}</p>
                     </td>
                     <td className="max-w-[18rem] px-5 py-3.5">
                       <p className="truncate text-[13.5px] text-ink-900">{g.projectTitle}</p>
                       <p className="text-[12px] text-stone-500">
-                        {g.domain || "—"} · {g.progress}% done
+                        {g.domain || "-"} · {g.progress}% done
                       </p>
                     </td>
                     <td className="px-5 py-3.5 text-[12.5px]">

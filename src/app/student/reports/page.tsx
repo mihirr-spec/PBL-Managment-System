@@ -55,13 +55,13 @@ export default function ReportsPage() {
         eyebrow="Weekly Reports"
         title="Weekly"
         emphasis="reports."
-        description={`${submitted} of ${group.reportCount} submitted. One report per week for the whole team — you can replace one until your supervisor grades it.`}
+        description={`${submitted} of ${group.reportCount} submitted. One report per week for the whole team - you can replace one until your supervisor grades it.`}
         scene="reports"
       />
 
       {submittedWeek != null ? (
         <p role="status" className="text-[13px] text-sage-500">
-          Week {submittedWeek} report submitted — your supervisor has been notified.
+          Week {submittedWeek} report submitted - your supervisor has been notified.
         </p>
       ) : null}
 
@@ -179,7 +179,7 @@ function SubmitReport({
 
   return (
     <form onSubmit={submit} className="mt-3 grid gap-4 rounded-[14px] bg-white/60 p-4">
-      <Field label="Report file" htmlFor={`r-file-${week}`} help="PDF, Word, PowerPoint, ZIP or images — up to 25 MB.">
+      <Field label="Report file" htmlFor={`r-file-${week}`} help="PDF, Word, PowerPoint, ZIP or images - up to 25 MB.">
         <input
           id={`r-file-${week}`}
           ref={fileRef}

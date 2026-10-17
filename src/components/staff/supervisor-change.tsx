@@ -55,7 +55,7 @@ export function ChangeSupervisorForm({
   async function decline() {
     if (!queryId) return;
     if (!reason.trim()) {
-      setError("Write why the request is declined — the group will see it.");
+      setError("Write why the request is declined - the group will see it.");
       return;
     }
     setBusy("decline");
@@ -83,7 +83,7 @@ export function ChangeSupervisorForm({
           <option value="">{teachers.data ? "Choose a teacher…" : "Loading teachers…"}</option>
           {options.map((t) => (
             <option key={t.id} value={t.id} disabled={t.groupCount >= t.maxGroups}>
-              {t.fullName} — {t.groupCount}/{t.maxGroups} groups{t.groupCount >= t.maxGroups ? " (full)" : ""}
+              {t.fullName} - {t.groupCount}/{t.maxGroups} groups{t.groupCount >= t.maxGroups ? " (full)" : ""}
             </option>
           ))}
         </select>

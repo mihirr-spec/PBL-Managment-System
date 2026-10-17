@@ -14,7 +14,7 @@ import * as repo from "@/lib/data/repository";
 import type { Faculty, GroupInvitation, Student } from "@/lib/types";
 
 /**
- * Shown to a student who is not in a group yet: their details, then one form —
+ * Shown to a student who is not in a group yet: their details, then one form:
  * choose the supervisor, attach the application they signed, give the project
  * title and the team (lead plus one or two teammates), and send. Teammates are
  * invited and join once they accept; the supervisor approves the request.
@@ -53,7 +53,7 @@ export function GetStarted({
     if (!teacher) return setError("Choose your supervisor.");
     if (!form) return setError("Attach the application your supervisor signed.");
     if (!title.trim()) return setError("Give your project title.");
-    if (teammates.length === 0) return setError("Add at least one teammate — a team has 2 or 3 students.");
+    if (teammates.length === 0) return setError("Add at least one teammate - a team has 2 or 3 students.");
     if (teammates.some((m) => !m.fullName || !m.registrationNumber)) {
       return setError("Give each teammate's name and registration number.");
     }
@@ -146,7 +146,7 @@ export function GetStarted({
             description="A team has 2 or 3 students. Teammates get an invitation to accept."
           />
           <CardBody className="space-y-5">
-            <Field label="Signed application" htmlFor="gs-form" help="PDF, or a clear scan or photo (PNG, JPG) — up to 25 MB.">
+            <Field label="Signed application" htmlFor="gs-form" help="PDF, or a clear scan or photo (PNG, JPG) - up to 25 MB.">
               <input
                 id="gs-form"
                 type="file"
@@ -198,7 +198,7 @@ export function GetStarted({
               ))}
             </div>
 
-            <Field label="Message to your supervisor" htmlFor="gs-msg" help="e.g. We talked this afternoon — submitting my form and team details with my project title.">
+            <Field label="Message to your supervisor" htmlFor="gs-msg" help="e.g. We talked this afternoon - submitting my form and team details with my project title.">
               <Textarea id="gs-msg" rows={2} value={message} onChange={(e) => setMessage(e.target.value)} />
             </Field>
 

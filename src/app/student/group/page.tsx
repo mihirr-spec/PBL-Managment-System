@@ -127,7 +127,7 @@ function GroupView({
               <CardBody>
                 <p className="text-[13px] text-stone-500">
                   {isLeader
-                    ? "No form sent yet — find your teacher below and upload the signed form."
+                    ? "No form sent yet - find your teacher below and upload the signed form."
                     : "Your team lead has not sent the signed PBL form yet."}
                 </p>
               </CardBody>
@@ -257,14 +257,14 @@ function RequestForm({
       <CardBody>
         {faculty.onPortal ? null : (
           <p className="text-[12.5px] text-stone-500">
-            {faculty.fullName} is not on the portal yet — they will see this once their account is set up.
+            {faculty.fullName} is not on the portal yet - they will see this once their account is set up.
           </p>
         )}
         <FormUpload
           idPrefix="req"
           submitLabel="Send for approval"
           messageLabel="Message to the teacher (optional)"
-          messageHelp="A line or two — e.g. when you discussed the project."
+          messageHelp="A line or two - e.g. when you discussed the project."
           onSubmit={async (message, form) => {
             await repo.requestMentor({ groupId, facultyId: faculty.id, message, form });
             onSent();
@@ -314,7 +314,7 @@ function FormUpload({
 
   return (
     <form onSubmit={submit} className="mt-3 space-y-3">
-      <Field label="Signed PBL form" htmlFor={`${idPrefix}-form`} help="PDF, or a clear scan or photo (PNG, JPG) — up to 25 MB.">
+      <Field label="Signed PBL form" htmlFor={`${idPrefix}-form`} help="PDF, or a clear scan or photo (PNG, JPG) - up to 25 MB.">
         <input
           id={`${idPrefix}-form`}
           type="file"

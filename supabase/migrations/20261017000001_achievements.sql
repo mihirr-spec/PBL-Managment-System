@@ -1,6 +1,6 @@
 -- Achievements: a student records something they achieved on their own
 -- (a hackathon win, a paper, a medal), with supporting documents. Their
--- group's supervisor reviews it — approves (optionally with bonus marks),
+-- group's supervisor reviews it - approves (optionally with bonus marks),
 -- asks for more details, comments, or rejects. Approved achievements feed the
 -- Student Excellence Award shortlist and a LinkedIn-ready post.
 --
@@ -135,7 +135,7 @@ begin
   join public.group_members gm on gm.group_id = gr.id
   where gm.student_id = s.id;
   if g.mentor_id is null then
-    raise exception 'Your group needs a supervisor first — they are the one who reviews achievements.';
+    raise exception 'Your group needs a supervisor first - they are the one who reviews achievements.';
   end if;
 
   if jsonb_array_length(app_private.check_documents(p_documents, s.id)) = 0 then
@@ -257,7 +257,7 @@ begin
   -- Bonus marks are recorded as a grade so they show in Grades & Feedback.
   if p_decision = 'approve' and marks > 0 then
     insert into public.student_grades (student_id, group_id, title, score, max_score, improvements, graded_by)
-    values (a.student_id, a.group_id, 'Achievement bonus — ' || a.title, marks, 5,
+    values (a.student_id, a.group_id, 'Achievement bonus - ' || a.title, marks, 5,
       coalesce(trim(p_note), ''), app_private.my_faculty_id());
   end if;
 
@@ -281,10 +281,10 @@ create or replace function app_private.on_grade() returns trigger
 language plpgsql security definer set search_path = ''
 as $$
 begin
-  if new.title like 'Achievement bonus — %' then return new; end if;
+  if new.title like 'Achievement bonus - %' then return new; end if;
   perform app_private.notify(
     array[(select user_id from public.students where id = new.student_id)], 'grade',
-    'New grade: ' || new.title || ' — ' || new.score || '/' || new.max_score, new.improvements,
+    'New grade: ' || new.title || ' - ' || new.score || '/' || new.max_score, new.improvements,
     '/student/grades');
   return new;
 end $$;
@@ -333,12 +333,12 @@ begin
   insert into public.achievements (student_id, group_id, faculty_id, category, template, title, description,
     answers, achieved_on, status, bonus_marks, reviewed_at, created_at)
   values ('s-2201', gid, 'f-301', 'hackathons', 'hackathon_win',
-    '1st Prize — Smart India Hackathon 2026 (Software Edition)',
+    '1st Prize - Smart India Hackathon 2026 (Software Edition)',
     'Our team of six built an offline crop-disease detector for farmers; I led model training and on-device optimisation.',
-    jsonb_build_object('event', 'Smart India Hackathon 2026 — Grand Finale', 'position', '1st Prize',
+    jsonb_build_object('event', 'Smart India Hackathon 2026 - Grand Finale', 'position', '1st Prize',
       'organiser', 'Ministry of Education''s Innovation Cell & AICTE', 'venue', 'IIT Jammu',
       'team', 'Team Kisan (6 members)', 'problem', 'Offline crop-disease detection for low-connectivity districts',
-      'prize', '₹1,00,000 cash prize', 'role', 'Team lead — model training and quantisation'),
+      'prize', '₹1,00,000 cash prize', 'role', 'Team lead - model training and quantisation'),
     current_date - 30, 'approved', 4, now() - interval '20 days', now() - interval '25 days')
   returning id into a1;
 
@@ -356,7 +356,7 @@ begin
   insert into public.achievements (student_id, group_id, faculty_id, category, template, title, description,
     answers, achieved_on, status, created_at)
   values ('s-2201', gid, 'f-301', 'sports', 'sports_medal',
-    'Gold — Inter-University Table Tennis (Singles)',
+    'Gold - Inter-University Table Tennis (Singles)',
     'Won the singles final 3–1 representing MUJ.',
     jsonb_build_object('sport', 'Table Tennis (Men''s Singles)', 'event', 'West Zone Inter-University Championship 2026',
       'medal', 'Gold', 'level', 'Zonal', 'organiser', 'Association of Indian Universities'),
@@ -369,14 +369,14 @@ begin
       'Congratulations! Could you add the winners'' list from the SIH portal as well?', now() - interval '23 days'),
     (a1, student_user, 'Mihir Sanghvi', 'student', 'comment', 'Added the screenshot of the official results page.', now() - interval '22 days'),
     (a1, mentor_user, 'Dr. Anagha Deshpande', 'faculty', 'approved',
-      'Verified with the SIH nodal centre. Well deserved — nominated for the Student Excellence Award.', now() - interval '20 days'),
+      'Verified with the SIH nodal centre. Well deserved - nominated for the Student Excellence Award.', now() - interval '20 days'),
     (a2, student_user, 'Mihir Sanghvi', 'student', 'submitted', '', now() - interval '10 days'),
     (a2, mentor_user, 'Dr. Anagha Deshpande', 'faculty', 'needs_info',
       'Please attach the presentation certificate and the DOI / proceedings link once it is out.', now() - interval '8 days'),
     (a3, student_user, 'Mihir Sanghvi', 'student', 'submitted', '', now() - interval '2 days');
 
   insert into public.student_grades (student_id, group_id, title, score, max_score, improvements, graded_by, created_at)
-  values ('s-2201', gid, 'Achievement bonus — 1st Prize — Smart India Hackathon 2026 (Software Edition)', 4, 5,
-    'Verified with the SIH nodal centre. Well deserved — nominated for the Student Excellence Award.', 'f-301',
+  values ('s-2201', gid, 'Achievement bonus - 1st Prize - Smart India Hackathon 2026 (Software Edition)', 4, 5,
+    'Verified with the SIH nodal centre. Well deserved - nominated for the Student Excellence Award.', 'f-301',
     now() - interval '20 days');
 end $$;

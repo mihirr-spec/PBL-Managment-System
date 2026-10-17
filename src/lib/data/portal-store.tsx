@@ -15,8 +15,8 @@ import * as repo from "@/lib/data/repository";
 import type { Faculty, Group, GroupInvitation, Notification, Student, SupervisorChange } from "@/lib/types";
 
 /**
- * Loads what every page of the signed-in user's portal shares — the student
- * record, their group and mentor, and notifications — once, and exposes the
+ * Loads what every page of the signed-in user's portal shares - the student
+ * record, their group and mentor, and notifications - once, and exposes the
  * mutations that write back through the repository. Pages fetch anything
  * page-specific themselves and call `refresh()` after actions that change
  * the shared data (forming a group, for example).

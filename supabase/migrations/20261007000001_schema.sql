@@ -1,4 +1,4 @@
--- PBL Portal — core schema and row-level security.
+-- PBL Portal - core schema and row-level security.
 --
 -- Record ids are readable text keys (s-2201, p-501 …) so they line up with
 -- the app's domain types; accounts link to Supabase Auth through user_id.
@@ -268,7 +268,7 @@ values
           'application/vnd.ms-powerpoint',
           'application/vnd.openxmlformats-officedocument.presentationml.presentation']);
 
--- avatars/<user id>/<file> — each user manages only their own folder.
+-- avatars/<user id>/<file> - each user manages only their own folder.
 create policy "read own avatar files" on storage.objects
   for select to authenticated
   using (bucket_id = 'avatars' and (storage.foldername(name))[1] = (select auth.uid())::text);
@@ -282,7 +282,7 @@ create policy "delete own avatar" on storage.objects
   for delete to authenticated
   using (bucket_id = 'avatars' and (storage.foldername(name))[1] = (select auth.uid())::text);
 
--- submissions/<project id>/<deadline id>/<file> — the team uploads, the
+-- submissions/<project id>/<deadline id>/<file> - the team uploads, the
 -- team and staff can read.
 create policy "team uploads submissions" on storage.objects
   for insert to authenticated

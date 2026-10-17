@@ -15,7 +15,7 @@ const PAGE = 30;
 
 /**
  * Searchable MUJ faculty directory (scraped from the university site into
- * Supabase). `action` renders an extra control per teacher — students use it
+ * Supabase). `action` renders an extra control per teacher - students use it
  * to request a mentor.
  */
 export function FacultyDirectory({
@@ -45,7 +45,7 @@ export function FacultyDirectory({
           f.expertise.toLowerCase().includes(q) ||
           f.email.toLowerCase().includes(q)),
     )
-      // Teachers on the portal first — they can act on a request straight away.
+      // Teachers on the portal first - they can act on a request straight away.
       .sort((a, b) => Number(b.onPortal) - Number(a.onPortal));
   }, [data, query, department]);
 

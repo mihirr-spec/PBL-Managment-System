@@ -30,7 +30,7 @@ export default function AchievementsPage() {
       eyebrow="Achievements"
       title="Your"
       emphasis="achievements."
-      description={`Hackathons, papers, patents, medals, awards — file each one with proof. Your supervisor reviews it, can award up to ${MAX_BONUS_MARKS} bonus marks, and approved achievements count towards the Student Excellence Award.`}
+      description={`Hackathons, papers, patents, medals, awards - file each one with proof. Your supervisor reviews it, can award up to ${MAX_BONUS_MARKS} bonus marks, and approved achievements count towards the Student Excellence Award.`}
       scene="achievements"
     />
   );
@@ -169,7 +169,7 @@ function AchievementForm({
       return;
     }
     if (!existing && files.length === 0) {
-      setError("Attach at least one supporting document — a certificate, letter, results page or screenshot.");
+      setError("Attach at least one supporting document - a certificate, letter, results page or screenshot.");
       return;
     }
     setBusy(true);
@@ -184,7 +184,7 @@ function AchievementForm({
         onDone("Updated and sent back to your supervisor.");
       } else {
         await repo.submitAchievement(studentId, { ...input, category: categoryKey, template: template.key, files });
-        onDone("Achievement submitted — your supervisor has been notified.");
+        onDone("Achievement submitted - your supervisor has been notified.");
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not save the achievement.");
@@ -253,7 +253,7 @@ function AchievementForm({
     <Card>
       <CardHeader
         title={existing ? "Update your achievement" : template.label}
-        description={`${category.label} — these are the details MUJ states when it announces an achievement.`}
+        description={`${category.label} - these are the details MUJ states when it announces an achievement.`}
         action={
           existing ? (
             <Button size="sm" variant="ghost" onClick={onCancel}>Cancel</Button>
@@ -286,18 +286,18 @@ function AchievementForm({
             </Field>
           </div>
 
-          <Field label="Title" htmlFor="f-title" help="Filled in from your answers — edit it if you like.">
+          <Field label="Title" htmlFor="f-title" help="Filled in from your answers - edit it if you like.">
             <Input id="f-title" value={title} onChange={(e) => { setTitle(e.target.value); setTitleTouched(true); }} />
           </Field>
 
-          <Field label="What did you do?" htmlFor="f-desc" help="Your contribution in your own words — what you built, how you prepared, what it took.">
+          <Field label="What did you do?" htmlFor="f-desc" help="Your contribution in your own words - what you built, how you prepared, what it took.">
             <Textarea id="f-desc" rows={3} value={description} onChange={(e) => setDescription(e.target.value)} />
           </Field>
 
           <Field
             label={existing ? "Add more documents" : "Supporting documents"}
             htmlFor="f-files"
-            help="Certificates, letters, results pages, screenshots — PDF, images, Word or PowerPoint, up to 15 MB each."
+            help="Certificates, letters, results pages, screenshots - PDF, images, Word or PowerPoint, up to 15 MB each."
           >
             <input
               id="f-files"

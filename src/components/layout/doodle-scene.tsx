@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
  * A small arrangement of study doodles over a soft wash of colour.
  *
  * Every page banner and empty state gets its own scene so no two pages look
- * the same — reports get books and a pencil, grades a bulb and set square,
+ * the same - reports get books and a pencil, grades a bulb and set square,
  * and so on. The first doodle is the large one; the others are accents.
  */
 const SCENES = {

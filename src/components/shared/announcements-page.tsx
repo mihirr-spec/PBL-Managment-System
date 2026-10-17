@@ -7,7 +7,7 @@ import { useSession } from "@/lib/auth/session";
 import { listAnnouncements } from "@/lib/data/repository";
 import { useLoad } from "@/lib/use-load";
 
-/** Staff announcements page — compose, then see everything posted so far. */
+/** Staff announcements page - compose, then see everything posted so far. */
 export function StaffAnnouncementsPage() {
   const { user } = useSession();
   const { data, reload } = useLoad(listAnnouncements, "announcements");

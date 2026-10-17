@@ -41,7 +41,7 @@ export default function AdminAchievementsPage() {
 
       <Card>
         <CardHeader
-          title="Student Excellence Award — shortlist"
+          title="Student Excellence Award - shortlist"
           description="Ranked by approved achievements, then by bonus marks."
         />
         {shortlist.length === 0 ? (

@@ -64,7 +64,7 @@ export default function QueriesPage() {
       setSent(
         isChange
           ? `Sent to ${mentor?.fullName ?? "your supervisor"}. Once they approve it, the PBL office chooses your new supervisor.`
-          : "Query sent — your supervisor has been notified.",
+          : "Query sent - your supervisor has been notified.",
       );
       setCategory("general");
       void queries.reload();
@@ -84,7 +84,7 @@ export default function QueriesPage() {
         description={
           mentor
             ? `Questions, blockers or requests go straight to ${mentor.fullName}.`
-            : "Your group has no supervisor yet — the PBL office will see your query."
+            : "Your group has no supervisor yet - the PBL office will see your query."
         }
         scene="queries"
       />

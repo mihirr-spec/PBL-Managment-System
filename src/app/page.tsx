@@ -18,7 +18,7 @@ import { Doodle, type DoodleKey } from "@/components/layout/doodle";
 import { ButtonLink } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-/** Numbered core features — rows alternate side, as in a printed spread. */
+/** Numbered core features - rows alternate side, as in a printed spread. */
 const FEATURES = [
   {
     number: "01",
@@ -172,7 +172,7 @@ export default function LandingPage() {
 
             <p className="mt-5 max-w-lg text-[15.5px] leading-relaxed text-stone-600">
               Form your team, register your mentor with the signed PBL form,
-              submit weekly reports and see your grades — with your mentor and
+              submit weekly reports and see your grades - with your mentor and
               the PBL office on the same page.
             </p>
 
@@ -278,7 +278,7 @@ export default function LandingPage() {
           </h2>
           <p className="mt-5 max-w-md text-[15px] leading-relaxed text-stone-600">
             Everything you need to plan, collaborate, track and complete your
-            project — without the chaos.
+            project - without the chaos.
           </p>
 
           <ol className="mt-14">
@@ -350,7 +350,7 @@ export default function LandingPage() {
                   {String(index + 1).padStart(2, "0")}
                 </span>
 
-                {/* Rail — one dot per step, joined except at the two ends */}
+                {/* Rail - one dot per step, joined except at the two ends */}
                 <div className="relative mt-3 flex h-3 w-full items-center justify-center">
                   <span
                     className={cn(

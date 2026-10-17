@@ -33,7 +33,7 @@ export const HOME_BY_ROLE: Record<Role, string> = {
 
 interface SessionContextValue {
   user: User | null;
-  /** True until the stored session has been checked — prevents a login flash. */
+  /** True until the stored session has been checked - prevents a login flash. */
   loading: boolean;
   signIn: (
     email: string,
@@ -52,7 +52,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let active = true;
-    // Only the most recent auth event may set the user — a slow profile
+    // Only the most recent auth event may set the user - a slow profile
     // lookup for an earlier sign-in must not undo a later sign-out.
     let latest = 0;
 

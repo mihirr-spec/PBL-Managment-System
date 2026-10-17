@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
  * Decorative watercolour bled off a section edge.
  *
  * The marketing sections sit on ivory, so the art is feathered on the side
- * that faces the content and held at low opacity — it reads as the paper the
+ * that faces the content and held at low opacity - it reads as the paper the
  * page is printed on rather than as a picture competing with the type. Each
  * section passes a different sketch so the page never repeats itself.
  */

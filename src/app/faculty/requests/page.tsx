@@ -21,7 +21,7 @@ type Request = MentorRequest & { group: Group | null };
 
 /** What the database said about a decision, in words. */
 const OUTCOME: Record<string, { tone: "sage" | "clay" | "gold"; text: string }> = {
-  approved: { tone: "sage", text: "Approved — you are now this group's registered mentor." },
+  approved: { tone: "sage", text: "Approved - you are now this group's registered mentor." },
   rejected: { tone: "clay", text: "Registration rejected. The group has been told." },
   changes_requested: { tone: "gold", text: "Sent back to the team lead with your corrections." },
   already_assigned: {
@@ -172,7 +172,7 @@ function RequestCard({ request, onDecided }: { request: Request; onDecided: () =
                   </li>
                 ))}
                 {(group.invited ?? []).map((m) => (
-                  <li key={m.registrationNumber} className="flex items-center gap-1.5 rounded-full bg-white/50 px-3 py-1 text-[12.5px] text-stone-600 ring-1 ring-white" title="Invited — joins once they accept">
+                  <li key={m.registrationNumber} className="flex items-center gap-1.5 rounded-full bg-white/50 px-3 py-1 text-[12.5px] text-stone-600 ring-1 ring-white" title="Invited - joins once they accept">
                     {m.fullName}
                     <span className="tnum text-stone-400">{m.registrationNumber}</span>
                     <span className="text-[11px] text-gold-600">invited</span>

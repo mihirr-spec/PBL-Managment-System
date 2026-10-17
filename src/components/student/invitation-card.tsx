@@ -12,7 +12,7 @@ import type { GroupInvitation } from "@/lib/types";
 import { timeAgo } from "@/lib/utils";
 
 /**
- * "Mihir has invited you to join his team" — the group, who is in it, and
+ * "Mihir has invited you to join his team" - the group, who is in it, and
  * where its supervisor request stands, with accept and decline.
  */
 export function InvitationCard({
@@ -97,7 +97,7 @@ export function InvitationCard({
                 <Hourglass className="mt-0.5 size-4 shrink-0 text-gold-500" />
                 {inv.requestedTeachers.length > 0
                   ? `Waiting for ${inv.requestedTeachers.join(", ")} to accept. Their details appear here once they do.`
-                  : "No supervisor yet — the team lead has not sent a request."}
+                  : "No supervisor yet - the team lead has not sent a request."}
               </p>
             )}
           </div>

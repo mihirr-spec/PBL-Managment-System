@@ -57,7 +57,7 @@ export function SignupForm() {
     event.preventDefault();
     setError(null);
     if (!isStudent && !isStaff) {
-      setError(`Use your university email — students ${STUDENT_DOMAIN}, teachers ${STAFF_DOMAIN}.`);
+      setError(`Use your university email - students ${STUDENT_DOMAIN}, teachers ${STAFF_DOMAIN}.`);
       return;
     }
     if (password !== confirm) {
@@ -136,7 +136,7 @@ export function SignupForm() {
               ? `Registration number ${emailReg}`
               : undefined
             : isStaff
-              ? "Teacher or PBL office account — matched to the MUJ faculty list."
+              ? "Teacher or PBL office account - matched to the MUJ faculty list."
               : `Students ${STUDENT_DOMAIN} · teachers ${STAFF_DOMAIN}`
         }
       >

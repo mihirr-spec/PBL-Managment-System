@@ -26,7 +26,7 @@ export interface Student {
   id: string;
   userId: string | null;
 
-  // Personal — student-editable
+  // Personal - student-editable
   fullName: string;
   dateOfBirth: string;
   gender: Gender;
@@ -35,7 +35,7 @@ export interface Student {
   address: string;
   avatarUrl?: string;
 
-  // Academic — university-controlled, read-only in the portal
+  // Academic - university-controlled, read-only in the portal
   registrationNumber: string;
   universityEmail: string;
   programme: string;
@@ -77,7 +77,7 @@ export interface GroupMember {
 
 export interface Group {
   id: string;
-  /** Human-facing group number — "Group 4". */
+  /** Human-facing group number - "Group 4". */
   number: number;
   name: string;
   projectTitle: string;
@@ -123,7 +123,7 @@ export interface SentInvitation {
   decidedAt?: string;
   fullName: string;
   registrationNumber: string;
-  /** False until the classmate has signed up — they see the invitation then. */
+  /** False until the classmate has signed up - they see the invitation then. */
   hasAccount: boolean;
 }
 
@@ -218,7 +218,7 @@ export interface Announcement {
   id: string;
   title: string;
   body: string;
-  /** "all" — every student (admin); "mentor_groups" — the poster's own groups. */
+  /** "all" - every student (admin); "mentor_groups" - the poster's own groups. */
   scope: "all" | "mentor_groups";
   postedByName: string;
   postedByRole: Role;

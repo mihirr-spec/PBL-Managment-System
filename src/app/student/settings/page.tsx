@@ -140,7 +140,7 @@ export default function SettingsPage() {
                 <DetailRow label="Role">Student</DetailRow>
                 <DetailRow label="Signed in">
                   <span className="tnum">
-                    {user.lastLoginAt ? formatDateTime(user.lastLoginAt) : "—"}
+                    {user.lastLoginAt ? formatDateTime(user.lastLoginAt) : "-"}
                   </span>
                 </DetailRow>
               </dl>

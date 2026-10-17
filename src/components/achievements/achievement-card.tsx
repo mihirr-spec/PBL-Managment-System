@@ -64,7 +64,7 @@ export function AchievementCard({
 }: {
   achievement: Achievement;
   viewer: AchievementViewer;
-  /** For the LinkedIn post — the student's own record, or the embedded one. */
+  /** For the LinkedIn post - the student's own record, or the embedded one. */
   student?: Pick<Student, "fullName" | "programme" | "branch" | "semester">;
   onChanged: () => void;
   onEdit?: () => void;
@@ -277,7 +277,7 @@ function ReviewPanel({ achievement, onChanged }: { achievement: Achievement; onC
                   ? "e.g. Attach the official results page and the certificate."
                   : mode === "reject"
                     ? "e.g. Participation certificates don't count as an achievement."
-                    : "e.g. Excellent work — nominated for the Student Excellence Award."
+                    : "e.g. Excellent work - nominated for the Student Excellence Award."
               }
             />
           </Field>

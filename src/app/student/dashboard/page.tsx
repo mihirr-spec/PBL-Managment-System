@@ -65,7 +65,7 @@ export default function DashboardPage() {
         description={
           group
             ? `Group ${group.number} · ${group.projectTitle}`
-            : "You are not in a group yet — form one and register your mentor to get started."
+            : "You are not in a group yet - form one and register your mentor to get started."
         }
         image="painting"
         imageClassName="object-[85%_70%]"
@@ -186,7 +186,7 @@ export default function DashboardPage() {
             <p className="text-[13px] text-stone-600">
               {openTickets > 0
                 ? `${openTickets} open ${openTickets === 1 ? "query" : "queries"} with your supervisor.`
-                : "Need help or have a problem? Raise a query — your supervisor sees it straight away."}
+                : "Need help or have a problem? Raise a query - your supervisor sees it straight away."}
             </p>
             <ButtonLink href={groupHref("/student/queries")} size="sm" variant="secondary">
               <MessageCircleQuestion className="size-3.5" />

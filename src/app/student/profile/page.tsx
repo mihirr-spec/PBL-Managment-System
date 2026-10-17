@@ -96,7 +96,7 @@ export default function ProfilePage() {
 
           <p className="px-1 text-[12px] leading-relaxed text-stone-400">
             Found an error in your academic record? Academic data cannot be
-            edited here — raise it with your coordinator or the academic office,
+            edited here - raise it with your coordinator or the academic office,
             and the correction will appear once processed.
           </p>
         </div>

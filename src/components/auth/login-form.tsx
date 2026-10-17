@@ -84,7 +84,7 @@ export function LoginForm({ verified = false }: { verified?: boolean }) {
     verified ? "Email verified. Sign in to continue." : null,
   );
 
-  // Already signed in — go straight to the role's home.
+  // Already signed in - go straight to the role's home.
   useEffect(() => {
     // Not while a submit is in flight: a wrong-tab sign-in is briefly signed
     // in before it is rejected and signed out again.

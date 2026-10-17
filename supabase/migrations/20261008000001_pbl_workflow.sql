@@ -325,7 +325,7 @@ as $$
 begin
   perform app_private.notify(
     array[(select user_id from public.students where id = new.student_id)], 'grade',
-    'New grade: ' || new.title || ' — ' || new.score || '/' || new.max_score, new.improvements,
+    'New grade: ' || new.title || ' - ' || new.score || '/' || new.max_score, new.improvements,
     '/student/grades');
   return new;
 end $$;

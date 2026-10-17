@@ -42,10 +42,6 @@ const teacherNav: NavSection[] = [
       { label: "Announcements", href: "/faculty/announcements", icon: Megaphone },
     ],
   },
-  {
-    heading: "Directory",
-    items: [{ label: "Faculty Directory", href: "/faculty/directory", icon: BookUser }],
-  },
 ];
 
 /** Navigation per role; the sidebar itself is role-agnostic. */
@@ -88,10 +84,6 @@ export const NAV_BY_ROLE: Record<Role, NavSection[]> = {
         { label: "Announcements", href: "/admin/announcements", icon: Megaphone },
         { label: "Excellence & LinkedIn", href: "/admin/achievements", icon: Trophy },
       ],
-    },
-    {
-      heading: "Directory",
-      items: [{ label: "Faculty Directory", href: "/admin/directory", icon: BookUser }],
     },
   ],
 };

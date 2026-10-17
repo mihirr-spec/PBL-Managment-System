@@ -30,7 +30,7 @@ export function Sidebar({
 
   return (
     <>
-      {/* Scrim — mobile only */}
+      {/* Scrim - mobile only */}
       <div
         onClick={onClose}
         className={cn(

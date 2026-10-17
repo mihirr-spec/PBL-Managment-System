@@ -37,7 +37,7 @@ export default function AdminDashboardPage() {
       const count = await repo.autoAllocateMentors();
       setMessage(
         count === 0
-          ? "Nothing to allot — every group has a supervisor, or no teacher on the portal has room."
+          ? "Nothing to allot - every group has a supervisor, or no teacher on the portal has room."
           : `Allotted a supervisor to ${count} group${count > 1 ? "s" : ""}. Their students have been notified.`,
       );
       await reload();
@@ -87,7 +87,7 @@ export default function AdminDashboardPage() {
         <Card className="ring-2 ring-azure-100">
           <CardHeader
             title={`Supervisor change requests (${waiting.length})`}
-            description="Approved by the group's current supervisor. Choose the new supervisor — the student's reason is filled in — or decline."
+            description="Approved by the group's current supervisor. Choose the new supervisor - the student's reason is filled in - or decline."
           />
           <QueryList
             queries={waiting}

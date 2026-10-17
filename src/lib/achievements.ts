@@ -58,16 +58,16 @@ export const ACHIEVEMENT_CATEGORIES: AchievementCategory[] = [
         label: "Won or placed at a hackathon",
         hint: "e.g. 1st Prize at Smart India Hackathon, 2nd Runner-Up at a company hackathon.",
         fields: [
-          { key: "event", label: "Hackathon name and edition", placeholder: "Smart India Hackathon 2026 — Software Edition" },
+          { key: "event", label: "Hackathon name and edition", placeholder: "Smart India Hackathon 2026 - Software Edition" },
           { key: "position", label: "Position or prize", placeholder: "1st Prize / Winner / 2nd Runner-Up" },
           { key: "organiser", label: "Organised by", placeholder: "Ministry of Education's Innovation Cell & AICTE" },
           { key: "venue", label: "Where it was held", placeholder: "IIT Jammu (or Online)", optional: true },
           { key: "team", label: "Team name and size", placeholder: "Team Kisan (6 members)", optional: true },
           { key: "problem", label: "Problem statement / what you built", placeholder: "Offline crop-disease detection app for farmers", long: true },
-          { key: "role", label: "Your role in the team", placeholder: "Team lead — model training", optional: true },
+          { key: "role", label: "Your role in the team", placeholder: "Team lead - model training", optional: true },
           { key: "prize", label: "Prize money or reward", placeholder: "₹1,00,000 cash prize", optional: true },
         ],
-        title: (a) => `${a.position || "Winner"} — ${a.event || "Hackathon"}`,
+        title: (a) => `${a.position || "Winner"} - ${a.event || "Hackathon"}`,
         post:
           "🏆 Proud moment for MUJ!\n\n" +
           "{name}, a {year} {programme} student ({branch}), has secured {position} at {event}[[, organised by {organiser}]][[, held at {venue}]].\n\n" +
@@ -85,7 +85,7 @@ export const ACHIEVEMENT_CATEGORIES: AchievementCategory[] = [
           { key: "participants", label: "Out of how many participants/teams", placeholder: "4,200 teams", optional: true },
           { key: "organiser", label: "Organised by", placeholder: "ICPC Foundation", optional: true },
         ],
-        title: (a) => `${a.rank || "Ranked"} — ${a.contest || "Coding contest"}`,
+        title: (a) => `${a.rank || "Ranked"} - ${a.contest || "Coding contest"}`,
         post:
           "💻 Congratulations, {name}!\n\n" +
           "Our {year} {programme} student ({branch}) achieved {rank} at {contest}[[ among {participants}]][[, organised by {organiser}]].\n\n" +
@@ -156,7 +156,7 @@ export const ACHIEVEMENT_CATEGORIES: AchievementCategory[] = [
           { key: "inventors", label: "Co-inventors", optional: true },
           { key: "summary", label: "What it does, in a line", long: true },
         ],
-        title: (a) => `Patent ${(a.stage || "published").toLowerCase()} — ${a.invention || "invention"}`,
+        title: (a) => `Patent ${(a.stage || "published").toLowerCase()} - ${a.invention || "invention"}`,
         post:
           "💡 Innovation at MUJ!\n\n" +
           "{name}, a {year} {programme} student ({branch}), has had a patent {stage} by the {office} for \"{invention}\"[[ (Application No. {number})]].\n\n" +
@@ -174,7 +174,7 @@ export const ACHIEVEMENT_CATEGORIES: AchievementCategory[] = [
           { key: "by", label: "From / by", placeholder: "MUJ Incubation Centre / Startup India Seed Fund" },
           { key: "what", label: "What the startup does", long: true },
         ],
-        title: (a) => `${a.startup || "Startup"} — ${a.milestone || "milestone"}`,
+        title: (a) => `${a.startup || "Startup"} - ${a.milestone || "milestone"}`,
         post:
           "🚀 Student entrepreneurship!\n\n" +
           "{startup}, founded by {name} ({year} {programme}, {branch}), has achieved a major milestone: {milestone}[[ from {by}]].\n\n" +
@@ -187,7 +187,7 @@ export const ACHIEVEMENT_CATEGORIES: AchievementCategory[] = [
   {
     key: "sports",
     label: "Sports",
-    blurb: "Medals and selections — university, state, national and international.",
+    blurb: "Medals and selections - university, state, national and international.",
     templates: [
       {
         key: "sports_medal",
@@ -201,7 +201,7 @@ export const ACHIEVEMENT_CATEGORIES: AchievementCategory[] = [
           { key: "venue", label: "Where it was held", optional: true },
           { key: "organiser", label: "Organised by", optional: true },
         ],
-        title: (a) => `${a.medal || "Medal"} — ${a.event || "Championship"}`,
+        title: (a) => `${a.medal || "Medal"} - ${a.event || "Championship"}`,
         post:
           "🥇 Champion at MUJ!\n\n" +
           "{name}, a {year} {programme} student, has won {medal} in {sport} at the {event}[[, held in {venue}]].\n\n" +
@@ -219,7 +219,7 @@ export const ACHIEVEMENT_CATEGORIES: AchievementCategory[] = [
           { key: "event", label: "For which event", placeholder: "Asian Games 2026", optional: true },
           { key: "recognition", label: "Award or felicitation received", placeholder: "Honoured by the Chief Minister of Rajasthan", optional: true },
         ],
-        title: (a) => `Selected for ${a.team || "the team"} — ${a.sport || "sport"}`,
+        title: (a) => `Selected for ${a.team || "the team"} - ${a.sport || "sport"}`,
         post:
           "🎽 Representing with pride!\n\n" +
           "{name}, a {year} {programme} student, has been selected for the {team} in {sport}[[ for {event}]].\n\n" +
@@ -238,7 +238,7 @@ export const ACHIEVEMENT_CATEGORIES: AchievementCategory[] = [
         label: "Award or honour received",
         hint: "e.g. a department Student Excellence Award, a best-student award.",
         fields: [
-          { key: "award", label: "Award", placeholder: "Student Excellence Award 2026 — Innovation" },
+          { key: "award", label: "Award", placeholder: "Student Excellence Award 2026 - Innovation" },
           { key: "by", label: "Presented by", placeholder: "Department of Data Science and Engineering, SoCSE" },
           { key: "for", label: "Awarded for", placeholder: "Outstanding contribution to innovation and research", long: true },
         ],
@@ -300,7 +300,7 @@ export const ACHIEVEMENT_CATEGORIES: AchievementCategory[] = [
           { key: "role", label: "Your role in the club", placeholder: "Chairperson" },
           { key: "highlights", label: "What the club did to earn it", long: true, optional: true },
         ],
-        title: (a) => `${a.club || "Club"} — ${a.award || "award"}`,
+        title: (a) => `${a.club || "Club"} - ${a.award || "award"}`,
         post:
           "🏅 Leadership that delivers!\n\n" +
           "The {club}, led by {role} {name} ({year} {programme}), has been awarded {award}[[ by the {by}]].\n\n" +
@@ -313,19 +313,19 @@ export const ACHIEVEMENT_CATEGORIES: AchievementCategory[] = [
   {
     key: "competitions",
     label: "Design, Debate & Other Competitions",
-    blurb: "Architecture and design awards, debates, MUNs, quizzes, case competitions — not fests.",
+    blurb: "Architecture and design awards, debates, MUNs, quizzes, case competitions - not fests.",
     templates: [
       {
         key: "competition_win",
         label: "Won a competition",
         hint: "e.g. a CoA / NIASA thesis award, best delegate at an MUN, a case competition.",
         fields: [
-          { key: "competition", label: "Competition", placeholder: "CoA National Awards 2026 — Thesis" },
+          { key: "competition", label: "Competition", placeholder: "CoA National Awards 2026 - Thesis" },
           { key: "position", label: "Position or award", placeholder: "Winner / Best Delegate / Special Mention" },
           { key: "organiser", label: "Organised by", optional: true },
           { key: "entry", label: "Your entry / topic", long: true, optional: true },
         ],
-        title: (a) => `${a.position || "Winner"} — ${a.competition || "Competition"}`,
+        title: (a) => `${a.position || "Winner"} - ${a.competition || "Competition"}`,
         post:
           "✨ Congratulations, {name}!\n\n" +
           "Our {year} {programme} student ({branch}) has won {position} at {competition}[[, organised by {organiser}]].\n\n" +

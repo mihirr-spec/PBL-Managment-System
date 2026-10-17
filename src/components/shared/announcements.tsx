@@ -95,7 +95,7 @@ export function AnnouncementComposer({ user, onPosted }: { user: User; onPosted:
           <Field label="Message" htmlFor="ann-body">
             <Textarea id="ann-body" rows={4} value={body} onChange={(e) => setBody(e.target.value)} />
           </Field>
-          <Field label="Attach a file (optional)" htmlFor="ann-file" help="PDF, slides, documents or images — up to 25 MB.">
+          <Field label="Attach a file (optional)" htmlFor="ann-file" help="PDF, slides, documents or images - up to 25 MB.">
             <input
               id="ann-file"
               ref={fileRef}

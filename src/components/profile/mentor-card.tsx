@@ -7,7 +7,7 @@ import { Card, CardBody, CardHeader, EmptyState } from "@/components/ui/card";
 import type { Faculty, SupervisorChange } from "@/lib/types";
 import { formatDateTime, timeAgo } from "@/lib/utils";
 
-/** The group's supervisor — or a prompt to request one. */
+/** The group's supervisor - or a prompt to request one. */
 export function MentorCard({
   mentor,
   lastChange = null,

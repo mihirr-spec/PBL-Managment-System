@@ -38,7 +38,7 @@ export default function FacultyAchievementsPage() {
         eyebrow="Achievements"
         title="Student"
         emphasis="achievements."
-        description={`Achievements filed by students in your groups, with their proof. Approve (with up to ${MAX_BONUS_MARKS} bonus marks), ask for more details, comment, or reject — the student is notified each time. Approved ones go to the Student Excellence Award shortlist.`}
+        description={`Achievements filed by students in your groups, with their proof. Approve (with up to ${MAX_BONUS_MARKS} bonus marks), ask for more details, comment, or reject - the student is notified each time. Approved ones go to the Student Excellence Award shortlist.`}
         scene="achievements"
       />
       <div className="inline-flex flex-wrap gap-1 rounded-xl bg-white/60 p-1 ring-1 ring-white">

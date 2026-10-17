@@ -86,19 +86,19 @@ insert into public.team_members (team_id, student_id, full_name, registration_nu
 -- --------------------------------------------------------------- deadlines
 
 insert into public.deadlines (id, project_id, title, description, kind, due_date, status, submitted_at, weightage) values
-  ('d-9001', 'p-501', 'Weekly Progress Report — Week 8',
+  ('d-9001', 'p-501', 'Weekly Progress Report - Week 8',
    'Summarise the week''s model-compression experiments, note blockers, and attach the updated accuracy/latency table.',
    'weekly_progress', now() + interval '2 days', 'pending', null, 5),
-  ('d-9002', 'p-501', 'PBL Review II — Mid-Term Presentation',
+  ('d-9002', 'p-501', 'PBL Review II - Mid-Term Presentation',
    'Fifteen-minute panel presentation covering problem statement, dataset, architecture and a live demonstration of the mobile client.',
    'review', now() + interval '5 days', 'pending', null, 25),
-  ('d-9003', 'p-501', 'Certificate Submission — NPTEL Deep Learning',
+  ('d-9003', 'p-501', 'Certificate Submission - NPTEL Deep Learning',
    'Upload the course completion certificate for coordinator verification. Scanned PDF, under 5 MB.',
    'certificate', now() + interval '12 days', 'pending', null, 5),
   ('d-9004', 'p-501', 'Literature Survey Document',
    'Comparative survey of at least twelve papers on plant-disease classification, in IEEE format.',
    'document', now() - interval '3 days', 'under_review', now() - interval '4 days', 10),
-  ('d-9005', 'p-501', 'Weekly Progress Report — Week 7',
+  ('d-9005', 'p-501', 'Weekly Progress Report - Week 7',
    'Dataset augmentation results and baseline model metrics.',
    'weekly_progress', now() - interval '5 days', 'submitted', now() - interval '6 days', 5),
   ('d-9006', 'p-501', 'Synopsis & Problem Statement',
@@ -115,10 +115,10 @@ insert into public.deadlines (id, project_id, title, description, kind, due_date
 
 insert into public.announcements (id, title, body, posted_by_name, posted_by_role, posted_at, priority, attachment_name, attachment_size_label, attachment_url, project_id) values
   ('a-8001', 'Week 8 progress report submission window',
-   'The Week 8 progress report must be submitted before Friday, 11:59 PM. Reports submitted after the window will be marked late and carry a deduction on the continuous-assessment component. Please attach your updated experiment log along with the report — several teams omitted it last week.',
+   'The Week 8 progress report must be submitted before Friday, 11:59 PM. Reports submitted after the window will be marked late and carry a deduction on the continuous-assessment component. Please attach your updated experiment log along with the report - several teams omitted it last week.',
    'Dr. Anagha Deshpande', 'faculty', now() - interval '1 day', 'urgent', null, null, null, 'p-501'),
   ('a-8002', 'PBL Review II schedule published',
-   'The mid-term review panel schedule for all Semester 5 teams is now available. Team Kisan is slotted on 9 October at 11:20 AM in Seminar Hall 2. Each team gets fifteen minutes for presentation and five for questions. Bring a working demonstration — slides alone will not be evaluated.',
+   'The mid-term review panel schedule for all Semester 5 teams is now available. Team Kisan is slotted on 9 October at 11:20 AM in Seminar Hall 2. Each team gets fifteen minutes for presentation and five for questions. Bring a working demonstration - slides alone will not be evaluated.',
    'Dr. Ramesh Kulkarni', 'supervisor', now() - interval '2 days', 'important',
    'PBL-Review-II-Schedule.pdf', '248 KB', '#', null),
   ('a-8003', 'Certificate verification drive',

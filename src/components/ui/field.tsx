@@ -6,7 +6,7 @@ import type { ComponentProps, ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 const control =
-  "w-full rounded-lg border border-white/80 bg-white/75 px-3 py-2 text-sm text-stone-800 placeholder:text-stone-400 transition-colors hover:border-sand-300 focus:border-gold-300 focus:outline-none focus:ring-2 focus:ring-gold-200 disabled:cursor-not-allowed disabled:bg-ivory-100 disabled:text-stone-500";
+  "w-full rounded-lg border border-sand-200 bg-white/75 px-3 py-2 text-sm text-stone-800 placeholder:text-stone-400 transition-colors hover:border-sand-300 focus:border-gold-300 focus:outline-none focus:ring-2 focus:ring-gold-200 disabled:cursor-not-allowed disabled:bg-ivory-100 disabled:text-stone-500";
 
 export function Label({
   htmlFor,
@@ -107,7 +107,7 @@ export function ReadOnlyField({
       >
         {label}
       </Label>
-      <p className="text-sm text-stone-800">{value || "—"}</p>
+      <p className="text-sm text-stone-800">{value || "-"}</p>
     </div>
   );
 }

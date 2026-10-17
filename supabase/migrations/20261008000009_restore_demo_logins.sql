@@ -155,7 +155,7 @@ cross join public.groups g where g.number = 1;
 insert into public.student_grades (student_id, group_id, title, score, max_score, improvements, graded_by)
 select 's-2201', g.id, t.title, t.score, t.max_score, t.improvements, 'f-301'
 from (values
-  ('Review I — Problem & Literature', 8.5, 10, 'Strong literature survey. Tighten the scope statement — the field study is ambitious for one semester.'),
+  ('Review I - Problem & Literature', 8.5, 10, 'Strong literature survey. Tighten the scope statement - the field study is ambitious for one semester.'),
   ('Lab participation (Weeks 1–4)', 9.0, 10, 'Consistently prepared. Share your experiment logs with the team earlier.')
 ) as t (title, score, max_score, improvements)
 cross join public.groups g where g.number = 1;

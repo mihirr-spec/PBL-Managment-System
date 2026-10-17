@@ -138,7 +138,7 @@ export function GroupDetail({ groupId, isAdmin = false }: { groupId: string; isA
       <Card>
         <CardHeader
           title="Weekly reports"
-          description={`${reports.filter((r) => r.week <= group.reportCount).length} of ${group.reportCount} submitted. Grade out of 10 with feedback — students are notified.`}
+          description={`${reports.filter((r) => r.week <= group.reportCount).length} of ${group.reportCount} submitted. Grade out of 10 with feedback - students are notified.`}
           action={<ReportCountPicker groupId={group.id} value={group.reportCount} onChanged={reload} />}
         />
         <ul className="divide-y divide-sand-200/70">
@@ -242,7 +242,7 @@ function StudentRow({
           {grades.map((g) => (
             <li key={g.id} className="text-[12.5px] text-stone-600">
               <span className="tnum font-semibold text-ink-900">{g.score}/{g.maxScore}</span> · {g.title}
-              {g.improvements ? <span className="text-stone-500"> — {g.improvements}</span> : null}
+              {g.improvements ? <span className="text-stone-500"> - {g.improvements}</span> : null}
             </li>
           ))}
         </ul>

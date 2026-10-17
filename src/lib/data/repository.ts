@@ -307,7 +307,7 @@ export function registrationFromEmail(email: string): string | null {
 export interface SignUpDetails {
   email: string;
   password: string;
-  /** Students only — used when the university roster has no record yet. */
+  /** Students only - used when the university roster has no record yet. */
   fullName?: string;
   registrationNumber?: string;
   programme?: string;
@@ -351,7 +351,7 @@ export async function signUp(details: SignUpDetails): Promise<{ ok: true } | { o
         ok: false,
         error: email.endsWith(STAFF_DOMAIN)
           ? "We could not find this address in the MUJ faculty list. Contact the PBL office."
-          : "We could not create this account — it may already be registered, or the registration number is taken.",
+          : "We could not create this account - it may already be registered, or the registration number is taken.",
       };
     }
     return { ok: false, error: error.message };
@@ -382,9 +382,9 @@ export async function authenticate({ email, password, roles }: Credentials): Pro
     password,
   });
   if (error?.code === "email_not_confirmed") {
-    return { ok: false, error: "Verify your email first — open the link we sent to your inbox." };
+    return { ok: false, error: "Verify your email first - open the link we sent to your inbox." };
   }
-  // A paused or unreachable backend is not a wrong password — say so.
+  // A paused or unreachable backend is not a wrong password - say so.
   if (error && (isAuthRetryableFetchError(error) || error.status === 0 || (error.status ?? 0) >= 500)) {
     return {
       ok: false,
@@ -405,7 +405,7 @@ export async function authenticate({ email, password, roles }: Credentials): Pro
     await supabase.auth.signOut();
     return {
       ok: false,
-      error: `This is ${ROLE_LABEL[user.role]} account — switch to the matching tab above to sign in.`,
+      error: `This is ${ROLE_LABEL[user.role]} account - switch to the matching tab above to sign in.`,
     };
   }
   return { ok: true, user };
@@ -505,7 +505,7 @@ export async function getFaculty(facultyId: string | null): Promise<Faculty | nu
   return data ? toFaculty(data) : null;
 }
 
-/** The whole directory (about 820 teachers) — filtered on the client. */
+/** The whole directory (about 820 teachers) - filtered on the client. */
 export async function listFaculty(): Promise<Faculty[]> {
   const { data, error } = await supabase
     .from("faculty")
@@ -841,7 +841,7 @@ export async function gradeStudent(input: {
 
 /* ------------------------------------------------------------- tickets */
 
-/** Tickets the caller may see — their group's, their mentored groups', or all (admin). */
+/** Tickets the caller may see - their group's, their mentored groups', or all (admin). */
 export async function listTickets(groupId?: string): Promise<Ticket[]> {
   let query = supabase
     .from("tickets")

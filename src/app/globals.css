@@ -5,14 +5,14 @@
 @custom-variant wide (@media (min-width: 1024px) and (min-aspect-ratio: 4/3));
 
 /* ------------------------------------------------------------------
-   PBL Platform — warm light theme
+   PBL Platform - warm light theme
    Palette sampled from the campus cover photograph: ivory stone,
    warm sand, muted gold dome, soft sky. No black / blue / purple /
    green / orange as primary surfaces or accents.
    ------------------------------------------------------------------ */
 
 @theme {
-  /* Neutrals — warm ivory → stone */
+  /* Neutrals - warm ivory → stone */
   --color-ivory-50: #fdfbf7;
   --color-ivory-100: #faf6ef;
   --color-ivory-200: #f4ece0;
@@ -25,7 +25,7 @@
   --color-stone-700: #4e463b;
   --color-stone-800: #35302a;
 
-  /* Accent — muted gold from the dome */
+  /* Accent - muted gold from the dome */
   --color-gold-50: #fdf6e6;
   --color-gold-100: #f9e9c4;
   --color-gold-200: #f0d593;
@@ -34,14 +34,14 @@
   --color-gold-500: #b88a2c;
   --color-gold-600: #946d22;
 
-  /* Watercolour wash — sampled from the campus illustration, used only as
+  /* Watercolour wash - sampled from the campus illustration, used only as
      the landing/auth backdrop so it blends with the artwork's own sky. */
   --color-wash-sky: #b9e0f0;
   --color-wash-mid: #cce6f0;
   --color-wash-low: #eef4f2;
   --color-wash-snow: #fcfcf9;
 
-  /* Ink — deep navy display type and the azure accent word, sampled from
+  /* Ink - deep navy display type and the azure accent word, sampled from
      the landing artwork's signage blue. Used by the marketing surfaces only. */
   --color-ink-900: #0d1f3f;
   --color-ink-800: #12294f;
@@ -58,7 +58,7 @@
   --color-numeral-sage: #d8e8d6;
   --color-numeral-lilac: #ddd6ef;
 
-  /* Status tints — kept soft and warm-leaning */
+  /* Status tints - kept soft and warm-leaning */
   --color-clay-100: #f7dfd7;
   --color-clay-500: #b4614a;
   --color-sage-100: #e2e8d9;
@@ -101,7 +101,7 @@ body {
   color: var(--color-stone-800);
 }
 
-/* Focus ring — consistent across every interactive element */
+/* Focus ring - consistent across every interactive element */
 :where(a, button, input, select, textarea, [tabindex]):focus-visible {
   outline: 2px solid var(--color-gold-400);
   outline-offset: 2px;
