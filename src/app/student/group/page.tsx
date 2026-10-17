@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { Crown, FileSignature, Hourglass, RotateCcw, Send, UserPlus, X } from "lucide-react";
+import { Crown, Hourglass, RotateCcw, Send, UserPlus, X } from "lucide-react";
 
 import { MentorCard } from "@/components/profile/mentor-card";
-import { FacultyDirectory } from "@/components/shared/faculty-directory";
+import { MentorPicker } from "@/components/student/mentor-picker";
 import { FileLink } from "@/components/shared/file-link";
 import { GetStarted } from "@/components/student/get-started";
 import { Avatar } from "@/components/ui/avatar";
@@ -45,7 +45,7 @@ export default function GroupPage() {
         description={
           group
             ? group.projectTitle
-            : "Check your details, choose the supervisor who signed your application, then register your group and invite your teammates."
+            : "Add your teammates, choose the mentor who signed your application, and send it."
         }
         scene="group"
       />
@@ -128,12 +128,21 @@ function GroupView({
               <CardBody>
                 <p className="text-[13px] text-stone-500">
                   {isLeader
-                    ? "No form sent yet - find your teacher below and upload the signed form."
+                    ? "No form sent yet. Choose your mentor below and upload the signed form."
                     : "Your team lead has not sent the signed PBL form yet."}
                 </p>
               </CardBody>
             )}
           </Card>
+
+          {isLeader ? (
+            <Card>
+              <CardHeader title="Choose your mentor" description="Pick the department, then the teacher who agreed to mentor you, and send them the signed form." />
+              <CardBody>
+                <MentorPicker idPrefix="gv" value={target} onChange={setTarget} />
+              </CardBody>
+            </Card>
+          ) : null}
 
           {target ? (
             <RequestForm
@@ -148,24 +157,6 @@ function GroupView({
             />
           ) : null}
 
-          {isLeader ? (
-            <div>
-              <h2 className="mb-3 font-display text-[1.3rem] text-ink-900">Find your teacher</h2>
-              <FacultyDirectory
-                action={(f) => (
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => setTarget(f)}
-                    title={f.onPortal ? undefined : "This teacher sees the form once their portal account is set up"}
-                  >
-                    <FileSignature className="size-3.5" />
-                    Send form
-                  </Button>
-                )}
-              />
-            </div>
-          ) : null}
         </>
       )}
     </div>
