@@ -1,6 +1,6 @@
 "use client";
 
-import { Lock } from "lucide-react";
+import { ChevronDown, Lock } from "lucide-react";
 import type { ComponentProps, ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
@@ -38,11 +38,18 @@ export function Textarea({ className, ...props }: ComponentProps<"textarea">) {
   );
 }
 
+/** Native select with its own arrow (the browser's is hidden for consistent styling). */
 export function Select({ className, children, ...props }: ComponentProps<"select">) {
   return (
-    <select className={cn(control, "appearance-none pr-8", className)} {...props}>
-      {children}
-    </select>
+    <div className="relative">
+      <select className={cn(control, "cursor-pointer appearance-none pr-9", className)} {...props}>
+        {children}
+      </select>
+      <ChevronDown
+        className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-stone-500"
+        aria-hidden
+      />
+    </div>
   );
 }
 
