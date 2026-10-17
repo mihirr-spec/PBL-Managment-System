@@ -114,6 +114,15 @@ body {
   scrollbar-color: var(--color-sand-300) transparent;
 }
 
+/* Same, but the bar only shows while the pointer is over the region. */
+.scroll-quiet {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+.scroll-quiet:hover {
+  scrollbar-color: var(--color-sand-300) transparent;
+}
+
 @keyframes fade-rise {
   from {
     opacity: 0;

@@ -57,7 +57,7 @@ export function AuthShell({
         <div
           role="dialog"
           aria-labelledby="auth-title"
-          className="animate-fade-rise scroll-soft w-full max-w-[31rem] rounded-[26px] wide:max-h-[calc(100dvh-5.5rem)] wide:overflow-y-auto border border-white/80 bg-white/85 px-6 py-7 shadow-[0_30px_90px_-30px_rgba(13,31,63,0.45)] backdrop-blur-xl sm:px-10"
+          className="animate-fade-rise scroll-quiet w-full max-w-[31rem] rounded-[26px] wide:max-h-[calc(100dvh-5.5rem)] wide:overflow-y-auto border border-white/80 bg-white/85 px-6 py-7 shadow-[0_30px_90px_-30px_rgba(13,31,63,0.45)] backdrop-blur-xl sm:px-10"
         >
           <div className="text-center">
             <h1

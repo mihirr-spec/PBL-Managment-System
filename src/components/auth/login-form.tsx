@@ -317,8 +317,8 @@ export function LoginForm({ verified = false }: { verified?: boolean }) {
             Create your account
           </Link>
         </p>
-        <p className="mt-3 text-[12px] tracking-wide text-stone-400 uppercase">Try a demo account</p>
-        <div className="mt-2 flex flex-wrap justify-center gap-2">
+        <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+          <span className="text-[12.5px] text-stone-400">Try a demo:</span>
           {tab.demos.map((demo) => (
             <button
               key={demo.email}
