@@ -4,7 +4,7 @@ import { useRef, useState, type ChangeEvent } from "react";
 import { Camera, Trash2 } from "lucide-react";
 
 import { Art } from "@/components/layout/art";
-import { Avatar } from "@/components/ui/avatar";
+import { Avatar, STUDENT_AVATAR } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardBody } from "@/components/ui/card";
 import { usePortal } from "@/lib/data/portal-store";
@@ -66,7 +66,7 @@ export function ProfilePhotoCard({ student }: { student: Student }) {
       <CardBody className="-mt-16 flex flex-col items-center pt-0 pb-7 text-center">
         <Avatar
           name={student.fullName}
-          src={student.avatarUrl}
+          src={student.avatarUrl ?? STUDENT_AVATAR}
           size="2xl"
           className="relative ring-4 ring-white/90 shadow-[0_16px_36px_-18px_rgba(13,31,63,0.6)]"
         />

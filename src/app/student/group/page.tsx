@@ -136,8 +136,8 @@ function GroupView({
           </Card>
 
           {isLeader ? (
-            <Card>
-              <CardHeader title="Choose your mentor" description="Pick the department, then the teacher who agreed to mentor you, and send them the signed form." />
+            <Card className="relative z-10 overflow-visible">
+              <CardHeader title="Choose your mentor" description="Type the name of the teacher who agreed to mentor you (the department is optional), then send them the signed form." />
               <CardBody>
                 <MentorPicker idPrefix="gv" value={target} onChange={setTarget} />
               </CardBody>

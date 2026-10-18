@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { LogOut, Settings, UserRound } from "lucide-react";
 
-import { Avatar } from "@/components/ui/avatar";
+import { Avatar, STUDENT_AVATAR } from "@/components/ui/avatar";
 import { useSession } from "@/lib/auth/session";
 import { usePortal } from "@/lib/data/portal-store";
 
@@ -49,7 +49,7 @@ export function ProfileMenu() {
         aria-label="Account menu"
         className="rounded-full transition-[opacity,box-shadow] hover:opacity-90 focus-visible:ring-3 focus-visible:ring-azure-100 focus-visible:outline-none"
       >
-        <Avatar name={name} src={student?.avatarUrl} size="sm" />
+        <Avatar name={name} src={student ? (student.avatarUrl ?? STUDENT_AVATAR) : undefined} size="sm" />
       </button>
 
       {open ? (
@@ -58,7 +58,7 @@ export function ProfileMenu() {
           className="animate-fade-rise absolute top-full right-0 z-40 mt-2 w-64 overflow-hidden rounded-2xl border border-white bg-white/95 shadow-[0_24px_60px_-24px_rgba(13,31,63,0.55)] backdrop-blur-xl"
         >
           <div className="flex items-center gap-3 border-b border-sand-200/70 px-4 py-3.5">
-            <Avatar name={name} src={student?.avatarUrl} size="md" />
+            <Avatar name={name} src={student ? (student.avatarUrl ?? STUDENT_AVATAR) : undefined} size="md" />
             <div className="min-w-0">
               <p className="truncate text-[14px] font-semibold text-ink-900">{name}</p>
               <p className="truncate text-[12px] text-stone-500">{user.email}</p>

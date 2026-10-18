@@ -2,6 +2,9 @@ import Image from "next/image";
 
 import { cn, initials } from "@/lib/utils";
 
+/** Shown for a student who has not uploaded a photo of their own. */
+export const STUDENT_AVATAR = "/avatars/student.webp";
+
 const SIZES = {
   sm: "size-8 text-[11px]",
   md: "size-10 text-xs",

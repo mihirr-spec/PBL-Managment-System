@@ -7,7 +7,7 @@ import { LogOut, X } from "lucide-react";
 import { Art } from "@/components/layout/art";
 import { Brand } from "@/components/layout/brand";
 import { NAV_BY_ROLE } from "@/components/layout/nav-config";
-import { Avatar } from "@/components/ui/avatar";
+import { Avatar, STUDENT_AVATAR } from "@/components/ui/avatar";
 import { HOME_BY_ROLE, useSession } from "@/lib/auth/session";
 import { usePortal } from "@/lib/data/portal-store";
 import { cn } from "@/lib/utils";
@@ -122,7 +122,7 @@ export function Sidebar({
           <div className="flex items-center gap-3 rounded-lg px-2 py-2">
             <Avatar
               name={student?.fullName ?? user.displayName}
-              src={student?.avatarUrl}
+              src={student ? (student.avatarUrl ?? STUDENT_AVATAR) : undefined}
               size="md"
             />
             <div className="min-w-0 flex-1">

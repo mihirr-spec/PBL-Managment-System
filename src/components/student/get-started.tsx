@@ -51,7 +51,7 @@ export function GetStarted({
     if (teammates.some((m) => !m.fullName || !m.registrationNumber)) {
       return setError("Give each teammate's name and registration number, or remove the empty row.");
     }
-    if (!teacher) return setError("Choose your mentor: pick the department, then the teacher.");
+    if (!teacher) return setError("Choose your mentor: type their name and pick them from the list.");
     if (!form) return setError("Attach the application your mentor signed.");
 
     setBusy(true);
@@ -155,7 +155,8 @@ export function GetStarted({
         </Card>
 
         {/* ------------------------------ mentor ------------------------------ */}
-        <Card>
+        {/* Lifted above the next card so the name suggestions can overlap it. */}
+        <Card className="relative z-10 overflow-visible">
           <CardHeader title="2 · Your mentor" description="The teacher who agreed to mentor your team and signed your application." />
           <CardBody>
             <MentorPicker idPrefix="gs" value={teacher} onChange={setTeacher} />
