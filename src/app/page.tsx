@@ -136,7 +136,7 @@ export default function LandingPage() {
   return (
     <div className="bg-ivory-100">
       {/* ------------------------------ hero ----------------------------- */}
-      <section className="relative isolate flex min-h-dvh flex-col overflow-x-clip">
+      <section className="relative isolate flex flex-col overflow-x-clip">
         {/* Sky wash, the same one the portal pages sit on */}
         <div
           aria-hidden
@@ -160,12 +160,10 @@ export default function LandingPage() {
           </ButtonLink>
         </header>
 
-        <div className="mx-auto grid w-full max-w-7xl flex-1 items-center gap-12 px-5 pt-4 pb-16 sm:px-8 lg:grid-cols-[1.05fr_1fr] lg:gap-10 lg:pb-12">
+        <div className="mx-auto grid w-full max-w-7xl items-center gap-12 px-5 pt-2 pb-16 sm:px-8 lg:grid-cols-[1.05fr_1fr] lg:gap-10 lg:pb-12">
           {/* --- words --- */}
           <div className="animate-fade-rise max-w-xl">
-            <Eyebrow lead="Project-Based Learning ·" emphasis="Semester 5" />
-
-            <h1 className="mt-4 font-display text-[2.5rem] leading-[1.04] tracking-tight text-ink-900 sm:text-[3.4rem] xl:text-[3.9rem]">
+            <h1 className="font-display text-[2.5rem] leading-[1.04] tracking-tight text-ink-900 sm:text-[3.4rem] xl:text-[3.9rem]">
               Every PBL project,
               <span className="block text-azure-600">from first idea to final grade.</span>
             </h1>
