@@ -147,8 +147,8 @@ export default function LandingPage() {
           className="absolute inset-0 -z-10 opacity-70 [background-image:radial-gradient(circle_at_20%_10%,rgba(255,255,255,0.95),transparent_40%),radial-gradient(circle_at_80%_30%,rgba(255,255,255,0.6),transparent_35%)]"
         />
 
-        <header className="mx-auto flex h-20 w-full max-w-7xl items-center justify-between px-5 sm:px-8">
-          <Brand href="/" />
+        <header className="mx-auto flex h-24 w-full max-w-7xl items-center justify-between px-5 sm:px-8">
+          <Brand href="/" height={80} priority />
           <ButtonLink
             href="/login"
             size="sm"
@@ -454,7 +454,7 @@ export default function LandingPage() {
 
       {/* ----------------------------- footer ---------------------------- */}
       <footer className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-4 border-t border-sand-200 px-5 py-10 sm:px-8">
-        <Brand href="/" />
+        <Brand href="/" height={56} />
         <p className="text-[12.5px] text-stone-400">
           A university Project-Based Learning initiative · Semester 5
         </p>

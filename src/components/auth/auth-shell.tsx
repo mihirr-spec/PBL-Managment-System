@@ -1,7 +1,7 @@
 import Image from "next/image";
-import Link from "next/link";
 import type { ReactNode } from "react";
-import { GraduationCap } from "lucide-react";
+
+import { Brand } from "@/components/layout/brand";
 
 /**
  * Sign-in and sign-up screens: the campus watercolour sits on the right at full height and
@@ -44,22 +44,16 @@ export function AuthShell({
       {/* Light veil so the dialog reads cleanly on smaller screens */}
       <div aria-hidden className="absolute inset-0 -z-10 bg-white/15 wide:hidden" />
 
-      <header className="px-6 pt-5 sm:px-10 wide:absolute wide:inset-x-0 wide:top-0">
-        <Link href="/" className="inline-flex items-center gap-3 text-ink-800">
-          <GraduationCap className="size-8" strokeWidth={1.5} aria-hidden />
-          <span className="text-[20px] font-semibold tracking-[0.04em]">PBL</span>
-        </Link>
-      </header>
-
       {/* On wide screens the dialog sits in the open paper left of the
           painting (centred on ~24vw); narrower screens centre it. */}
-      <main className="flex flex-1 items-center justify-center px-4 py-6 sm:px-6 wide:justify-start wide:pt-16 wide:pb-4 wide:pl-[max(4rem,calc(24vw-15.5rem))]">
+      <main className="flex flex-1 items-center justify-center px-4 py-6 sm:px-6 wide:justify-start wide:py-4 wide:pl-[max(4rem,calc(24vw-15.5rem))]">
         <div
           role="dialog"
           aria-labelledby="auth-title"
-          className="animate-fade-rise scroll-quiet w-full max-w-[31rem] rounded-[26px] wide:max-h-[calc(100dvh-5.5rem)] wide:overflow-y-auto border border-white/80 bg-white/85 px-6 py-7 shadow-[0_30px_90px_-30px_rgba(13,31,63,0.45)] backdrop-blur-xl sm:px-10"
+          className="animate-fade-rise scroll-quiet w-full max-w-[31rem] rounded-[26px] wide:max-h-[calc(100dvh-2rem)] wide:overflow-y-auto border border-white/80 bg-white/85 px-6 py-7 shadow-[0_30px_90px_-30px_rgba(13,31,63,0.45)] backdrop-blur-xl sm:px-10"
         >
           <div className="text-center">
+            <Brand href="/" height={64} priority className="mb-2" />
             <h1
               id="auth-title"
               className="font-display text-[2.1rem] leading-[1.05] font-semibold tracking-[-0.02em] text-ink-900 sm:text-[2.35rem]"

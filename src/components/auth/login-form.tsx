@@ -20,31 +20,35 @@ import { resendConfirmation } from "@/lib/data/repository";
 import type { Role } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-/** One sign-in tab per kind of account. */
+/** One sign-in tab per kind of account, each with its demo login (supabase/migrations/20261026000001_remove_demo_data.sql). */
 const TABS = [
   {
     key: "student",
     label: "Student",
     roles: ["student"],
     placeholder: "name.regno@muj.manipal.edu",
+    demo: { label: "Demo student", email: "demo.2400000001@muj.manipal.edu", password: "pace@2026" },
   },
   {
     key: "teacher",
     label: "Teacher",
     roles: ["faculty", "supervisor"],
     placeholder: "name@jaipur.manipal.edu",
+    demo: { label: "Demo teacher", email: "demo.teacher@jaipur.manipal.edu", password: "pace@2026" },
   },
   {
     key: "admin",
     label: "Administrator",
     roles: ["admin"],
     placeholder: "name@jaipur.manipal.edu",
+    demo: { label: "Demo PBL office", email: "demo.admin@jaipur.manipal.edu", password: "pace@2026" },
   },
 ] as const satisfies ReadonlyArray<{
   key: string;
   label: string;
   roles: readonly Role[];
   placeholder: string;
+  demo: { label: string; email: string; password: string };
 }>;
 
 type TabKey = (typeof TABS)[number]["key"];
@@ -111,6 +115,13 @@ export function LoginForm({ verified = false }: { verified?: boolean }) {
     } else {
       setError(result.error);
     }
+  }
+
+  /** One click: fill the demo login and sign straight in. */
+  function tryDemo() {
+    setEmail(tab.demo.email);
+    setPassword(tab.demo.password);
+    void signInWith(tab.demo.email, tab.demo.password);
   }
 
   function chooseTab(key: TabKey) {
@@ -299,6 +310,14 @@ export function LoginForm({ verified = false }: { verified?: boolean }) {
             Create your account
           </Link>
         </p>
+        <button
+          type="button"
+          disabled={submitting}
+          onClick={tryDemo}
+          className="mt-3 rounded-full border border-[#dbe3ee] bg-white/70 px-3.5 py-1.5 text-[12.5px] text-stone-500 transition-colors hover:border-azure-100 hover:text-azure-600 disabled:pointer-events-none disabled:opacity-60"
+        >
+          Try the {tab.demo.label.toLowerCase()}
+        </button>
       </div>
     </>
   );

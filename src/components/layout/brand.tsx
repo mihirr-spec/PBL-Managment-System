@@ -1,32 +1,42 @@
+import Image from "next/image";
 import Link from "next/link";
 
 import { cn } from "@/lib/utils";
 
-/** Wordmark used in the sidebar, the auth screens and the landing page. */
+/** Logo is 1200 × 570; the emblem (dome and ribbon) is square. */
+const LOGO_RATIO = 1200 / 570;
+
+/**
+ * The PACE logo (Project Allocation, Coordination & Evaluation), used in the
+ * sidebar, the auth screens and the landing page. `compact` shows only the
+ * emblem; `height` sets the logo's height in pixels.
+ */
 export function Brand({
   href = "/",
   compact = false,
+  height = 48,
+  priority = false,
   className,
 }: {
   href?: string;
   compact?: boolean;
+  height?: number;
+  priority?: boolean;
   className?: string;
 }) {
   return (
-    <Link href={href} className={cn("flex items-center gap-2.5", className)}>
-      <span className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-gradient-to-br from-gold-300 to-gold-500 text-[13px] font-bold text-white shadow-[0_2px_6px_-1px_rgba(184,138,44,0.5)]">
-        PB
-      </span>
-      {!compact ? (
-        <span className="leading-tight">
-          <span className="block font-display text-[15px] font-semibold tracking-tight text-stone-800">
-            PBL Portal
-          </span>
-          <span className="block text-[11px] tracking-wide text-stone-400">
-            Project-Based Learning
-          </span>
-        </span>
-      ) : null}
+    <Link href={href} aria-label="PACE home" className={cn("inline-flex shrink-0 items-center", className)}>
+      {compact ? (
+        <Image src="/brand/pace-emblem.webp" alt="PACE" width={height} height={height} priority={priority} />
+      ) : (
+        <Image
+          src="/brand/pace-logo.webp"
+          alt="PACE - Project Allocation, Coordination & Evaluation"
+          width={Math.round(height * LOGO_RATIO)}
+          height={height}
+          priority={priority}
+        />
+      )}
     </Link>
   );
 }

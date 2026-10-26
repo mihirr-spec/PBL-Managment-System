@@ -21,7 +21,7 @@ function Heading({
     <div className="min-w-0 max-w-xl">
       {eyebrow ? (
         <p className="mb-2 text-[11px] font-semibold tracking-[0.22em] text-ink-400 uppercase">
-          PBL Portal · <span className="text-ink-800">{eyebrow}</span>
+          PACE · <span className="text-ink-800">{eyebrow}</span>
         </p>
       ) : null}
       <h1

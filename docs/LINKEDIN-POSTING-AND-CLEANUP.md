@@ -1,4 +1,4 @@
-# LinkedIn posting and demo-data cleanup
+# PACE: LinkedIn posting, demo-data cleanup and the new logo
 
 Update of 26 October 2026. It covers direct LinkedIn posting of approved
 achievements, the removal of all demo accounts and test data, and what is
@@ -112,12 +112,12 @@ Security notes:
 
 ---
 
-## 2. Removing demo accounts and test data
+## 2. Removing old test data, with three fresh demo logins
 
 ### Done in the code
 
-- The "Try a demo" buttons are gone from the sign-in page.
-- README and `docs/PORTAL-GUIDE.md` no longer list demo logins.
+- Each sign-in tab has one demo button, for the three new demo logins below.
+- README and `docs/PORTAL-GUIDE.md` list only these three.
 
 ### Database: waiting to be run
 
@@ -134,9 +134,19 @@ applied**. It removes:
 It keeps the 821 MUJ faculty from the directory (their logins are cleared) and
 the PBL office address in `app_private.admin_emails`.
 
+Then it creates **three demo logins**, one per portal, set up by the normal sign-up rules:
+
+| Portal | Email | Password |
+| --- | --- | --- |
+| Student | `demo.2400000001@muj.manipal.edu` | `pace@2026` |
+| Teacher | `demo.teacher@jaipur.manipal.edu` | `pace@2026` |
+| PBL office | `demo.admin@jaipur.manipal.edu` | `pace@2026` |
+
+The demo student starts without a group, so the student dashboard shows the start-of-semester view.
+
 To run it, paste the file into the Supabase SQL editor, or apply it as a migration.
 
-**After it runs there are no logins at all.** The PBL office signs up as
+**After it runs, only the three demo logins exist.** The real PBL office signs up as
 `babita.kinha@jaipur.manipal.edu`. Teachers sign up with their own
 `@jaipur.manipal.edu` address and students with `name.regno@muj.manipal.edu`.
 Testing the LinkedIn flow end to end needs at least one real student and one real teacher account.
@@ -152,7 +162,22 @@ Testing the LinkedIn flow end to end needs at least one real student and one rea
 
 ---
 
-## 4. Still to do
+## 4. New name and logo
+
+The portal is now **PACE (Project Allocation, Coordination & Evaluation)**.
+
+- The watercolour logo (dome and ribbon with the PACE lettering) replaces the old "PB" badge and "PBL"
+  wordmark in the sidebar, the sign-in and sign-up screens and the landing page header.
+- The logo was trimmed and given a transparent background, so it sits cleanly on the frosted sidebar:
+  `public/brand/pace-logo.webp` / `.png`.
+- A square emblem (dome and ribbon, without lettering) is `public/brand/pace-emblem.webp` / `.png`.
+  It is also the browser-tab icon (`src/app/icon.png`).
+- Page titles read "… · PACE", and page eyebrows read "PACE · …".
+- "PBL office" and "PBL form" keep their names: they are the university's office and form.
+
+---
+
+## 5. Still to do
 
 - [ ] Run the demo-data cleanup migration (section 2).
 - [ ] Create the central LinkedIn profile and the LinkedIn app; add the app's keys locally and on Vercel (section 1).

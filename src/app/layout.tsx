@@ -20,8 +20,8 @@ const fraunces = Fraunces({
 
 export const metadata: Metadata = {
   title: {
-    default: "PBL Portal - Project-Based Learning Management",
-    template: "%s · PBL Portal",
+    default: "PACE - Project Allocation, Coordination & Evaluation",
+    template: "%s · PACE",
   },
   description:
     "The university platform for managing the complete Project-Based Learning lifecycle - projects, progress, deadlines, evaluations and announcements.",

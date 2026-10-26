@@ -47,7 +47,7 @@ export function Sidebar({
         )}
       >
         <div className="flex h-16 items-center justify-between border-b border-white/60 px-5">
-          <Brand href={HOME_BY_ROLE[user.role]} />
+          <Brand href={HOME_BY_ROLE[user.role]} height={50} />
           <button
             onClick={onClose}
             className="rounded-md p-1.5 text-stone-400 hover:bg-white/70 hover:text-ink-800 lg:hidden"

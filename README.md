@@ -1,6 +1,8 @@
-# PBL Management Platform
+<p align="center"><img src="public/brand/pace-logo.png" alt="PACE - Project Allocation, Coordination & Evaluation" width="420"></p>
 
-The Project-Based Learning portal for Manipal University Jaipur. Students form
+# PACE
+
+**Project Allocation, Coordination & Evaluation**: the Project-Based Learning portal for Manipal University Jaipur. Students form
 groups, choose a supervisor and report weekly. Supervisors approve groups,
 grade the work and review achievements. The PBL office oversees every group and
 posts student achievements to LinkedIn.
@@ -32,8 +34,16 @@ Open http://localhost:3000. `.env.local` needs:
 
 ### Accounts
 
-There are no demo accounts. Everyone signs up at `/signup` with their
-university email and confirms it from the emailed link:
+Three demo logins, one per portal (each sign-in tab also has a one-click demo button):
+
+| Portal | Email | Password |
+| --- | --- | --- |
+| Student | `demo.2400000001@muj.manipal.edu` | `pace@2026` |
+| Teacher | `demo.teacher@jaipur.manipal.edu` | `pace@2026` |
+| PBL office | `demo.admin@jaipur.manipal.edu` | `pace@2026` |
+
+Everyone else signs up at `/signup` with their university email and confirms it
+from the emailed link:
 
 | Address | Becomes |
 | --- | --- |
@@ -113,7 +123,9 @@ only the server can decrypt it.
 
 ## Design
 
-The palette is sampled from `public/coverpage.webp`: ivory and warm sand
+The PACE logo and its square emblem live in `public/brand/` (transparent WebP
+and PNG). The `Brand` component (`src/components/layout/brand.tsx`) draws the logo,
+and `src/app/icon.png` is the browser-tab icon. The palette is sampled from `public/coverpage.webp`: ivory and warm sand
 surfaces, muted gold from the dome as the accent, soft stone for text. All tokens
 live in the `@theme` block at the top of `src/app/globals.css`. Type is Inter for
 the interface and Fraunces for display headings.
