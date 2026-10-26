@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
+  AlertTriangle,
   CheckCircle2,
   ExternalLink,
   Globe,
@@ -19,12 +20,13 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Card, CardHeader } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/field";
 import { useSession } from "@/lib/auth/session";
 import { linkedInPost } from "@/lib/achievements";
 import * as repo from "@/lib/data/repository";
 import type { Achievement, LinkedInAccount } from "@/lib/types";
-import { cn, formatDateTime, initials } from "@/lib/utils";
+import { cn, formatDate, formatDateTime, initials } from "@/lib/utils";
 
 /** LinkedIn's limit on post text. */
 const MAX_LENGTH = 3000;
@@ -32,6 +34,8 @@ const MAX_LENGTH = 3000;
 const FOLD = 210;
 /** Image types LinkedIn accepts in a post. */
 const POSTABLE_IMAGE = /\.(png|jpe?g|gif)$/i;
+/** Shown as the author until the PBL office connects the central account. */
+const FALLBACK_AUTHOR = "MUJ PBL Office";
 
 const REOPEN_KEY = "linkedin:preview";
 
@@ -54,19 +58,54 @@ function clearPending() {
   } catch {}
 }
 
+/** The account with how long its connection has left, worked out when it loads. */
+type LoadedAccount = LinkedInAccount & { daysLeft: number; expired: boolean };
+
+/** The portal's central LinkedIn account; `undefined` while loading. */
+function useLinkedInAccount() {
+  const [account, setAccount] = useState<LoadedAccount | null | undefined>(undefined);
+  useEffect(() => {
+    let live = true;
+    repo.getLinkedInAccount().then(
+      (acc) => {
+        if (!live) return;
+        const ms = acc ? new Date(acc.expiresAt).getTime() - Date.now() : 0;
+        setAccount(acc ? { ...acc, daysLeft: Math.ceil(ms / 86_400_000), expired: ms <= 0 } : null);
+      },
+      () => live && setAccount(null),
+    );
+    return () => {
+      live = false;
+    };
+  }, []);
+  return [account, setAccount] as const;
+}
+
+/** The supervisor's approval, held back until they have seen the post. */
+export interface PendingApproval {
+  note: string;
+  marks: number;
+}
+
 /**
- * Full-screen preview of an approved achievement's LinkedIn post, drawn the
- * way LinkedIn shows it in the feed, beside the editor. "Post to LinkedIn"
- * publishes it from the viewer's connected LinkedIn account.
+ * Full-screen preview of an achievement's LinkedIn post, drawn the way
+ * LinkedIn shows it in the feed, beside the editor. Every post goes out from
+ * the portal's central LinkedIn account, so teachers never handle its login.
+ *
+ * With `approval`, the supervisor is approving from here: "Approve and post"
+ * records the approval and publishes in one step. Without it, the achievement
+ * is already approved and "Post to LinkedIn" publishes it.
  */
 export function LinkedInPreview({
   achievement: a,
+  approval,
   onClose,
-  onPosted,
+  onChanged,
 }: {
   achievement: Achievement;
+  approval?: PendingApproval;
   onClose: () => void;
-  onPosted: () => void;
+  onChanged: () => void;
 }) {
   const { user } = useSession();
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -74,15 +113,17 @@ export function LinkedInPreview({
   const images = useMemo(() => a.documents.filter((d) => POSTABLE_IMAGE.test(d.name)), [a.documents]);
   const [imagePath, setImagePath] = useState<string | null>(() => images[0]?.path ?? null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
-  const [account, setAccount] = useState<LinkedInAccount | null | undefined>(undefined);
-  const [busy, setBusy] = useState<"connect" | "post" | "disconnect" | null>(null);
+  const [account] = useLinkedInAccount();
+  const [busy, setBusy] = useState<"approve" | "approve-post" | "post" | "connect" | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [approvedHere, setApprovedHere] = useState(false);
   const [posted, setPosted] = useState<{ url: string } | null>(
     a.linkedIn ? { url: `https://www.linkedin.com/feed/update/${a.linkedIn.urn}/` } : null,
   );
 
   useEffect(() => {
     closeRef.current?.focus();
+    clearPending();
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     const overflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -92,18 +133,6 @@ export function LinkedInPreview({
       window.removeEventListener("keydown", onKey);
     };
   }, [onClose]);
-
-  useEffect(() => {
-    clearPending();
-    let live = true;
-    repo.getLinkedInAccount().then(
-      (acc) => live && setAccount(acc),
-      () => live && setAccount(null),
-    );
-    return () => {
-      live = false;
-    };
-  }, []);
 
   useEffect(() => {
     if (!imagePath) return;
@@ -117,9 +146,40 @@ export function LinkedInPreview({
     };
   }, [imagePath]);
 
-  const expired = account ? new Date(account.expiresAt) <= new Date() : false;
-  const connected = !!account && !expired;
+  const connected = !!account && !account.expired;
   const tooLong = text.trim().length > MAX_LENGTH;
+  const approving = !!approval && !approvedHere && a.status !== "approved";
+  const isAdmin = user?.role === "admin";
+
+  async function approve(): Promise<boolean> {
+    if (!approval) return true;
+    await repo.reviewAchievement(a.id, "approve", approval.note, approval.marks);
+    setApprovedHere(true);
+    onChanged();
+    return true;
+  }
+
+  async function publish() {
+    const result = await repo.postAchievementToLinkedIn(a.id, text.trim(), imagePath ?? undefined);
+    setPosted({ url: result.url });
+    onChanged();
+  }
+
+  async function run(kind: "approve" | "approve-post" | "post") {
+    setBusy(kind);
+    setError(null);
+    let approvedNow = false;
+    try {
+      if (kind !== "post") approvedNow = await approve();
+      if (kind !== "approve") await publish();
+      if (kind === "approve") onClose();
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Something went wrong.";
+      setError(approvedNow ? `Approved, but the post did not go out: ${message}` : message);
+    } finally {
+      setBusy(null);
+    }
+  }
 
   async function connect() {
     setBusy("connect");
@@ -136,34 +196,109 @@ export function LinkedInPreview({
     }
   }
 
-  async function disconnect() {
-    setBusy("disconnect");
-    setError(null);
-    try {
-      await repo.disconnectLinkedIn();
-      setAccount(null);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not disconnect LinkedIn.");
-    } finally {
-      setBusy(null);
-    }
-  }
+  const linkedInButton = "w-full bg-[#0a66c2] text-white hover:bg-[#004182] active:bg-[#004182]";
 
-  async function post() {
-    setBusy("post");
-    setError(null);
-    try {
-      const result = await repo.postAchievementToLinkedIn(a.id, text.trim(), imagePath ?? undefined);
-      setPosted({ url: result.url });
-      onPosted();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not post to LinkedIn.");
-    } finally {
-      setBusy(null);
-    }
-  }
+  let actions: React.ReactNode;
+  if (posted) {
+    actions = (
+      <div className="space-y-2">
+        <p className="flex items-center gap-2 text-[13.5px] font-medium text-sage-500">
+          <CheckCircle2 className="size-4" />
+          {approvedHere ? "Approved and posted on LinkedIn" : "Posted on LinkedIn"}
+        </p>
+        {a.linkedIn ? (
+          <p className="text-[12px] text-stone-500">
+            By {a.linkedIn.postedBy || "staff"} · {formatDateTime(a.linkedIn.postedAt)}
+          </p>
+        ) : null}
+        <a
+          href={posted.url}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex items-center gap-1.5 text-[13px] font-medium text-[#0a66c2] hover:underline"
+        >
+          <ExternalLink className="size-3.5" />
+          View the post
+        </a>
+      </div>
+    );
+  } else if (account === undefined) {
+    actions = (
+      <p className="flex items-center gap-2 text-[13px] text-stone-500">
+        <Loader2 className="size-4 animate-spin" />
+        Checking the portal&apos;s LinkedIn account…
+      </p>
+    );
+  } else {
+    const notConnected = (
+      <p className="flex gap-2 text-[12.5px] leading-snug text-stone-600">
+        <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-gold-600" />
+        {account?.expired
+          ? "The portal's LinkedIn connection has expired. The PBL office needs to connect it again before posts can go out."
+          : "The portal's LinkedIn account is not connected yet. The PBL office connects it once."}
+      </p>
+    );
+    actions = (
+      <>
+        {connected ? (
+          <p className="text-[12.5px] text-stone-600">
+            Posts from <span className="font-medium text-ink-900">{account.name || "the portal's LinkedIn"}</span>
+          </p>
+        ) : (
+          notConnected
+        )}
 
-  const authorName = account?.name || user?.displayName || "You";
+        {approving ? (
+          <>
+            {connected ? (
+              <Button
+                className={linkedInButton}
+                loading={busy === "approve-post"}
+                disabled={busy !== null || !text.trim() || tooLong}
+                onClick={() => void run("approve-post")}
+              >
+                {busy === "approve-post" ? "Approving and posting…" : "Approve and post to LinkedIn"}
+              </Button>
+            ) : null}
+            <Button
+              variant={connected ? "secondary" : "primary"}
+              className="w-full"
+              loading={busy === "approve"}
+              disabled={busy !== null}
+              onClick={() => void run("approve")}
+            >
+              {connected ? "Approve without posting" : "Approve (post later)"}
+            </Button>
+            {approval && approval.marks > 0 ? (
+              <p className="text-[11.5px] text-stone-500">Approving adds +{approval.marks} bonus marks to the student&apos;s grades.</p>
+            ) : null}
+          </>
+        ) : connected ? (
+          <Button
+            className={linkedInButton}
+            loading={busy === "post"}
+            disabled={busy !== null || !text.trim() || tooLong}
+            onClick={() => void run("post")}
+          >
+            {busy === "post" ? "Posting…" : "Post to LinkedIn"}
+          </Button>
+        ) : null}
+
+        {!connected && isAdmin ? (
+          <Button className={linkedInButton} loading={busy === "connect"} disabled={busy !== null} onClick={() => void connect()}>
+            <Link2 className="size-4" />
+            Connect the portal&apos;s LinkedIn
+          </Button>
+        ) : null}
+
+        {connected ? (
+          <p className="text-[11.5px] leading-snug text-stone-500">
+            Goes out publicly straight away. The student is notified.
+          </p>
+        ) : null}
+      </>
+    );
+  }
 
   return createPortal(
     <div
@@ -180,7 +315,9 @@ export function LinkedInPreview({
         <header className="flex items-center gap-3 border-b border-sand-200/70 px-5 py-3">
           <LinkedInMark className="size-6 shrink-0" />
           <div className="min-w-0 flex-1">
-            <p className="text-[14px] font-medium text-ink-900">LinkedIn post preview</p>
+            <p className="text-[14px] font-medium text-ink-900">
+              {approving ? "Approve and post to LinkedIn" : "LinkedIn post preview"}
+            </p>
             <p className="truncate text-[12px] text-stone-500">{a.title}</p>
           </div>
           <button
@@ -200,7 +337,7 @@ export function LinkedInPreview({
               How it will look on LinkedIn
             </p>
             <FeedPost
-              authorName={authorName}
+              authorName={account?.name || FALLBACK_AUTHOR}
               picture={account?.picture}
               text={text}
               imageUrl={imagePath ? imageUrl : null}
@@ -208,7 +345,7 @@ export function LinkedInPreview({
             />
           </div>
 
-          {/* Editor and posting. */}
+          {/* Editor and the decision. */}
           <div className="flex flex-col gap-4 border-t border-sand-200/70 p-5 lg:overflow-auto lg:border-t-0 lg:border-l">
             <div>
               <label htmlFor="linkedin-text" className="text-[12.5px] font-medium text-ink-800">
@@ -222,7 +359,7 @@ export function LinkedInPreview({
                 disabled={!!posted}
                 className="mt-1.5 font-[inherit] text-[13px] leading-relaxed"
               />
-              <p className={cn("mt-1 text-right text-[11.5px] tnum", tooLong ? "text-clay-500" : "text-stone-400")}>
+              <p className={cn("tnum mt-1 text-right text-[11.5px]", tooLong ? "text-clay-500" : "text-stone-400")}>
                 {text.trim().length} / {MAX_LENGTH}
               </p>
             </div>
@@ -257,77 +394,7 @@ export function LinkedInPreview({
             </div>
 
             <div className="mt-auto space-y-3 rounded-[14px] bg-ivory-100 p-4">
-              {posted ? (
-                <div className="space-y-2">
-                  <p className="flex items-center gap-2 text-[13.5px] font-medium text-sage-500">
-                    <CheckCircle2 className="size-4" />
-                    Posted on LinkedIn
-                  </p>
-                  {a.linkedIn ? (
-                    <p className="text-[12px] text-stone-500">
-                      By {a.linkedIn.postedBy || "staff"} · {formatDateTime(a.linkedIn.postedAt)}
-                    </p>
-                  ) : null}
-                  <a
-                    href={posted.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1.5 text-[13px] font-medium text-[#0a66c2] hover:underline"
-                  >
-                    <ExternalLink className="size-3.5" />
-                    View the post
-                  </a>
-                </div>
-              ) : account === undefined ? (
-                <p className="flex items-center gap-2 text-[13px] text-stone-500">
-                  <Loader2 className="size-4 animate-spin" />
-                  Checking your LinkedIn connection…
-                </p>
-              ) : connected ? (
-                <>
-                  <div className="flex items-center gap-2">
-                    <p className="min-w-0 flex-1 text-[12.5px] text-stone-600">
-                      Posting as <span className="font-medium text-ink-900">{account.name || "your LinkedIn account"}</span>
-                    </p>
-                    <button
-                      onClick={() => void disconnect()}
-                      disabled={busy !== null}
-                      className="inline-flex items-center gap-1 text-[12px] text-stone-500 hover:text-clay-500"
-                    >
-                      <Unlink className="size-3" />
-                      Disconnect
-                    </button>
-                  </div>
-                  <Button
-                    className="w-full bg-[#0a66c2] text-white hover:bg-[#004182] active:bg-[#004182]"
-                    loading={busy === "post"}
-                    disabled={busy !== null || !text.trim() || tooLong}
-                    onClick={() => void post()}
-                  >
-                    {busy === "post" ? "Posting…" : "Post to LinkedIn"}
-                  </Button>
-                  <p className="text-[11.5px] leading-snug text-stone-500">
-                    Goes out publicly on your LinkedIn feed straight away. The student is notified.
-                  </p>
-                </>
-              ) : (
-                <>
-                  <p className="text-[12.5px] leading-snug text-stone-600">
-                    {expired
-                      ? "Your LinkedIn connection has expired (they last 60 days). Connect again to post."
-                      : "Connect your LinkedIn account once, and posts go out from it with one click."}
-                  </p>
-                  <Button
-                    className="w-full bg-[#0a66c2] text-white hover:bg-[#004182] active:bg-[#004182]"
-                    loading={busy === "connect"}
-                    disabled={busy !== null}
-                    onClick={() => void connect()}
-                  >
-                    <Link2 className="size-4" />
-                    Connect LinkedIn
-                  </Button>
-                </>
-              )}
+              {actions}
               {error ? (
                 <p role="alert" className="text-[12.5px] text-clay-500">
                   {error}
@@ -339,6 +406,117 @@ export function LinkedInPreview({
       </div>
     </div>,
     document.body,
+  );
+}
+
+/**
+ * PBL office: the portal's central LinkedIn account. Connecting means signing
+ * in on LinkedIn's own page with that account, so its password never passes
+ * through the portal and teachers never see it.
+ */
+export function LinkedInAccountCard() {
+  const [account, setAccount] = useLinkedInAccount();
+  const [busy, setBusy] = useState<"connect" | "disconnect" | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function connect() {
+    setBusy("connect");
+    setError(null);
+    try {
+      await repo.connectLinkedIn(window.location.pathname);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not start the LinkedIn sign-in.");
+      setBusy(null);
+    }
+  }
+
+  async function disconnect() {
+    setBusy("disconnect");
+    setError(null);
+    try {
+      await repo.disconnectLinkedIn();
+      setAccount(null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not disconnect LinkedIn.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  const expired = account?.expired ?? false;
+  const daysLeft = account?.daysLeft ?? 0;
+
+  return (
+    <Card>
+      <CardHeader
+        title="Portal LinkedIn account"
+        description="Every approved achievement is posted from this one account. Teachers only preview the post and approve it; they never see its login."
+      />
+      <div className="flex flex-wrap items-center gap-4 px-5 pb-5">
+        {account === undefined ? (
+          <p className="flex items-center gap-2 text-[13px] text-stone-500">
+            <Loader2 className="size-4 animate-spin" />
+            Loading…
+          </p>
+        ) : account ? (
+          <>
+            {account.picture ? (
+              // eslint-disable-next-line @next/next/no-img-element -- LinkedIn's own image host
+              <img src={account.picture} alt="" className="size-12 rounded-full object-cover" />
+            ) : (
+              <span className="flex size-12 items-center justify-center rounded-full bg-[#dbe7f3] text-[15px] font-semibold text-[#0a66c2]">
+                {initials(account.name || "LinkedIn")}
+              </span>
+            )}
+            <div className="min-w-0 flex-1 text-[13px]">
+              <p className="font-medium text-ink-900">{account.name || "LinkedIn account"}</p>
+              <p className="text-stone-500">
+                Connected by {account.connectedBy || "the PBL office"} on {formatDate(account.connectedAt)} ·{" "}
+                {expired ? (
+                  <span className="font-medium text-clay-500">expired - connect again</span>
+                ) : (
+                  <span className={cn(daysLeft <= 7 && "font-medium text-gold-600")}>
+                    {daysLeft} day{daysLeft === 1 ? "" : "s"} left (LinkedIn connections last 60 days)
+                  </span>
+                )}
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" variant={expired ? "primary" : "secondary"} loading={busy === "connect"} disabled={busy !== null} onClick={() => void connect()}>
+                <Link2 className="size-3.5" />
+                {expired ? "Connect again" : "Reconnect"}
+              </Button>
+              <Button size="sm" variant="ghost" loading={busy === "disconnect"} disabled={busy !== null} onClick={() => void disconnect()}>
+                <Unlink className="size-3.5" />
+                Disconnect
+              </Button>
+            </div>
+          </>
+        ) : (
+          <>
+            <p className="min-w-0 flex-1 text-[13px] leading-relaxed text-stone-600">
+              Not connected. Click <span className="font-medium">Connect LinkedIn</span> and sign in on LinkedIn&apos;s page
+              with the portal&apos;s central account. Until then, approved achievements wait to be posted.
+            </p>
+            <Button
+              size="sm"
+              className="bg-[#0a66c2] text-white hover:bg-[#004182]"
+              loading={busy === "connect"}
+              disabled={busy !== null}
+              onClick={() => void connect()}
+            >
+              <Link2 className="size-3.5" />
+              Connect LinkedIn
+            </Button>
+          </>
+        )}
+        {error ? (
+          <p role="alert" className="w-full text-[12.5px] text-clay-500">
+            {error}
+          </p>
+        ) : null}
+      </div>
+    </Card>
   );
 }
 

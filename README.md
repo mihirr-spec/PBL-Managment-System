@@ -28,6 +28,7 @@ Open http://localhost:3000. `.env.local` needs:
 | `LINKEDIN_CLIENT_SECRET` | LinkedIn app client secret (server only) |
 | `LINKEDIN_REDIRECT_URI` | Optional. Defaults to `<site>/linkedin/callback` |
 | `LINKEDIN_API_VERSION` | Optional `YYYYMM`. Defaults to two months back |
+| `LINKEDIN_TOKEN_KEY` | Optional key that encrypts the stored token. Defaults to one derived from the client secret |
 
 ### Accounts
 
@@ -47,22 +48,28 @@ university email and confirms it from the emailed link:
 | Portal | Pages |
 | --- | --- |
 | **Student** `/student/...` | Dashboard · My Group & Mentor (team, supervisor, signed PBL form) · Requests (invitations) · Weekly Reports · Grades & Feedback · Achievements · Queries · Notifications · Faculty Directory · My Profile · Settings |
-| **Teacher** `/faculty/...` | My Groups · Mentor Requests (review the signed form: approve, ask for changes, reject) · Queries · Achievements (review, bonus marks, **post to LinkedIn**) · Announcements |
-| **PBL office** `/admin/...` | Overview of every group and unassigned student · move groups between supervisors · Announcements · Excellence & LinkedIn (award shortlist, post to LinkedIn) |
+| **Teacher** `/faculty/...` | My Groups · Mentor Requests (review the signed form: approve, ask for changes, reject) · Queries · Achievements (review, bonus marks, **approve and post to LinkedIn**) · Announcements |
+| **PBL office** `/admin/...` | Overview of every group and unassigned student · move groups between supervisors · Announcements · Excellence & LinkedIn (portal LinkedIn account, award shortlist, posting) |
 
 Documents (PDFs, images) open in an in-portal viewer built on PDF.js.
 
 ### Posting achievements to LinkedIn
 
-When a supervisor approves an achievement, a preview opens inside the teacher
-portal. It shows the post the way LinkedIn draws it in the feed, written from the
-achievement's template, with an optional proof image. The supervisor can edit
-the text and click **Post to LinkedIn** to publish it straight to their feed.
-The student is notified, and the achievement shows a link to the live post. The
-PBL office can do the same from Excellence & LinkedIn.
+Every post goes out from **one central LinkedIn account** for the whole portal.
+Teachers never see its login.
 
-Each poster connects **their own** LinkedIn account once (OAuth, about 60 days
-per connection). The portal never sees a LinkedIn password. Setup:
+1. When a supervisor clicks Approve on an achievement, a preview opens inside the
+   teacher portal. It shows the post the way LinkedIn draws it in the feed, under the
+   central account's name, written from the achievement's template, with an optional proof image.
+2. The supervisor can adjust the text and clicks **Approve and post to LinkedIn**.
+   The achievement is approved and published in one step. (*Approve without posting* is also there.)
+3. The student is notified, and the achievement shows a link to the live post.
+
+The **PBL office** connects the central account once from Excellence & LinkedIn.
+They click **Connect LinkedIn** and sign in on LinkedIn's own page with the central
+account, so its password never passes through the portal. The connection lasts
+about 60 days; the page shows the days left and a **Reconnect** button. The access token is stored
+encrypted (AES-256-GCM) with a key that exists only on the server. Setup:
 
 1. Create an app at https://www.linkedin.com/developers/apps (it must be linked to a LinkedIn Page).
 2. Under **Products**, add *Sign In with LinkedIn using OpenID Connect* and *Share on LinkedIn*.
@@ -70,8 +77,9 @@ per connection). The portal never sees a LinkedIn password. Setup:
    and `https://<your-domain>/linkedin/callback`.
 4. Put the client ID and secret in `.env.local` (and in the Vercel project's environment variables).
 
-Posts go out from the person's own profile. Posting as the university's
-LinkedIn Page needs LinkedIn's Community Management API, which LinkedIn has to approve separately.
+The central account is a LinkedIn *member* profile (for example, a dedicated
+"MUJ PBL" profile). Posting as an official LinkedIn *Page* needs LinkedIn's
+Community Management API, which LinkedIn has to approve separately.
 
 ---
 
@@ -98,6 +106,8 @@ Row-level security does the authorisation. Every query runs as the signed-in
 user, and state changes go through `security definer` database functions
 (`review_achievement`, `record_linkedin_post`, ...). The LinkedIn route
 handlers forward the user's Supabase token, so they need no service-role key.
+The central LinkedIn token sits in `app_private.linkedin_account`, encrypted;
+only the server can decrypt it.
 
 ---
 
@@ -114,5 +124,5 @@ the interface and Fraunces for display headings.
 
 - Teacher accounts: the 821 faculty in the directory must sign up before they can review.
 - University single sign-on and "Forgot password" still show a *later release* message.
-- Posting as the university LinkedIn Page (needs LinkedIn's Community Management API approval).
+- Posting as an official LinkedIn Page instead of a member profile (needs LinkedIn's Community Management API approval).
 - Analytics: project health score, at-risk detection, progress prediction.

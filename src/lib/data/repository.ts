@@ -1052,20 +1052,23 @@ async function linkedInApi<T>(path: string, body: unknown): Promise<T> {
   return json as T;
 }
 
-/** The caller's connected LinkedIn account, if any. */
+/** The portal's central LinkedIn account that posts go out from, if connected (staff only). */
 export async function getLinkedInAccount(): Promise<LinkedInAccount | null> {
-  const { data: auth } = await supabase.auth.getUser();
-  if (!auth.user) return null;
-  const { data, error } = await supabase
-    .from("linkedin_accounts")
-    .select("name, picture, expires_at")
-    .eq("user_id", auth.user.id)
-    .maybeSingle();
+  const { data, error } = await supabase.rpc("linkedin_account");
   fail(error);
-  return data ? { name: data.name, picture: data.picture ?? undefined, expiresAt: data.expires_at } : null;
+  const row = (data as any[] | null)?.[0];
+  return row
+    ? {
+        name: row.name,
+        picture: row.picture ?? undefined,
+        expiresAt: row.expires_at,
+        connectedBy: row.connected_by,
+        connectedAt: row.connected_at,
+      }
+    : null;
 }
 
-/** Sends the browser to LinkedIn to connect an account; it comes back to `returnTo`. */
+/** PBL office: sends the browser to LinkedIn to connect the central account; it comes back to `returnTo`. */
 export async function connectLinkedIn(returnTo: string): Promise<void> {
   const { url } = await linkedInApi<{ url: string }>("connect", { returnTo });
   window.location.assign(url);
@@ -1077,13 +1080,13 @@ export async function finishLinkedInConnect(code: string, state: string): Promis
   return returnTo;
 }
 
+/** PBL office: stop posting from the central account. */
 export async function disconnectLinkedIn(): Promise<void> {
-  const { data: auth } = await supabase.auth.getUser();
-  const { error } = await supabase.from("linkedin_accounts").delete().eq("user_id", auth.user?.id ?? "");
+  const { error } = await supabase.rpc("disconnect_linkedin_account");
   fail(error);
 }
 
-/** Publishes an approved achievement on the caller's LinkedIn; returns the post's link. */
+/** Publishes an approved achievement from the central LinkedIn account; returns the post's link. */
 export async function postAchievementToLinkedIn(
   achievementId: string,
   text: string,

@@ -1,10 +1,24 @@
-import { errorResponse, linkedInConfig, makeState, portalUser, redirectUri, safeReturnTo, SCOPES } from "@/lib/linkedin/server";
+import {
+  errorResponse,
+  linkedInConfig,
+  makeState,
+  portalUser,
+  redirectUri,
+  requireAdmin,
+  safeReturnTo,
+  SCOPES,
+} from "@/lib/linkedin/server";
 
-/** Starts "Connect LinkedIn": returns the LinkedIn sign-in URL to send the browser to. */
+/**
+ * PBL office starts "Connect LinkedIn" for the portal's central account:
+ * returns the LinkedIn sign-in URL to send the browser to. They sign in there
+ * with the central account, so its password never passes through the portal.
+ */
 export async function POST(request: Request) {
   try {
     const { clientId, clientSecret } = linkedInConfig();
-    const { userId } = await portalUser(request);
+    const { db, userId } = await portalUser(request);
+    await requireAdmin(db, userId);
     const { returnTo } = (await request.json().catch(() => ({}))) as { returnTo?: string };
 
     const url = new URL("https://www.linkedin.com/oauth/v2/authorization");

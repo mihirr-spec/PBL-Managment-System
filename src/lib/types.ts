@@ -296,9 +296,11 @@ export interface Achievement {
   events: AchievementEvent[];
 }
 
-/** The signed-in staff member's connected LinkedIn account, used to post achievements. */
+/** The portal's central LinkedIn account, connected by the PBL office; every achievement post goes out from it. */
 export interface LinkedInAccount {
   name: string;
   picture?: string;
   expiresAt: string;
+  connectedBy: string;
+  connectedAt: string;
 }

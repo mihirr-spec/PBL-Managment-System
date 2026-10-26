@@ -18,6 +18,7 @@ import { FileLink } from "@/components/shared/file-link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Textarea } from "@/components/ui/field";
+import type { PendingApproval } from "@/components/achievements/linkedin-preview";
 import { findTemplate, linkedInPost, MAX_BONUS_MARKS } from "@/lib/achievements";
 import * as repo from "@/lib/data/repository";
 import type { Achievement, AchievementEvent, AchievementStatus, Student } from "@/lib/types";
@@ -56,6 +57,8 @@ export type AchievementViewer = "student" | "reviewer" | "admin";
  * Reviewers can approve (with bonus marks), ask for details or reject; anyone
  * involved can comment. Approved achievements show their LinkedIn post:
  * staff open the preview (`onPreview`) to post it, students get a draft to copy.
+ * With `onApproveWithPreview`, approving first shows the post, then approves
+ * and posts it in one step.
  */
 export function AchievementCard({
   achievement: a,
@@ -64,6 +67,7 @@ export function AchievementCard({
   onChanged,
   onEdit,
   onPreview,
+  onApproveWithPreview,
 }: {
   achievement: Achievement;
   viewer: AchievementViewer;
@@ -73,6 +77,8 @@ export function AchievementCard({
   onEdit?: () => void;
   /** Staff: opens the LinkedIn preview for this achievement (also right after approving it). */
   onPreview?: () => void;
+  /** Staff: approve from the LinkedIn preview instead of straight away. */
+  onApproveWithPreview?: (approval: PendingApproval) => void;
 }) {
   const { category, template } = findTemplate(a.category, a.template);
   const open = a.status === "submitted" || a.status === "needs_info";
@@ -133,7 +139,7 @@ export function AchievementCard({
         </Button>
       ) : null}
 
-      {viewer !== "student" && open ? <ReviewPanel achievement={a} onChanged={onChanged} onApproved={onPreview} /> : null}
+      {viewer !== "student" && open ? <ReviewPanel achievement={a} onChanged={onChanged} onApproveWithPreview={onApproveWithPreview} /> : null}
 
       <CommentBox achievementId={a.id} onChanged={onChanged} />
 
@@ -205,11 +211,11 @@ type Mode = "approve" | "needs_info" | "reject" | null;
 function ReviewPanel({
   achievement,
   onChanged,
-  onApproved,
+  onApproveWithPreview,
 }: {
   achievement: Achievement;
   onChanged: () => void;
-  onApproved?: () => void;
+  onApproveWithPreview?: (approval: PendingApproval) => void;
 }) {
   const [mode, setMode] = useState<Mode>(null);
   const [note, setNote] = useState("");
@@ -224,6 +230,12 @@ function ReviewPanel({
       setError(`Bonus marks must be between 0 and ${MAX_BONUS_MARKS}.`);
       return;
     }
+    // The preview records the approval itself, once the post has been seen.
+    if (mode === "approve" && onApproveWithPreview) {
+      setError(null);
+      onApproveWithPreview({ note: note.trim(), marks: m });
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
@@ -231,7 +243,6 @@ function ReviewPanel({
       setMode(null);
       setNote("");
       setMarks("");
-      if (mode === "approve") onApproved?.();
       onChanged();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not save the decision.");
@@ -309,7 +320,7 @@ function ReviewPanel({
           <div>
             <Button size="sm" loading={busy} variant={mode === "reject" ? "danger" : "primary"} onClick={() => void decide()}>
               <Check className="size-3.5" />
-              {mode === "approve" ? "Confirm approval" : mode === "reject" ? "Confirm rejection" : "Send request"}
+              {mode === "approve" ? (onApproveWithPreview ? "Preview LinkedIn post and approve" : "Confirm approval") : mode === "reject" ? "Confirm rejection" : "Send request"}
             </Button>
           </div>
         </div>

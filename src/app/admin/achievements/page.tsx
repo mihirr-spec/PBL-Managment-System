@@ -4,7 +4,12 @@ import { useState } from "react";
 import { Medal, Trophy } from "lucide-react";
 
 import { AchievementCard } from "@/components/achievements/achievement-card";
-import { LinkedInPreview, pendingLinkedInPreview } from "@/components/achievements/linkedin-preview";
+import {
+  LinkedInAccountCard,
+  LinkedInPreview,
+  pendingLinkedInPreview,
+  type PendingApproval,
+} from "@/components/achievements/linkedin-preview";
 import { Card, CardHeader, EmptyState } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { PageSkeleton } from "@/components/ui/skeleton";
@@ -15,19 +20,24 @@ import { useLoad } from "@/lib/use-load";
 import { cn } from "@/lib/utils";
 
 /**
- * PBL office: the Student Excellence Award shortlist (approved achievements
- * ranked per student) and every approved achievement's LinkedIn post.
+ * PBL office: the portal's central LinkedIn account, the Student Excellence
+ * Award shortlist (approved achievements ranked per student) and every
+ * approved achievement's LinkedIn post.
  */
 export default function AdminAchievementsPage() {
   const { data, error, reload } = useLoad(() => listAchievements(), "achievements");
   // Reopens the preview after a "Connect LinkedIn" round trip.
-  const [previewId, setPreviewId] = useState<string | null>(pendingLinkedInPreview);
+  const [preview, setPreview] = useState<{ id: string; approval?: PendingApproval } | null>(() => {
+    const id = pendingLinkedInPreview();
+    return id ? { id } : null;
+  });
   const [category, setCategory] = useState<string>("all");
   const [showAll, setShowAll] = useState(false);
 
   if (error) return <p role="alert" className="text-[13px] text-clay-500">{error}</p>;
   if (!data) return <PageSkeleton />;
-  const preview = data.find((a) => a.id === previewId && a.status === "approved");
+  // Approving from the preview shows the achievement before it is approved.
+  const previewed = data.find((a) => a.id === preview?.id && (preview.approval || a.status === "approved"));
 
   const approved = data.filter((a) => a.status === "approved");
   const shortlist = rankStudents(approved);
@@ -39,9 +49,11 @@ export default function AdminAchievementsPage() {
         eyebrow="Excellence & LinkedIn"
         title="Student"
         emphasis="excellence."
-        description="Achievements approved by supervisors. The shortlist ranks students for the Student Excellence Award; each approved achievement has a LinkedIn post ready to copy or open."
+        description="Achievements approved by supervisors. The shortlist ranks students for the Student Excellence Award. Posts go out from the portal's LinkedIn account below when supervisors approve; any approved achievement not yet posted can be previewed and posted here."
         scene="achievements"
       />
+
+      <LinkedInAccountCard />
 
       <Card>
         <CardHeader
@@ -120,14 +132,20 @@ export default function AdminAchievementsPage() {
                 achievement={a}
                 viewer="admin"
                 onChanged={() => void reload()}
-                onPreview={() => setPreviewId(a.id)}
+                onPreview={() => setPreview({ id: a.id })}
+                onApproveWithPreview={(approval) => setPreview({ id: a.id, approval })}
               />
             ))}
           </div>
         )}
       </Card>
-      {preview ? (
-        <LinkedInPreview achievement={preview} onClose={() => setPreviewId(null)} onPosted={() => void reload()} />
+      {previewed ? (
+        <LinkedInPreview
+          achievement={previewed}
+          approval={preview?.approval}
+          onClose={() => setPreview(null)}
+          onChanged={() => void reload()}
+        />
       ) : null}
     </div>
   );

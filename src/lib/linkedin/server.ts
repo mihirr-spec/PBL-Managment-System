@@ -1,10 +1,13 @@
 
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 /**
  * Server half of LinkedIn posting, used by the route handlers in
- * src/app/api/linkedin. The LinkedIn app's client secret only lives here.
+ * src/app/api/linkedin. Every post goes out from one central LinkedIn
+ * account that the PBL office connects; its token is kept encrypted with a
+ * key that only exists here, so no one in the portal can read or reuse it.
+ * The LinkedIn app's client secret only lives here too.
  *
  * Every request carries the caller's Supabase access token, and the database
  * is queried as that user, so row-level security still decides what they may
@@ -71,6 +74,50 @@ export async function portalUser(request: Request): Promise<{ db: SupabaseClient
   return { db, userId: data.user.id };
 }
 
+/** The PBL office only: they connect and disconnect the central account. */
+export async function requireAdmin(db: SupabaseClient, userId: string) {
+  const { data } = await db.from("profiles").select("role").eq("id", userId).maybeSingle();
+  if (data?.role !== "admin") throw new HttpError(403, "Only the PBL office can connect the portal's LinkedIn account.");
+}
+
+/* -------------------------------------------------------- token at rest */
+
+/** AES-256-GCM key, from LINKEDIN_TOKEN_KEY or else derived from the client secret. */
+function tokenKey(): Buffer {
+  const base = process.env.LINKEDIN_TOKEN_KEY ?? linkedInConfig().clientSecret;
+  return createHash("sha256").update(`linkedin-token:${base}`).digest();
+}
+
+export function sealToken(token: string): string {
+  const iv = randomBytes(12);
+  const cipher = createCipheriv("aes-256-gcm", tokenKey(), iv);
+  const data = Buffer.concat([cipher.update(token, "utf8"), cipher.final()]);
+  return [iv, cipher.getAuthTag(), data].map((b) => b.toString("base64url")).join(".");
+}
+
+export function openToken(sealed: string): string {
+  try {
+    const [iv, tag, data] = sealed.split(".").map((p) => Buffer.from(p, "base64url"));
+    const decipher = createDecipheriv("aes-256-gcm", tokenKey(), iv);
+    decipher.setAuthTag(tag);
+    return Buffer.concat([decipher.update(data), decipher.final()]).toString("utf8");
+  } catch {
+    throw new HttpError(401, "The portal's LinkedIn connection can no longer be read. The PBL office needs to connect LinkedIn again.");
+  }
+}
+
+/** The central account's member id and usable token, for posting. */
+export async function centralAccount(db: SupabaseClient): Promise<{ memberUrn: string; accessToken: string }> {
+  const { data, error } = await db.rpc("linkedin_credentials");
+  if (error) throw new HttpError(500, error.message);
+  const row = (data as { member_urn: string; token_enc: string; expires_at: string }[] | null)?.[0];
+  if (!row) throw new HttpError(412, "The portal's LinkedIn account is not connected yet. The PBL office connects it.");
+  if (new Date(row.expires_at) <= new Date()) {
+    throw new HttpError(401, "The portal's LinkedIn connection has expired. The PBL office needs to connect LinkedIn again.");
+  }
+  return { memberUrn: row.member_urn, accessToken: openToken(row.token_enc) };
+}
+
 /* ------------------------------------------------------------- state */
 
 const b64 = (s: string) => Buffer.from(s).toString("base64url");
@@ -106,7 +153,7 @@ async function linkedInError(response: Response, doing: string): Promise<HttpErr
     detail = JSON.parse(body).message ?? JSON.parse(body).error_description ?? body;
   } catch {}
   if (response.status === 401) {
-    return new HttpError(401, "Your LinkedIn connection has expired. Connect LinkedIn again.");
+    return new HttpError(401, "The portal's LinkedIn connection has expired. The PBL office needs to connect LinkedIn again.");
   }
   return new HttpError(502, `LinkedIn could not ${doing} (${response.status}): ${detail}`.slice(0, 400));
 }

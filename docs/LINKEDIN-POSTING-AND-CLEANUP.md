@@ -16,31 +16,39 @@ button opened LinkedIn's share box in whatever account was signed in on that
 browser. The portal used no LinkedIn account of its own and stored no
 LinkedIn login.
 
-### Now
+### Now: one central LinkedIn account
 
-1. A supervisor approves an achievement at `/faculty/achievements`.
-2. A **preview pops up inside the teacher portal**, drawn the way LinkedIn shows a
-   post in the feed: the poster's name and photo, the text with "…more",
+Every approved achievement is posted from **one central LinkedIn account** for
+the whole portal (for example, a dedicated "MUJ PBL" profile). Teachers never
+see its ID or password.
+
+**Supervisor** (`/faculty/achievements`):
+
+1. Opens an achievement, picks **Approve** and optional bonus marks, then clicks
+   **Preview LinkedIn post and approve**.
+2. A **preview pops up inside the teacher portal**, drawn the way LinkedIn shows
+   a post in the feed: the central account's name and photo, the text with "…more",
    blue hashtags, an optional proof image and the Like / Comment / Repost / Send bar.
-3. Beside the preview the supervisor can edit the text (up to 3,000 characters)
-   and pick a proof image (JPG, PNG or GIF) or none.
-4. **Post to LinkedIn** publishes it straight to the supervisor's LinkedIn feed.
-5. The achievement then shows **On LinkedIn · View post**, its trail logs
-   "posted it on LinkedIn", and the student gets a notification.
+3. Beside it they can adjust the text (up to 3,000 characters) and pick a proof
+   image (JPG, PNG or GIF) or none.
+4. **Approve and post to LinkedIn** approves the achievement and publishes the
+   post in one click. **Approve without posting** only approves.
+5. The achievement shows **On LinkedIn · View post**, its trail logs "posted it
+   on LinkedIn", and the student gets a notification.
 
-The PBL office can preview and post any approved achievement the same way
-from **Excellence & LinkedIn** (`/admin/achievements`). Students still get the
-copy-or-open draft to share it themselves.
+If the central account is not connected yet (or its connection has expired),
+the supervisor can still approve, and the post can go out later.
 
-### Whose account posts
+**PBL office** (`/admin/achievements`, Excellence & LinkedIn):
 
-Each poster uses **their own** LinkedIn account. They click **Connect LinkedIn**
-once and sign in on LinkedIn's own page (OAuth). The portal never sees a LinkedIn
-password. A connection lasts about 60 days, after which the preview asks
-them to connect again. They can disconnect at any time from the preview.
+- The **Portal LinkedIn account** card connects the central account. They click
+  **Connect LinkedIn** and sign in **on LinkedIn's own page** with the central
+  account's ID and password, so the password never passes through the portal.
+- A LinkedIn connection lasts about 60 days. The card shows the days left
+  (highlighted in the last week), with **Reconnect** and **Disconnect**.
+- Any approved achievement that is not yet posted can be previewed and posted from here.
 
-Posts go out from personal profiles. Posting as the university's LinkedIn Page
-needs LinkedIn's Community Management API, which LinkedIn must approve separately.
+Students still get the copy-or-open draft to share their achievement themselves.
 
 ### One-time setup (needed before posting works)
 
@@ -57,37 +65,49 @@ needs LinkedIn's Community Management API, which LinkedIn must approve separatel
 | `LINKEDIN_CLIENT_SECRET` | the app's Client Secret (server only, never sent to the browser) |
 | `LINKEDIN_REDIRECT_URI` | optional, defaults to `<site>/linkedin/callback` |
 | `LINKEDIN_API_VERSION` | optional `YYYYMM`, defaults to two months back |
+| `LINKEDIN_TOKEN_KEY` | optional key that encrypts the stored token, defaults to one derived from the client secret |
 
-Until the keys are set, **Connect LinkedIn** shows a message saying LinkedIn
-posting is not set up yet.
+5. The PBL office signs in to the portal, opens Excellence & LinkedIn, clicks
+   **Connect LinkedIn** and signs in with the central account.
+
+The central account is a LinkedIn *member* profile. Posting as an official
+LinkedIn *Page* needs LinkedIn's Community Management API, which LinkedIn must
+approve separately.
 
 ### How it is built
 
 | Part | File |
 | --- | --- |
-| Preview pop-up (feed-style post, editor, connect / post) | `src/components/achievements/linkedin-preview.tsx` |
+| Preview pop-up (feed-style post, editor, approve and post) and the PBL office's account card | `src/components/achievements/linkedin-preview.tsx` |
 | Where LinkedIn returns after sign-in | `src/app/linkedin/callback/page.tsx`, `src/components/achievements/linkedin-callback.tsx` |
-| Start sign-in (returns LinkedIn's sign-in URL with a signed `state`) | `src/app/api/linkedin/connect/route.ts` |
-| Finish sign-in (code → access token, saved for the user) | `src/app/api/linkedin/callback/route.ts` |
+| Start sign-in (PBL office only; returns LinkedIn's sign-in URL with a signed `state`) | `src/app/api/linkedin/connect/route.ts` |
+| Finish sign-in (code → access token, encrypted and saved as the central account) | `src/app/api/linkedin/callback/route.ts` |
 | Publish the post (optional image upload, then the post) | `src/app/api/linkedin/post/route.ts` |
-| LinkedIn OAuth and API calls, post-text escaping | `src/lib/linkedin/server.ts` |
+| LinkedIn OAuth and API calls, token encryption, post-text escaping | `src/lib/linkedin/server.ts` |
 | Browser helpers | `src/lib/data/repository.ts` (LinkedIn section) |
-| Database | `supabase/migrations/20261026000002_linkedin_posting.sql` |
+| Database | `supabase/migrations/20261026000002_linkedin_posting.sql`, `20261026000003_central_linkedin_account.sql` |
 
-Database changes (already applied):
+Database (already applied):
 
-- `public.linkedin_accounts`: one row per connected user (member id, name,
-  photo, access token, expiry). Row-level security lets only the owner read or change it.
+- `app_private.linkedin_account`: a single row for the central account (member id, name, photo,
+  **encrypted** access token, expiry, who connected it and when). It cannot be read directly from
+  the browser.
+- `save_linkedin_account` and `disconnect_linkedin_account`: PBL office only.
+- `linkedin_account()`: staff see the name, photo and expiry, never the token.
+- `linkedin_credentials()`: used by the post route. It returns only the encrypted token, which is
+  useless without the server's key.
 - `public.achievements` gains `linkedin_post_urn`, `linkedin_posted_at` and `linkedin_posted_by`.
-- `public.record_linkedin_post(achievement, urn)`: only the reviewing supervisor
-  or the PBL office, only for approved achievements. Logs the event and notifies the student.
+- `record_linkedin_post(achievement, urn)`: only the reviewing supervisor or the PBL office, only for
+  approved achievements. Logs the event and notifies the student.
 
 Security notes:
 
+- No one in the portal ever types or sees the central account's password; sign-in happens on LinkedIn's site.
+- The access token is encrypted with AES-256-GCM. The key exists only on the server.
 - The client secret stays in the server route handlers.
 - The route handlers act as the signed-in user, using their Supabase token, so row-level
   security still applies. No service-role key is needed.
-- The OAuth `state` is HMAC-signed, tied to the user who started it, and expires after 10 minutes.
+- The OAuth `state` is HMAC-signed, tied to the PBL office user who started it, and expires after 10 minutes.
 - An achievement can be posted only once. The image must be one of its own proof documents.
 
 ---
@@ -135,11 +155,12 @@ Testing the LinkedIn flow end to end needs at least one real student and one rea
 ## 4. Still to do
 
 - [ ] Run the demo-data cleanup migration (section 2).
-- [ ] Create the LinkedIn app and add its keys locally and on Vercel (section 1).
-- [ ] Do a first real post to confirm the whole flow.
+- [ ] Create the central LinkedIn profile and the LinkedIn app; add the app's keys locally and on Vercel (section 1).
+- [ ] PBL office connects the central account from Excellence & LinkedIn.
+- [ ] Do a first real approve-and-post to confirm the whole flow.
 - [ ] Teachers sign up. None of the 821 faculty has a login yet.
 - [ ] University single sign-on and "Forgot password" (both still show a *later release* message).
-- [ ] Posting as the university LinkedIn Page (needs Community Management API approval).
+- [ ] Posting as an official LinkedIn Page instead of a member profile (needs Community Management API approval).
 - [ ] Analytics: project health score, at-risk detection, progress prediction.
 - [ ] GitHub reports the repository moved to `git@github.com:mihirr-spec/PBL-Managment-System.git`;
       update the remote with `git remote set-url origin <new address>`.
