@@ -1,9 +1,13 @@
 # PBL Management Platform
 
-A university platform for managing the complete Project-Based Learning lifecycle
-for students, faculty coordinators and PBL supervisors.
+The Project-Based Learning portal for Manipal University Jaipur. Students form
+groups, choose a supervisor and report weekly. Supervisors approve groups,
+grade the work and review achievements. The PBL office oversees every group and
+posts student achievements to LinkedIn.
 
-**This repository currently contains Version 1 - the Student Portal.**
+- **Stack:** Next.js 16 (App Router) · React 19 · Tailwind CSS v4 · Supabase (Postgres, Auth, Storage)
+- **Three portals:** Student · Teacher (faculty / supervisor) · Administrator (PBL office)
+- **Full walkthrough:** [`docs/PORTAL-GUIDE.md`](docs/PORTAL-GUIDE.md)
 
 ---
 
@@ -14,33 +18,60 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:3000.
+Open http://localhost:3000. `.env.local` needs:
 
-**Demo account**
-
-| Field | Value |
+| Variable | What it is |
 | --- | --- |
-| Email | `mihir.2427010544@muj.manipal.edu` |
-| Password | `pbl@2026` |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon (publishable) key |
+| `LINKEDIN_CLIENT_ID` | LinkedIn app client ID (for posting achievements) |
+| `LINKEDIN_CLIENT_SECRET` | LinkedIn app client secret (server only) |
+| `LINKEDIN_REDIRECT_URI` | Optional. Defaults to `<site>/linkedin/callback` |
+| `LINKEDIN_API_VERSION` | Optional `YYYYMM`. Defaults to two months back |
 
-New accounts sign up at `/signup` with a university email (students `@muj.manipal.edu`,
-teachers `@jaipur.manipal.edu`) and verify it from the emailed link. See `docs/PORTAL-GUIDE.md`.
+### Accounts
+
+There are no demo accounts. Everyone signs up at `/signup` with their
+university email and confirms it from the emailed link:
+
+| Address | Becomes |
+| --- | --- |
+| `name.regno@muj.manipal.edu` | Student |
+| `@jaipur.manipal.edu` in `app_private.admin_emails` | PBL office (administrator) |
+| any other `@jaipur.manipal.edu` | Teacher, linked to their row in the MUJ faculty directory (821 scraped) |
 
 ---
 
-## What V1 ships
+## What the portal does
 
-| Route | Page |
+| Portal | Pages |
 | --- | --- |
-| `/` | Landing page |
-| `/login` | Authentication |
-| `/student/dashboard` | Identity, project summary, deadlines, pending submissions, announcements, quick actions |
-| `/student/profile` | Personal (editable), academic (read-only), mentor details, photo upload, password |
-| `/student/project` | Project record, team, progress, faculty |
-| `/student/deadlines` | All submissions with status filters and countdowns |
-| `/student/announcements` | Notices with priority filters and attachments |
-| `/student/notifications` | Notification feed with read state |
-| `/student/settings` | Password change, account details, sign out |
+| **Student** `/student/...` | Dashboard · My Group & Mentor (team, supervisor, signed PBL form) · Requests (invitations) · Weekly Reports · Grades & Feedback · Achievements · Queries · Notifications · Faculty Directory · My Profile · Settings |
+| **Teacher** `/faculty/...` | My Groups · Mentor Requests (review the signed form: approve, ask for changes, reject) · Queries · Achievements (review, bonus marks, **post to LinkedIn**) · Announcements |
+| **PBL office** `/admin/...` | Overview of every group and unassigned student · move groups between supervisors · Announcements · Excellence & LinkedIn (award shortlist, post to LinkedIn) |
+
+Documents (PDFs, images) open in an in-portal viewer built on PDF.js.
+
+### Posting achievements to LinkedIn
+
+When a supervisor approves an achievement, a preview opens inside the teacher
+portal. It shows the post the way LinkedIn draws it in the feed, written from the
+achievement's template, with an optional proof image. The supervisor can edit
+the text and click **Post to LinkedIn** to publish it straight to their feed.
+The student is notified, and the achievement shows a link to the live post. The
+PBL office can do the same from Excellence & LinkedIn.
+
+Each poster connects **their own** LinkedIn account once (OAuth, about 60 days
+per connection). The portal never sees a LinkedIn password. Setup:
+
+1. Create an app at https://www.linkedin.com/developers/apps (it must be linked to a LinkedIn Page).
+2. Under **Products**, add *Sign In with LinkedIn using OpenID Connect* and *Share on LinkedIn*.
+3. Under **Auth → Authorized redirect URLs**, add `http://localhost:3000/linkedin/callback`
+   and `https://<your-domain>/linkedin/callback`.
+4. Put the client ID and secret in `.env.local` (and in the Vercel project's environment variables).
+
+Posts go out from the person's own profile. Posting as the university's
+LinkedIn Page needs LinkedIn's Community Management API, which LinkedIn has to approve separately.
 
 ---
 
@@ -49,75 +80,39 @@ teachers `@jaipur.manipal.edu`) and verify it from the emailed link. See `docs/P
 ```
 src/
   app/
-    page.tsx                  Landing page
-    login/                    Authentication
-    student/                  Student route group (V1)
-      layout.tsx              → <PortalShell role="student">
-      dashboard/ profile/ project/ deadlines/
-      announcements/ notifications/ settings/
-    faculty/                  V2    - add layout.tsx with role="faculty"
-    supervisor/               V2.5  - add layout.tsx with role="supervisor"
-
-  components/
-    layout/                   Shell, sidebar, topbar, nav config, brand
-    ui/                       Card, Badge, Button, Progress, Avatar, Field, Skeleton
-    auth/ dashboard/ profile/ project/ deadlines/ notifications/
-
+    student/ faculty/ admin/   One route group per portal; each layout wraps <PortalShell role=...>
+    api/linkedin/              Route handlers: connect, callback, post (hold the LinkedIn secret)
+    linkedin/callback/         Where LinkedIn returns after "Connect LinkedIn"
+    login/ signup/             Authentication
+  components/                  UI per feature (achievements/, shared/, staff/, ui/ ...)
   lib/
-    types.ts                  Domain model
-    auth/session.tsx          Session context + role → home-route map
-    data/
-      seed.ts                 In-memory records (the only place data lives)
-      repository.ts           Async data-access boundary
-      portal-store.tsx        Loads the student's data, exposes mutations
-    utils.ts                  Dates, countdowns, formatting
+    data/repository.ts         The only place the browser talks to Supabase
+    linkedin/server.ts         LinkedIn OAuth and posting (server only)
+    achievements.ts            Achievement categories, question templates and post templates
+    types.ts                   Domain model
+supabase/migrations/           Schema, row-level security and database functions, in order
+scripts/                       MUJ faculty scraper and importer
 ```
 
-### Three seams that keep the roadmap cheap
-
-**1. Role-based routing.** `PortalShell` takes a `role`, guards the route and
-renders the chrome. Adding the Faculty portal is a new `src/app/faculty/layout.tsx`
-containing `<PortalShell role="faculty">`, plus its entry in `NAV_BY_ROLE`.
-
-**2. A single data boundary.** No component imports `seed.ts`. Everything goes
-through `repository.ts`, whose functions are already async. Swapping to Prisma,
-Supabase or a REST API means rewriting those function bodies and nothing else.
-
-**3. A forward-looking schema.** `types.ts` defines the entities V1 needs
-(`users`, `students`, `faculty`, `projects`, `teams`, `deadlines`,
-`announcements`, `notifications`) with the foreign keys that
-`weekly_progress`, `certificates`, `marks` and `evaluations` will hang off.
+Row-level security does the authorisation. Every query runs as the signed-in
+user, and state changes go through `security definer` database functions
+(`review_achievement`, `record_linkedin_post`, ...). The LinkedIn route
+handlers forward the user's Supabase token, so they need no service-role key.
 
 ---
 
 ## Design
 
-The palette is sampled from `public/coverpage.webp` - ivory and warm sand
-surfaces, muted gold from the dome as the accent, soft stone for text. Status
-colours (clay, sage, sky, plum) are kept muted so they read as information
-rather than decoration. Type is Inter for the interface and Fraunces for
-display headings.
-
-All tokens live in the `@theme` block at the top of `src/app/globals.css`.
+The palette is sampled from `public/coverpage.webp`: ivory and warm sand
+surfaces, muted gold from the dome as the accent, soft stone for text. All tokens
+live in the `@theme` block at the top of `src/app/globals.css`. Type is Inter for
+the interface and Fraunces for display headings.
 
 ---
 
-## Known limits of V1
+## Still to do
 
-- Data is in memory. Profile edits and submissions persist for the session;
-  a reload restores the seed. Only the signed-in user survives (localStorage).
-- File uploads are not implemented. "Mark as submitted" records the
-  declaration; attachments arrive with weekly progress reporting in V1.1.
-- Faculty and Supervisor sign-in is refused with an explanatory message.
-
----
-
-## Roadmap
-
-| Release | Scope |
-| --- | --- |
-| **V1** | Student portal - auth, dashboard, profile, project, deadlines, announcements, notifications |
-| **V1.1** | Coordinator selection, team management, weekly progress submission, evidence uploads, faculty feedback |
-| **V2** | Faculty portal - student management, progress review, certificate verification, evaluation, marks |
-| **V2.5** | Supervisor - student allocation, faculty management, project monitoring, reports |
-| **V3** | Project health score, at-risk detection, progress prediction, analytics |
+- Teacher accounts: the 821 faculty in the directory must sign up before they can review.
+- University single sign-on and "Forgot password" still show a *later release* message.
+- Posting as the university LinkedIn Page (needs LinkedIn's Community Management API approval).
+- Analytics: project health score, at-risk detection, progress prediction.

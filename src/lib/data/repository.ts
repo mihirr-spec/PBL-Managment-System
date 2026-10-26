@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabase/client";
 import type {
   Achievement,
   AchievementDocument,
+  LinkedInAccount,
   Announcement,
   Faculty,
   Group,
@@ -225,6 +226,9 @@ const toAchievement = (r: any): Achievement => ({
   status: r.status,
   bonusMarks: r.bonus_marks == null ? undefined : Number(r.bonus_marks),
   reviewedAt: r.reviewed_at ?? undefined,
+  linkedIn: r.linkedin_post_urn
+    ? { urn: r.linkedin_post_urn, postedAt: r.linkedin_posted_at, postedBy: r.linkedin_posted_by ?? "" }
+    : undefined,
   createdAt: r.created_at,
   updatedAt: r.updated_at,
   events: (r.achievement_events ?? [])
@@ -374,8 +378,8 @@ export async function resendConfirmation(email: string): Promise<{ ok: true } | 
   return error ? { ok: false, error: error.message } : { ok: true };
 }
 
-// No address check here: the database only has accounts it accepted, and the
-// demo logins use test addresses. Sign-up enforces the MUJ domains.
+// No address check here: the database only has accounts it accepted.
+// Sign-up enforces the MUJ domains.
 export async function authenticate({ email, password, roles }: Credentials): Promise<AuthResult> {
   const { data, error } = await supabase.auth.signInWithPassword({
     email: email.trim().toLowerCase(),
@@ -1031,6 +1035,61 @@ export async function reviewAchievement(
     p_marks: marks ?? null,
   });
   fail(error);
+}
+
+/* ------------------------------------------------------------ LinkedIn */
+
+/** Calls one of the /api/linkedin route handlers as the signed-in user. */
+async function linkedInApi<T>(path: string, body: unknown): Promise<T> {
+  const { data } = await supabase.auth.getSession();
+  const response = await fetch(`/api/linkedin/${path}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${data.session?.access_token ?? ""}` },
+    body: JSON.stringify(body),
+  });
+  const json = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(json.error ?? `Request failed (${response.status}).`);
+  return json as T;
+}
+
+/** The caller's connected LinkedIn account, if any. */
+export async function getLinkedInAccount(): Promise<LinkedInAccount | null> {
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) return null;
+  const { data, error } = await supabase
+    .from("linkedin_accounts")
+    .select("name, picture, expires_at")
+    .eq("user_id", auth.user.id)
+    .maybeSingle();
+  fail(error);
+  return data ? { name: data.name, picture: data.picture ?? undefined, expiresAt: data.expires_at } : null;
+}
+
+/** Sends the browser to LinkedIn to connect an account; it comes back to `returnTo`. */
+export async function connectLinkedIn(returnTo: string): Promise<void> {
+  const { url } = await linkedInApi<{ url: string }>("connect", { returnTo });
+  window.location.assign(url);
+}
+
+/** Second half of connecting, from /linkedin/callback. Returns where to go next. */
+export async function finishLinkedInConnect(code: string, state: string): Promise<string> {
+  const { returnTo } = await linkedInApi<{ returnTo: string }>("callback", { code, state });
+  return returnTo;
+}
+
+export async function disconnectLinkedIn(): Promise<void> {
+  const { data: auth } = await supabase.auth.getUser();
+  const { error } = await supabase.from("linkedin_accounts").delete().eq("user_id", auth.user?.id ?? "");
+  fail(error);
+}
+
+/** Publishes an approved achievement on the caller's LinkedIn; returns the post's link. */
+export async function postAchievementToLinkedIn(
+  achievementId: string,
+  text: string,
+  imagePath?: string,
+): Promise<{ urn: string; url: string }> {
+  return linkedInApi("post", { achievementId, text, imagePath });
 }
 
 /* ------------------------------------------------------- announcements */

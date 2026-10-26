@@ -20,42 +20,31 @@ import { resendConfirmation } from "@/lib/data/repository";
 import type { Role } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-/** One sign-in tab per kind of account, each with its demo logins (supabase/migrations). */
+/** One sign-in tab per kind of account. */
 const TABS = [
   {
     key: "student",
     label: "Student",
     roles: ["student"],
     placeholder: "name.regno@muj.manipal.edu",
-    demos: [
-      { label: "Mihir (test)", email: "mihirtest@university.edu", password: "123" },
-      { label: "Krishna (test)", email: "krishnatest@university.edu", password: "123" },
-      { label: "Sample data", email: "mihir.sanghvi@university.edu.in", password: "pbl@2026" },
-    ],
   },
   {
     key: "teacher",
     label: "Teacher",
     roles: ["faculty", "supervisor"],
     placeholder: "name@jaipur.manipal.edu",
-    demos: [
-      { label: "Test Supervisor", email: "testsupervisor@muj.manipal.edu", password: "123" },
-      { label: "Sample data", email: "a.deshpande@university.edu.in", password: "pbl@2026" },
-    ],
   },
   {
     key: "admin",
     label: "Administrator",
     roles: ["admin"],
     placeholder: "name@jaipur.manipal.edu",
-    demos: [{ label: "PBL Office (sample data)", email: "pbl.admin@university.edu.in", password: "pbl@2026" }],
   },
 ] as const satisfies ReadonlyArray<{
   key: string;
   label: string;
   roles: readonly Role[];
   placeholder: string;
-  demos: ReadonlyArray<{ label: string; email: string; password: string }>;
 }>;
 
 type TabKey = (typeof TABS)[number]["key"];
@@ -122,13 +111,6 @@ export function LoginForm({ verified = false }: { verified?: boolean }) {
     } else {
       setError(result.error);
     }
-  }
-
-  /** One click: fill the demo login and sign straight in. */
-  function tryDemo(demo: { email: string; password: string }) {
-    setEmail(demo.email);
-    setPassword(demo.password);
-    void signInWith(demo.email, demo.password);
   }
 
   function chooseTab(key: TabKey) {
@@ -317,20 +299,6 @@ export function LoginForm({ verified = false }: { verified?: boolean }) {
             Create your account
           </Link>
         </p>
-        <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
-          <span className="text-[12.5px] text-stone-400">Try a demo:</span>
-          {tab.demos.map((demo) => (
-            <button
-              key={demo.email}
-              type="button"
-              disabled={submitting}
-              onClick={() => tryDemo(demo)}
-              className="rounded-full border border-[#dbe3ee] bg-white/70 px-3.5 py-1.5 text-[12.5px] text-stone-500 transition-colors hover:border-azure-100 hover:text-azure-600 disabled:pointer-events-none disabled:opacity-60"
-            >
-              {demo.label}
-            </button>
-          ))}
-        </div>
       </div>
     </>
   );

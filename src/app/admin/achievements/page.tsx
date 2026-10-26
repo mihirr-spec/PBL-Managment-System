@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Medal, Trophy } from "lucide-react";
 
 import { AchievementCard } from "@/components/achievements/achievement-card";
+import { LinkedInPreview, pendingLinkedInPreview } from "@/components/achievements/linkedin-preview";
 import { Card, CardHeader, EmptyState } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { PageSkeleton } from "@/components/ui/skeleton";
@@ -19,11 +20,14 @@ import { cn } from "@/lib/utils";
  */
 export default function AdminAchievementsPage() {
   const { data, error, reload } = useLoad(() => listAchievements(), "achievements");
+  // Reopens the preview after a "Connect LinkedIn" round trip.
+  const [previewId, setPreviewId] = useState<string | null>(pendingLinkedInPreview);
   const [category, setCategory] = useState<string>("all");
   const [showAll, setShowAll] = useState(false);
 
   if (error) return <p role="alert" className="text-[13px] text-clay-500">{error}</p>;
   if (!data) return <PageSkeleton />;
+  const preview = data.find((a) => a.id === previewId && a.status === "approved");
 
   const approved = data.filter((a) => a.status === "approved");
   const shortlist = rankStudents(approved);
@@ -111,11 +115,20 @@ export default function AdminAchievementsPage() {
         ) : (
           <div className="divide-y divide-sand-200/70">
             {listed.map((a) => (
-              <AchievementCard key={a.id} achievement={a} viewer="admin" onChanged={() => void reload()} />
+              <AchievementCard
+                key={a.id}
+                achievement={a}
+                viewer="admin"
+                onChanged={() => void reload()}
+                onPreview={() => setPreviewId(a.id)}
+              />
             ))}
           </div>
         )}
       </Card>
+      {preview ? (
+        <LinkedInPreview achievement={preview} onClose={() => setPreviewId(null)} onPosted={() => void reload()} />
+      ) : null}
     </div>
   );
 }

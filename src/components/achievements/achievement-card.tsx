@@ -45,6 +45,7 @@ const ACTION_LABEL: Record<AchievementEvent["action"], string> = {
   needs_info: "asked for more details",
   approved: "approved it",
   rejected: "did not approve it",
+  posted: "posted it on LinkedIn",
 };
 
 /** Who is looking: the student who filed it, their supervisor, or the PBL office. */
@@ -53,7 +54,8 @@ export type AchievementViewer = "student" | "reviewer" | "admin";
 /**
  * One achievement with its answers, documents and the conversation trail.
  * Reviewers can approve (with bonus marks), ask for details or reject; anyone
- * involved can comment. Approved achievements show their LinkedIn post.
+ * involved can comment. Approved achievements show their LinkedIn post:
+ * staff open the preview (`onPreview`) to post it, students get a draft to copy.
  */
 export function AchievementCard({
   achievement: a,
@@ -61,6 +63,7 @@ export function AchievementCard({
   student,
   onChanged,
   onEdit,
+  onPreview,
 }: {
   achievement: Achievement;
   viewer: AchievementViewer;
@@ -68,6 +71,8 @@ export function AchievementCard({
   student?: Pick<Student, "fullName" | "programme" | "branch" | "semester">;
   onChanged: () => void;
   onEdit?: () => void;
+  /** Staff: opens the LinkedIn preview for this achievement (also right after approving it). */
+  onPreview?: () => void;
 }) {
   const { category, template } = findTemplate(a.category, a.template);
   const open = a.status === "submitted" || a.status === "needs_info";
@@ -128,11 +133,21 @@ export function AchievementCard({
         </Button>
       ) : null}
 
-      {viewer !== "student" && open ? <ReviewPanel achievement={a} onChanged={onChanged} /> : null}
+      {viewer !== "student" && open ? <ReviewPanel achievement={a} onChanged={onChanged} onApproved={onPreview} /> : null}
 
       <CommentBox achievementId={a.id} onChanged={onChanged} />
 
-      {a.status === "approved" && who ? <LinkedInDraft achievement={a} student={who} /> : null}
+      {a.linkedIn ? <PostedOnLinkedIn achievement={a} onPreview={onPreview} /> : null}
+      {a.status === "approved" && !a.linkedIn ? (
+        onPreview ? (
+          <Button size="sm" variant="secondary" className="mt-3 ml-0 sm:ml-3" onClick={onPreview}>
+            <Share2 className="size-3.5" />
+            Preview LinkedIn post
+          </Button>
+        ) : who ? (
+          <LinkedInDraft achievement={a} student={who} />
+        ) : null
+      ) : null}
     </article>
   );
 }
@@ -187,7 +202,15 @@ function Trail({ events }: { events: AchievementEvent[] }) {
 
 type Mode = "approve" | "needs_info" | "reject" | null;
 
-function ReviewPanel({ achievement, onChanged }: { achievement: Achievement; onChanged: () => void }) {
+function ReviewPanel({
+  achievement,
+  onChanged,
+  onApproved,
+}: {
+  achievement: Achievement;
+  onChanged: () => void;
+  onApproved?: () => void;
+}) {
   const [mode, setMode] = useState<Mode>(null);
   const [note, setNote] = useState("");
   const [marks, setMarks] = useState("");
@@ -208,6 +231,7 @@ function ReviewPanel({ achievement, onChanged }: { achievement: Achievement; onC
       setMode(null);
       setNote("");
       setMarks("");
+      if (mode === "approve") onApproved?.();
       onChanged();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not save the decision.");
@@ -341,6 +365,36 @@ function CommentBox({ achievementId, onChanged }: { achievementId: string; onCha
         </Button>
       </div>
     </div>
+  );
+}
+
+/** "Posted on LinkedIn" with a link to the live post. */
+function PostedOnLinkedIn({ achievement: a, onPreview }: { achievement: Achievement; onPreview?: () => void }) {
+  if (!a.linkedIn) return null;
+  return (
+    <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px] text-stone-500">
+      <span className="inline-flex items-center gap-1 font-medium text-sage-500">
+        <CheckCircle2 className="size-3.5" />
+        On LinkedIn
+      </span>
+      <span>
+        Posted by {a.linkedIn.postedBy || "staff"} · {formatDate(a.linkedIn.postedAt)}
+      </span>
+      <a
+        href={`https://www.linkedin.com/feed/update/${a.linkedIn.urn}/`}
+        target="_blank"
+        rel="noreferrer"
+        className="inline-flex items-center gap-1 font-medium text-azure-600 hover:underline"
+      >
+        <ExternalLink className="size-3" />
+        View post
+      </a>
+      {onPreview ? (
+        <button onClick={onPreview} className="text-stone-500 hover:text-ink-800 hover:underline">
+          Preview
+        </button>
+      ) : null}
+    </p>
   );
 }
 

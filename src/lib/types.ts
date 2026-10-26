@@ -264,7 +264,7 @@ export interface AchievementEvent {
   id: string;
   actorName: string;
   actorRole: Role;
-  action: "submitted" | "resubmitted" | "comment" | "needs_info" | "approved" | "rejected";
+  action: "submitted" | "resubmitted" | "comment" | "needs_info" | "approved" | "rejected" | "posted";
   note: string;
   createdAt: string;
 }
@@ -289,7 +289,16 @@ export interface Achievement {
   /** Out of 5, set when approved. */
   bonusMarks?: number;
   reviewedAt?: string;
+  /** Set once it has been posted on LinkedIn from the portal. */
+  linkedIn?: { urn: string; postedAt: string; postedBy: string };
   createdAt: string;
   updatedAt: string;
   events: AchievementEvent[];
+}
+
+/** The signed-in staff member's connected LinkedIn account, used to post achievements. */
+export interface LinkedInAccount {
+  name: string;
+  picture?: string;
+  expiresAt: string;
 }
