@@ -598,9 +598,9 @@ export async function respondToInvitation(invitationId: string, accept: boolean)
   return data as string;
 }
 
-/** Team lead only. */
-export async function inviteMember(registrationNumber: string): Promise<void> {
-  const { error } = await supabase.rpc("invite_member", { p_reg: registrationNumber });
+/** Team lead only. The name, when given, must match the registration number. */
+export async function inviteMember(registrationNumber: string, fullName?: string): Promise<void> {
+  const { error } = await supabase.rpc("invite_member", { p_reg: registrationNumber, p_name: fullName ?? null });
   fail(error);
 }
 
@@ -647,7 +647,7 @@ export async function listRequestsForFaculty(
 ): Promise<Array<MentorRequest & { group: Group | null }>> {
   const { data, error } = await supabase
     .from("mentor_requests")
-    .select(`*, groups(${GROUP_SELECT}, group_invitations(status, students(full_name, registration_number)))`)
+    .select(`*, groups(${GROUP_SELECT}, group_invitations(status, students!group_invitations_student_id_fkey(full_name, registration_number)))`)
     .eq("faculty_id", facultyId)
     .order("created_at", { ascending: false });
   fail(error);

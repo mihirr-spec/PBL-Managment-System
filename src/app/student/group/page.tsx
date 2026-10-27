@@ -31,28 +31,51 @@ const REQUEST_STATUS: Record<RequestStatus, { tone: "gold" | "sage" | "clay" | "
 
 export default function GroupPage() {
   const { loading, student, group, mentor, supervisorChange, invitations, refresh } = usePortal();
+  const isLeader = student != null && group?.leaderStudentId === student.id;
+
+  // A team lead stays on the start form until the mentor request is sent:
+  // the team itself is created by the first teammate request.
+  const choosing = group != null && isLeader && !group.mentorId;
+  const requests = useLoad(() => repo.listRequestsForGroup(group!.id), choosing ? `start:${group!.id}` : null);
+  const [startedHere, setStartedHere] = useState(false);
 
   if (loading || !student) return <PageSkeleton />;
 
-  const isLeader = group?.leaderStudentId === student.id;
+  const checking = choosing && requests.data == null && !requests.error;
+  const starting =
+    !group || (choosing && (requests.data?.length === 0 || (checking && startedHere)));
 
   return (
     <div className="space-y-6">
       <PageHeader
         eyebrow="My Group"
-        title={group ? `Group ${group.number}:` : "Start your"}
-        emphasis={group ? group.name : "PBL group."}
+        title={group && !starting ? `Group ${group.number}:` : "Start your"}
+        emphasis={group && !starting ? group.name : "PBL group."}
         description={
-          group
+          group && !starting
             ? group.projectTitle
-            : "Add your teammates, choose the mentor who signed your application, and send it."
+            : "Send your teammates a request, choose the mentor who signed your application, and send it."
         }
         scene="group"
       />
-      {group ? (
-        <GroupView group={group} isLeader={isLeader} mentorCard={<MentorCard mentor={mentor} lastChange={supervisorChange} />} onChanged={refresh} />
+      {starting ? (
+        <GetStarted
+          student={student}
+          group={group}
+          invitations={invitations}
+          onGroupCreated={() => {
+            setStartedHere(true);
+            void refresh();
+          }}
+          onDone={async () => {
+            await refresh();
+            if (choosing) await requests.reload();
+          }}
+        />
+      ) : checking || !group ? (
+        <PageSkeleton />
       ) : (
-        <GetStarted student={student} invitations={invitations} onDone={refresh} />
+        <GroupView group={group} isLeader={isLeader} mentorCard={<MentorCard mentor={mentor} lastChange={supervisorChange} />} onChanged={refresh} />
       )}
     </div>
   );

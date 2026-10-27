@@ -6,7 +6,7 @@ import { StatTile } from "@/components/dashboard/stat-tile";
 import { GroupTable } from "@/components/staff/group-table";
 import { SupervisorHistory } from "@/components/staff/supervisor-change";
 import { ButtonLink } from "@/components/ui/button";
-import { Card, CardHeader } from "@/components/ui/card";
+import { Card, CardHeader, EmptyState } from "@/components/ui/card";
 import { DashboardHero } from "@/components/ui/page-header";
 import { PageSkeleton } from "@/components/ui/skeleton";
 import { useSession } from "@/lib/auth/session";
@@ -17,7 +17,7 @@ const MAX_GROUPS = 7;
 
 export default function FacultyDashboardPage() {
   const { user } = useSession();
-  const { data } = useLoad(async () => {
+  const { data, error } = useLoad(async () => {
     const [groups, requests, ungraded, tickets, changes, achievements] = await Promise.all([
       repo.listGroups(user!.profileId),
       repo.listRequestsForFaculty(user!.profileId),
@@ -39,6 +39,13 @@ export default function FacultyDashboardPage() {
     };
   }, user ? user.id : null);
 
+  if (error) {
+    return (
+      <Card>
+        <EmptyState icon={<UsersRound className="size-5" />} title="Could not load your groups" description={error} scene="group" />
+      </Card>
+    );
+  }
   if (!user || !data) return <PageSkeleton />;
 
   const ungradedTotal = data.groups.reduce((n, g) => n + (data.ungraded[g.id] ?? 0), 0);

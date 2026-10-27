@@ -42,8 +42,15 @@ const STATUS: Record<RequestStatus, { tone: "gold" | "sage" | "clay" | "neutral"
 
 export default function RequestsPage() {
   const { user } = useSession();
-  const { data, reload } = useLoad(() => repo.listRequestsForFaculty(user!.profileId), user ? user.id : null);
+  const { data, error, reload } = useLoad(() => repo.listRequestsForFaculty(user!.profileId), user ? user.id : null);
 
+  if (error) {
+    return (
+      <Card>
+        <EmptyState icon={<UserPlus className="size-5" />} title="Could not load your requests" description={error} scene="requests" />
+      </Card>
+    );
+  }
   if (!user || !data) return <PageSkeleton />;
 
   const pending = data.filter((r) => r.status === "pending");
