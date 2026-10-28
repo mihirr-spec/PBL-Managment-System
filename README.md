@@ -34,13 +34,15 @@ Open http://localhost:3000. `.env.local` needs:
 
 ### Accounts
 
-Three demo logins, one per portal (each sign-in tab also has a one-click demo button):
+Test logins (supabase/migrations/20261028000002_test_accounts.sql). Each sign-in tab also has a one-click test button, and the email box fills in the domain, so you type only the part before the @.
 
 | Portal | Email | Password |
 | --- | --- | --- |
-| Student | `demo.2400000001@muj.manipal.edu` | `pace@2026` |
-| Team supervisor | `demo.teacher@jaipur.manipal.edu` | `pace@2026` |
-| Administrator | `demo.admin@jaipur.manipal.edu` | `pace@2026` |
+| Student (team lead of Team Test) | `teststudent1@muj.manipal.edu` | `pace@2026` |
+| Student | `teststudent2@muj.manipal.edu` | `pace@2026` |
+| Student | `teststudent3@muj.manipal.edu` | `pace@2026` |
+| Team supervisor (mentor of Team Test) | `testteacher1@jaipur.manipal.edu` | `pace@2026` |
+| Administrator | `testadministrator1@jaipur.manipal.edu` | `pace@2026` |
 
 Everyone else signs up at `/signup` with their university email and confirms it
 from the emailed link:

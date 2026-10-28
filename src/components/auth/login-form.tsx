@@ -20,33 +20,41 @@ import { resendConfirmation } from "@/lib/data/repository";
 import type { Role } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-/** One sign-in tab per kind of account, each with its demo login (supabase/migrations/20261026000001_remove_demo_data.sql). */
+/**
+ * One sign-in tab per kind of account. The domain is filled in, so people type
+ * only the part before the @. Each tab has its test login
+ * (supabase/migrations/20261028000002_test_accounts.sql).
+ */
 const TABS = [
   {
     key: "student",
     label: "Student",
     roles: ["student"],
-    placeholder: "name.regno@muj.manipal.edu",
-    demo: { label: "Demo student", email: "demo.2400000001@muj.manipal.edu", password: "pace@2026" },
+    domain: "muj.manipal.edu",
+    placeholder: "name.regno",
+    demo: { label: "Test student", email: "teststudent1@muj.manipal.edu", password: "pace@2026" },
   },
   {
     key: "teacher",
     label: "Team Supervisor",
     roles: ["faculty", "supervisor"],
-    placeholder: "name@jaipur.manipal.edu",
-    demo: { label: "Demo team supervisor", email: "demo.teacher@jaipur.manipal.edu", password: "pace@2026" },
+    domain: "jaipur.manipal.edu",
+    placeholder: "name",
+    demo: { label: "Test team supervisor", email: "testteacher1@jaipur.manipal.edu", password: "pace@2026" },
   },
   {
     key: "admin",
     label: "Administrator",
     roles: ["admin"],
-    placeholder: "name@jaipur.manipal.edu",
-    demo: { label: "Demo administrator", email: "demo.admin@jaipur.manipal.edu", password: "pace@2026" },
+    domain: "jaipur.manipal.edu",
+    placeholder: "name",
+    demo: { label: "Test administrator", email: "testadministrator1@jaipur.manipal.edu", password: "pace@2026" },
   },
 ] as const satisfies ReadonlyArray<{
   key: string;
   label: string;
   roles: readonly Role[];
+  domain: string;
   placeholder: string;
   demo: { label: string; email: string; password: string };
 }>;
@@ -55,6 +63,10 @@ type TabKey = (typeof TABS)[number]["key"];
 
 const control =
   "h-11 w-full rounded-lg border border-[#c9d1dc] bg-white/90 pl-12 pr-4 text-[14.5px] text-ink-900 placeholder:text-stone-400 transition-colors hover:border-ink-400/60 focus:border-azure-500 focus:outline-none focus:ring-3 focus:ring-azure-100";
+
+/** The email box: a bordered row holding the typed name and the fixed domain. */
+const emailBox =
+  "relative flex h-11 w-full items-center rounded-lg border border-[#c9d1dc] bg-white/90 pl-12 pr-4 transition-colors hover:border-ink-400/60 focus-within:border-azure-500 focus-within:ring-3 focus-within:ring-azure-100";
 
 const fieldIcon =
   "pointer-events-none absolute top-1/2 left-4 size-[18px] -translate-y-1/2 text-ink-800";
@@ -84,9 +96,12 @@ export function LoginForm({ verified = false }: { verified?: boolean }) {
     if (!loading && user && !submitting) router.replace(HOME_BY_ROLE[user.role]);
   }, [loading, user, submitting, router]);
 
+  /** The full address: what was typed plus the tab's domain, unless they typed one. */
+  const fullEmail = (typed: string) => (typed.includes("@") ? typed.trim() : `${typed.trim()}@${tab.domain}`);
+
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    void signInWith(email, password);
+    void signInWith(fullEmail(email), password);
   }
 
   async function signInWith(address: string, secret: string) {
@@ -107,19 +122,19 @@ export function LoginForm({ verified = false }: { verified?: boolean }) {
   }
 
   async function resend() {
-    const result = await resendConfirmation(email);
+    const result = await resendConfirmation(fullEmail(email));
     setUnverified(false);
     if (result.ok) {
       setError(null);
-      setNotice(`We sent a new verification link to ${email.trim().toLowerCase()}.`);
+      setNotice(`We sent a new verification link to ${fullEmail(email).toLowerCase()}.`);
     } else {
       setError(result.error);
     }
   }
 
-  /** One click: fill the demo login and sign straight in. */
+  /** One click: fill the test login and sign straight in. */
   function tryDemo() {
-    setEmail(tab.demo.email);
+    setEmail(tab.demo.email.split("@")[0]);
     setPassword(tab.demo.password);
     void signInWith(tab.demo.email, tab.demo.password);
   }
@@ -166,18 +181,26 @@ export function LoginForm({ verified = false }: { verified?: boolean }) {
           >
             University Email
           </label>
-          <div className="relative">
+          <div className={emailBox}>
             <Mail className={fieldIcon} strokeWidth={1.6} aria-hidden />
             <input
               id="email"
-              type="email"
+              type="text"
+              inputMode="email"
               autoComplete="username"
+              autoCapitalize="none"
+              spellCheck={false}
               placeholder={tab.placeholder}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className={control}
+              className="h-full min-w-0 flex-1 bg-transparent text-[14.5px] text-ink-900 placeholder:text-stone-400 focus:outline-none"
               required
             />
+            {email.includes("@") ? null : (
+              <label htmlFor="email" className="shrink-0 cursor-text pl-1 text-[14.5px] text-stone-500 select-none">
+                @{tab.domain}
+              </label>
+            )}
           </div>
         </div>
 
