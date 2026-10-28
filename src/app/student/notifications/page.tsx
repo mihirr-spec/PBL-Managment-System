@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { BellOff, CheckCheck, ChevronRight } from "lucide-react";
+import { Activity, BellOff, CheckCheck, ChevronRight, Megaphone } from "lucide-react";
 
 import { NotificationIcon } from "@/components/notifications/notification-icon";
 import { AnnouncementFeed } from "@/components/shared/announcements";
@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, EmptyState } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { PageSkeleton } from "@/components/ui/skeleton";
+import { PillTabs } from "@/components/ui/toolbar";
 import { listAnnouncements } from "@/lib/data/repository";
 import { usePortal } from "@/lib/data/portal-store";
 import { useLoad } from "@/lib/use-load";
@@ -42,27 +43,15 @@ export default function NotificationsPage() {
         }
       />
 
-      <div role="tablist" className="inline-flex gap-1 rounded-xl bg-white/60 p-1 ring-1 ring-white backdrop-blur-md">
-        {(
-          [
-            ["announcements", "Announcements & files"],
-            ["activity", `Activity${unreadCount > 0 ? ` (${unreadCount})` : ""}`],
-          ] as const
-        ).map(([key, label]) => (
-          <button
-            key={key}
-            role="tab"
-            aria-selected={tab === key}
-            onClick={() => setTab(key)}
-            className={cn(
-              "rounded-lg px-3.5 py-1.5 text-[13px] font-medium transition-colors",
-              tab === key ? "bg-ink-800 text-white" : "text-stone-600 hover:text-ink-800",
-            )}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      <PillTabs
+        label="Notifications"
+        value={tab}
+        onChange={setTab}
+        items={[
+          { key: "announcements", label: "Announcements & files", icon: Megaphone },
+          { key: "activity", label: "Activity", count: unreadCount > 0 ? unreadCount : undefined, icon: Activity },
+        ]}
+      />
 
       {tab === "announcements" ? (
         announcements.data ? (

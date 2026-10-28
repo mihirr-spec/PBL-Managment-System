@@ -40,7 +40,7 @@ export function GroupTable({
                 <th className="px-5 py-2.5 font-semibold">Group</th>
                 <th className="px-5 py-2.5 font-semibold">Team leader</th>
                 <th className="px-5 py-2.5 font-semibold">Project</th>
-                <th className="px-5 py-2.5 font-semibold">{showMentor ? "Supervisor" : "Needs you"}</th>
+                <th className="px-5 py-2.5 font-semibold">{showMentor ? "Supervisor" : "Action needed"}</th>
                 <th className="w-8" />
               </tr>
             </thead>

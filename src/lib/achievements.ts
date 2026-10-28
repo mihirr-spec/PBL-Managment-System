@@ -342,6 +342,26 @@ export function findTemplate(category: string, template: string) {
   return { category: c, template: c?.templates.find((t) => t.key === template) };
 }
 
+/** Search: every typed word must appear in the title, the student, the people, the category or an answer. */
+export function achievementMatches(a: Achievement, query: string): boolean {
+  const words = query.toLowerCase().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return true;
+  const { category, template } = findTemplate(a.category, a.template);
+  const haystack = [
+    a.title,
+    a.description,
+    a.student?.fullName,
+    a.student?.registrationNumber,
+    category?.label,
+    template?.label,
+    ...a.participants.map((p) => p.name),
+    ...Object.values(a.answers),
+  ]
+    .join(" ")
+    .toLowerCase();
+  return words.every((w) => haystack.includes(w));
+}
+
 /** Most bonus marks a supervisor may award for one approved achievement. */
 export const MAX_BONUS_MARKS = 5;
 

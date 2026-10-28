@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Medal, Trophy } from "lucide-react";
+import { CircleCheck, ListChecks, Medal, Trophy } from "lucide-react";
 
 import { AchievementDetail, AchievementRow } from "@/components/achievements/achievement-card";
 import {
@@ -13,11 +13,11 @@ import {
 import { Card, CardHeader, EmptyState } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { PageSkeleton } from "@/components/ui/skeleton";
-import { ACHIEVEMENT_CATEGORIES } from "@/lib/achievements";
+import { FilterMenu, PillTabs, SearchBox } from "@/components/ui/toolbar";
+import { ACHIEVEMENT_CATEGORIES, achievementMatches } from "@/lib/achievements";
 import { checkLinkedInPosts, listAchievements } from "@/lib/data/repository";
 import type { Achievement } from "@/lib/types";
 import { useLoad } from "@/lib/use-load";
-import { cn } from "@/lib/utils";
 
 /**
  * PBL office: the portal's central LinkedIn account, the Student Excellence
@@ -40,6 +40,7 @@ export default function AdminAchievementsPage() {
   });
   const [category, setCategory] = useState<string>("all");
   const [showAll, setShowAll] = useState(false);
+  const [query, setQuery] = useState("");
   const [openId, setOpenId] = useState<string | null>(() => pendingLinkedInPreview());
 
   if (error) return <p role="alert" className="text-[13px] text-clay-500">{error}</p>;
@@ -74,7 +75,7 @@ export default function AdminAchievementsPage() {
 
   const approved = data.filter((a) => a.status === "approved");
   const shortlist = rankStudents(approved);
-  const listed = (showAll ? data : approved).filter((a) => category === "all" || a.category === category);
+  const listed = (showAll ? data : approved).filter((a) => (category === "all" || a.category === category) && achievementMatches(a, query));
 
   return (
     <div className="space-y-6">
@@ -127,31 +128,23 @@ export default function AdminAchievementsPage() {
       </Card>
 
       <div className="flex flex-wrap items-center gap-2">
-        <div className="inline-flex gap-1 rounded-xl bg-white/60 p-1 ring-1 ring-white">
-          {[false, true].map((all) => (
-            <button
-              key={String(all)}
-              onClick={() => setShowAll(all)}
-              className={cn(
-                "rounded-lg px-3.5 py-1.5 text-[13px] font-medium",
-                showAll === all ? "bg-azure-600 text-white" : "text-stone-600 hover:text-ink-800",
-              )}
-            >
-              {all ? `All (${data.length})` : `Approved (${approved.length})`}
-            </button>
-          ))}
+        <PillTabs
+          label="Achievements"
+          value={showAll ? "all" : "approved"}
+          onChange={(k) => setShowAll(k === "all")}
+          items={[
+            { key: "approved", label: "Approved", count: approved.length, icon: CircleCheck },
+            { key: "all", label: "All", count: data.length, icon: ListChecks },
+          ]}
+        />
+        <div className="ml-auto flex w-full gap-3 sm:w-auto">
+          <SearchBox value={query} onChange={setQuery} placeholder="Search achievements..." className="flex-1 sm:w-72" />
+          <FilterMenu
+            value={category}
+            onChange={setCategory}
+            options={[{ value: "all", label: "All categories" }, ...ACHIEVEMENT_CATEGORIES.map((c) => ({ value: c.key, label: c.label }))]}
+          />
         </div>
-        <select
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
-          aria-label="Category"
-          className="h-9 rounded-lg bg-white/70 px-3 text-[13px] text-stone-700 ring-1 ring-white"
-        >
-          <option value="all">All categories</option>
-          {ACHIEVEMENT_CATEGORIES.map((c) => (
-            <option key={c.key} value={c.key}>{c.label}</option>
-          ))}
-        </select>
       </div>
 
       <Card>

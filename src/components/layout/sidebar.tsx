@@ -81,7 +81,7 @@ export function Sidebar({
                         className={cn(
                           "group relative flex items-center gap-3 rounded-lg px-3 py-2 text-[13.5px] font-medium transition-colors",
                           active
-                            ? "bg-white/90 text-ink-800 shadow-[0_6px_18px_-12px_rgba(13,31,63,0.55)]"
+                            ? "bg-azure-50 text-azure-600 ring-1 ring-azure-100 shadow-[0_6px_18px_-12px_rgba(21,80,200,0.45)]"
                             : "text-stone-600 hover:bg-white/60 hover:text-ink-800",
                         )}
                       >

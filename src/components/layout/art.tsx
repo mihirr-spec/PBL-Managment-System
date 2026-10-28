@@ -67,6 +67,8 @@ export function Art({
       className={cn(
         "pointer-events-none select-none object-cover",
         art.position,
+        // Muted so the warm paintings sit inside the bluish white theme.
+        "[filter:saturate(0.6)_brightness(1.04)]",
         blend && "mix-blend-multiply",
         FADE[fade],
         className,

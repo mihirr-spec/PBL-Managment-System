@@ -85,17 +85,10 @@ export function EmptyState({
         className,
       )}
     >
-      <div className="relative mb-4">
-        <DoodleVignette scene={scene} />
-        {icon ? (
-          <div className="absolute -bottom-2 left-1/2 flex size-10 -translate-x-1/2 items-center justify-center rounded-full border border-white/80 bg-white/90 text-azure-600 shadow-[0_8px_20px_-12px_rgba(13,31,63,0.6)]">
-            {icon}
-          </div>
-        ) : null}
-      </div>
-      <p className="font-display text-[16px] text-ink-900">{title}</p>
+      <DoodleVignette scene={scene} icon={icon} className="mb-3" />
+      <p className="font-display text-[20px] text-ink-900">{title}</p>
       {description ? (
-        <p className="mt-1 max-w-xs text-[13px] text-stone-500">{description}</p>
+        <p className="mt-1.5 max-w-md text-[13.5px] leading-relaxed text-stone-500">{description}</p>
       ) : null}
     </div>
   );

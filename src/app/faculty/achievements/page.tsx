@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Trophy } from "lucide-react";
+import { CircleCheck, Clock3, FileText, Trophy } from "lucide-react";
 
 import { AchievementDetail, AchievementRow, needsAction } from "@/components/achievements/achievement-card";
 import {
@@ -12,16 +12,28 @@ import {
 import { Card, EmptyState } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { PageSkeleton } from "@/components/ui/skeleton";
-import { MAX_BONUS_MARKS } from "@/lib/achievements";
+import { FilterMenu, PillTabs, SearchBox } from "@/components/ui/toolbar";
+import { ACHIEVEMENT_CATEGORIES, achievementMatches, MAX_BONUS_MARKS } from "@/lib/achievements";
 import { checkLinkedInPosts, listAchievements } from "@/lib/data/repository";
 import { useLoad } from "@/lib/use-load";
-import { cn } from "@/lib/utils";
 
 const TABS = [
-  { key: "review", label: "Action needed" },
-  { key: "waiting", label: "Waiting on student" },
-  { key: "decided", label: "Decided" },
+  { key: "review", label: "Action needed", icon: FileText },
+  { key: "waiting", label: "Waiting on student", icon: Clock3 },
+  { key: "decided", label: "Decided", icon: CircleCheck },
 ] as const;
+
+const CATEGORY_FILTER = [
+  { value: "all", label: "All categories" },
+  ...ACHIEVEMENT_CATEGORIES.map((c) => ({ value: c.key, label: c.label })),
+];
+
+/** What each tab says when it has nothing in it. */
+const EMPTY = {
+  review: { title: "Nothing here yet", description: "There are no achievement submissions that need your review right now. Submissions from your students will appear here." },
+  waiting: { title: "Nothing waiting", description: "When you ask a student for more details, their achievement waits here until they reply." },
+  decided: { title: "No decisions yet", description: "Achievements you approve or reject are kept here, with their LinkedIn posts." },
+} as const;
 
 export default function FacultyAchievementsPage() {
   const { data, error, reload } = useLoad(() => listAchievements(), "achievements");
@@ -39,6 +51,8 @@ export default function FacultyAchievementsPage() {
   });
   const [tab, setTab] = useState<(typeof TABS)[number]["key"]>("review");
   const [openId, setOpenId] = useState<string | null>(() => pendingLinkedInPreview());
+  const [query, setQuery] = useState("");
+  const [category, setCategory] = useState("all");
 
   if (error) return <p role="alert" className="text-[13px] text-clay-500">{error}</p>;
   if (!data) return <PageSkeleton />;
@@ -46,12 +60,14 @@ export default function FacultyAchievementsPage() {
   const previewed = data.find((a) => a.id === preview?.id && (preview.approval || a.status === "approved"));
   const opened = data.find((a) => a.id === openId);
 
+  const shown = data.filter((a) => (category === "all" || a.category === category) && achievementMatches(a, query));
   const groups = {
-    review: data.filter(needsAction),
-    waiting: data.filter((a) => a.status === "needs_info"),
-    decided: data.filter((a) => (a.status === "approved" || a.status === "rejected") && !needsAction(a)),
+    review: shown.filter(needsAction),
+    waiting: shown.filter((a) => a.status === "needs_info"),
+    decided: shown.filter((a) => (a.status === "approved" || a.status === "rejected") && !needsAction(a)),
   };
   const visible = groups[tab];
+  const searching = query.trim() !== "" || category !== "all";
 
   const previewModal = previewed ? (
     <LinkedInPreview
@@ -87,23 +103,25 @@ export default function FacultyAchievementsPage() {
         description={`Achievements filed by students in your groups, with their proof. Open one to approve it (with up to ${MAX_BONUS_MARKS} bonus marks), ask for more details or reject it. Approving shows the LinkedIn post first, then approves and posts it from the portal's LinkedIn account.`}
         scene="achievements"
       />
-      <div className="inline-flex flex-wrap gap-1 rounded-xl bg-white/60 p-1 ring-1 ring-white">
-        {TABS.map((t) => (
-          <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
-            className={cn(
-              "rounded-lg px-3.5 py-1.5 text-[13px] font-medium",
-              tab === t.key ? "bg-azure-600 text-white" : "text-slate-600 hover:text-ink-800",
-            )}
-          >
-            {t.label} ({groups[t.key].length})
-          </button>
-        ))}
+      <div className="flex flex-wrap items-center gap-3">
+        <PillTabs
+          label="Achievements"
+          value={tab}
+          onChange={setTab}
+          items={TABS.map((t) => ({ ...t, count: groups[t.key].length }))}
+        />
+        <div className="ml-auto flex w-full gap-3 sm:w-auto">
+          <SearchBox value={query} onChange={setQuery} placeholder="Search achievements..." className="flex-1 sm:w-72" />
+          <FilterMenu value={category} onChange={setCategory} options={CATEGORY_FILTER} />
+        </div>
       </div>
       <Card>
         {visible.length === 0 ? (
-          <EmptyState icon={<Trophy className="size-5" />} title="Nothing here" scene="achievements" />
+          searching ? (
+            <EmptyState icon={<Trophy />} title="No matches" description="Nothing in this list matches your search or filter." scene="achievements" />
+          ) : (
+            <EmptyState icon={<Trophy />} title={EMPTY[tab].title} description={EMPTY[tab].description} scene="achievements" />
+          )
         ) : (
           <div className="divide-y divide-azure-100/70">
             {visible.map((a) => (

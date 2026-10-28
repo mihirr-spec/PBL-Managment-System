@@ -5,34 +5,36 @@
 @custom-variant wide (@media (min-width: 1024px) and (min-aspect-ratio: 4/3));
 
 /* ------------------------------------------------------------------
-   PBL Platform - warm light theme
-   Palette sampled from the campus cover photograph: ivory stone,
-   warm sand, muted gold dome, soft sky. No black / blue / purple /
-   green / orange as primary surfaces or accents.
+   PACE - bluish white theme
+   Cool white surfaces, slate text, azure and periwinkle accents, over
+   the same soft sky wash as the landing page. Green and red are kept
+   only for approve / reject states.
    ------------------------------------------------------------------ */
 
 @theme {
-  /* Neutrals - warm ivory → stone */
-  --color-ivory-50: #fdfbf7;
-  --color-ivory-100: #faf6ef;
-  --color-ivory-200: #f4ece0;
-  --color-sand-100: #efe4d2;
-  --color-sand-200: #e5d6bf;
-  --color-sand-300: #d8c4a6;
-  --color-stone-400: #a89b88;
-  --color-stone-500: #8a7d6b;
-  --color-stone-600: #6b6153;
-  --color-stone-700: #4e463b;
-  --color-stone-800: #35302a;
+  /* Neutrals - bluish white surfaces, cool slate text. The names are kept
+     from the old warm palette so every page picks up the change. */
+  --color-ivory-50: #f9fbfe;
+  --color-ivory-100: #f2f6fb;
+  --color-ivory-200: #e7eef7;
+  --color-sand-100: #e4ecf6;
+  --color-sand-200: #d6e2ef;
+  --color-sand-300: #bfcfe2;
+  --color-stone-400: #94a3b8;
+  --color-stone-500: #64748b;
+  --color-stone-600: #4b5a70;
+  --color-stone-700: #364357;
+  --color-stone-800: #1f2a3c;
 
-  /* Accent - muted gold from the dome */
-  --color-gold-50: #fdf6e6;
-  --color-gold-100: #f9e9c4;
-  --color-gold-200: #f0d593;
-  --color-gold-300: #e3bd62;
-  --color-gold-400: #d2a63f;
-  --color-gold-500: #b88a2c;
-  --color-gold-600: #946d22;
+  /* Secondary accent - a soft periwinkle beside the azure (it replaced the
+     old gold; the name stays so existing classes keep working). */
+  --color-gold-50: #eef3fd;
+  --color-gold-100: #dde7fb;
+  --color-gold-200: #c4d5f6;
+  --color-gold-300: #9fb9ee;
+  --color-gold-400: #7398e2;
+  --color-gold-500: #4a74cf;
+  --color-gold-600: #2f56ab;
 
   /* Watercolour wash - sampled from the campus illustration, used only as
      the landing/auth backdrop so it blends with the artwork's own sky. */
@@ -54,11 +56,11 @@
 
   /* Numeral tints for the numbered feature rows */
   --color-numeral-blue: #cddff5;
-  --color-numeral-peach: #fae2c4;
+  --color-numeral-peach: #dbe6f6;
   --color-numeral-sage: #d8e8d6;
   --color-numeral-lilac: #ddd6ef;
 
-  /* Status tints - kept soft and warm-leaning */
+  /* Status tints - kept soft */
   --color-clay-100: #f7dfd7;
   --color-clay-500: #b4614a;
   --color-sage-100: #e2e8d9;
@@ -97,13 +99,13 @@ body {
 }
 
 ::selection {
-  background-color: var(--color-gold-100);
+  background-color: var(--color-azure-100);
   color: var(--color-stone-800);
 }
 
 /* Focus ring - consistent across every interactive element */
 :where(a, button, input, select, textarea, [tabindex]):focus-visible {
-  outline: 2px solid var(--color-gold-400);
+  outline: 2px solid var(--color-azure-500);
   outline-offset: 2px;
   border-radius: 6px;
 }
