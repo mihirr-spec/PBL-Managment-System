@@ -108,19 +108,14 @@ body {
   border-radius: 6px;
 }
 
-/* Scrollbars inside scroll regions */
-.scroll-soft {
-  scrollbar-width: thin;
-  scrollbar-color: var(--color-sand-300) transparent;
-}
-
-/* Same, but the bar only shows while the pointer is over the region. */
+/* Scroll regions that still scroll but never draw a scrollbar. */
+.scroll-soft,
 .scroll-quiet {
-  scrollbar-width: thin;
-  scrollbar-color: transparent transparent;
+  scrollbar-width: none;
 }
-.scroll-quiet:hover {
-  scrollbar-color: var(--color-sand-300) transparent;
+.scroll-soft::-webkit-scrollbar,
+.scroll-quiet::-webkit-scrollbar {
+  display: none;
 }
 
 @keyframes fade-rise {
