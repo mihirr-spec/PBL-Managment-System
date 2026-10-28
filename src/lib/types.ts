@@ -45,6 +45,8 @@ export interface Student {
   section: string;
   batch: string;
   cgpa: number;
+  /** LinkedIn profile link, remembered from the last achievement filed. */
+  linkedin: string;
 }
 
 export interface Faculty {
@@ -73,6 +75,8 @@ export interface GroupMember {
   email: string;
   teamRole: string;
   avatarUrl?: string;
+  /** LinkedIn profile link, or "". */
+  linkedin?: string;
 }
 
 export interface Group {
@@ -270,6 +274,18 @@ export interface AchievementEvent {
 }
 
 /** Something one student achieved, reviewed by their group's supervisor. */
+/** Someone who achieved it together with the student who filed it. */
+export interface AchievementParticipant {
+  name: string;
+  registrationNumber: string;
+  /** Set when they are a student on the portal. */
+  studentId?: string;
+  /** LinkedIn profile link, or "". */
+  linkedin: string;
+  /** In the filing student's team. */
+  inTeam: boolean;
+}
+
 export interface Achievement {
   id: string;
   studentId: string;
@@ -291,6 +307,10 @@ export interface Achievement {
   reviewedAt?: string;
   /** Set once it has been posted on LinkedIn from the portal. */
   linkedIn?: { urn: string; postedAt: string; postedBy: string };
+  /** The filing student's LinkedIn profile link, or "". */
+  linkedin: string;
+  /** Who achieved it with the student. Only they (and the student) are notified. */
+  participants: AchievementParticipant[];
   createdAt: string;
   updatedAt: string;
   events: AchievementEvent[];

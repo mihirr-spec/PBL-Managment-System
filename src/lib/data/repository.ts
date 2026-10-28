@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabase/client";
 import type {
   Achievement,
   AchievementDocument,
+  AchievementParticipant,
   LinkedInAccount,
   Announcement,
   Faculty,
@@ -60,6 +61,7 @@ const toStudent = (r: any): Student => ({
   section: r.section,
   batch: r.batch,
   cgpa: Number(r.cgpa),
+  linkedin: r.linkedin ?? "",
 });
 
 const toFaculty = (r: any): Faculty => ({
@@ -80,7 +82,7 @@ const toFaculty = (r: any): Faculty => ({
 });
 
 const GROUP_SELECT =
-  "*, group_members(student_id, team_role, students(full_name, registration_number, university_email, avatar_url))";
+  "*, group_members(student_id, team_role, students(full_name, registration_number, university_email, avatar_url, linkedin))";
 
 const toGroup = (r: any): Group => ({
   id: r.id,
@@ -110,6 +112,7 @@ const toGroup = (r: any): Group => ({
         email: m.students?.university_email ?? "",
         teamRole: m.team_role,
         avatarUrl: m.students?.avatar_url ?? undefined,
+        linkedin: m.students?.linkedin ?? "",
       }),
     )
     // Leader first, then alphabetical.
@@ -229,6 +232,16 @@ const toAchievement = (r: any): Achievement => ({
   linkedIn: r.linkedin_post_urn
     ? { urn: r.linkedin_post_urn, postedAt: r.linkedin_posted_at, postedBy: r.linkedin_posted_by ?? "" }
     : undefined,
+  linkedin: r.linkedin ?? "",
+  participants: (r.participants ?? []).map(
+    (p: any): AchievementParticipant => ({
+      name: p.name ?? "",
+      registrationNumber: p.registration_number ?? "",
+      studentId: p.student_id ?? undefined,
+      linkedin: p.linkedin ?? "",
+      inTeam: !!p.in_team,
+    }),
+  ),
   createdAt: r.created_at,
   updatedAt: r.updated_at,
   events: (r.achievement_events ?? [])
@@ -971,11 +984,30 @@ export async function uploadAchievementFiles(studentId: string, files: File[]): 
   return documents;
 }
 
+/** Someone added to an achievement; the server fills in the rest from the registration number. */
+export type ParticipantInput = Pick<AchievementParticipant, "name" | "registrationNumber" | "linkedin">;
+
 export interface AchievementInput {
   title: string;
   description: string;
   answers: Record<string, string>;
   achievedOn: string;
+  /** The filing student's LinkedIn profile. */
+  linkedin: string;
+  participants: ParticipantInput[];
+}
+
+const participantRows = (people: ParticipantInput[]) =>
+  people.map((p) => ({ name: p.name.trim(), registration_number: p.registrationNumber.trim(), linkedin: p.linkedin.trim() }));
+
+/** Size in bytes of a stored file, or null when it can't be read. */
+export async function getFileSize(bucket: FileBucket, path: string): Promise<number | null> {
+  const slash = path.lastIndexOf("/");
+  const { data } = await supabase.storage
+    .from(bucket)
+    .list(path.slice(0, slash), { search: path.slice(slash + 1), limit: 1 });
+  const size = data?.[0]?.metadata?.size;
+  return typeof size === "number" ? size : null;
 }
 
 export async function submitAchievement(
@@ -991,6 +1023,8 @@ export async function submitAchievement(
     p_answers: input.answers,
     p_achieved_on: input.achievedOn || null,
     p_documents: documents,
+    p_participants: participantRows(input.participants),
+    p_linkedin: input.linkedin.trim(),
   });
   fail(error);
   return data as string;
@@ -1011,6 +1045,8 @@ export async function updateAchievement(
     p_achieved_on: input.achievedOn || null,
     p_new_documents: documents,
     p_note: input.note,
+    p_participants: participantRows(input.participants),
+    p_linkedin: input.linkedin.trim(),
   });
   fail(error);
 }

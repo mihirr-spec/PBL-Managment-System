@@ -347,9 +347,58 @@ export const MAX_BONUS_MARKS = 5;
 
 const ordinal = (n: number) => `${n}${n === 1 ? "st" : n === 2 ? "nd" : n === 3 ? "rd" : "th"}`;
 
-/** Fills a template's post with the achievement's answers and the student's details. */
+/** The answers that state the result, in the order they are looked for. */
+const RESULT_KEYS = ["position", "medal", "rank", "award", "recognition", "scholarship", "milestone", "stage"];
+
+/** The headline result of an achievement ("1st Prize", "Gold", "All India Rank 37"), or "". */
+export function achievementResult(a: Pick<Achievement, "answers">): string {
+  for (const k of RESULT_KEYS) {
+    const v = (a.answers[k] ?? "").trim();
+    if (v) return v;
+  }
+  return "";
+}
+
+/** First, second or third place when the result says so; null for anything else. */
+export function placement(a: Pick<Achievement, "answers">): 1 | 2 | 3 | null {
+  const r = achievementResult(a);
+  if (/runner[\s-]*up/i.test(r)) return /\b(2nd|second)\b/i.test(r) ? 3 : 2;
+  if (/\b(1st|first|winner|winners|gold|champion|champions)\b/i.test(r)) return 1;
+  if (/\b(2nd|second|silver)\b/i.test(r)) return 2;
+  if (/\b(3rd|third|bronze)\b/i.test(r)) return 3;
+  return null;
+}
+
+/**
+ * LinkedIn has no bold formatting, so posts use the Unicode bold letters most
+ * LinkedIn posts use. Letters and digits change; everything else stays.
+ */
+export function toBold(text: string): string {
+  return [...text]
+    .map((ch) => {
+      const c = ch.codePointAt(0)!;
+      if (c >= 65 && c <= 90) return String.fromCodePoint(0x1d5d4 + c - 65);
+      if (c >= 97 && c <= 122) return String.fromCodePoint(0x1d5ee + c - 97);
+      if (c >= 48 && c <= 57) return String.fromCodePoint(0x1d7ec + c - 48);
+      return ch;
+    })
+    .join("");
+}
+
+/** Values shown in bold in the post: who, what they won, and where. */
+const BOLD_KEYS = new Set(["name", ...RESULT_KEYS, "event", "contest", "competition"]);
+
+/** "A", "A and B", "A, B and C". */
+const listNames = (names: string[]) =>
+  names.length <= 1 ? (names[0] ?? "") : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
+
+/**
+ * Fills a template's post with the achievement's answers and the student's
+ * details. Names and results are in bold; the people who achieved it together
+ * are named, and everyone's LinkedIn profile is listed.
+ */
 export function linkedInPost(
-  achievement: Pick<Achievement, "category" | "template" | "answers" | "title" | "description">,
+  achievement: Pick<Achievement, "category" | "template" | "answers" | "title" | "description" | "linkedin" | "participants">,
   student: Pick<Student, "fullName" | "programme" | "branch" | "semester">,
 ): string {
   const { template } = findTemplate(achievement.category, achievement.template);
@@ -360,16 +409,39 @@ export function linkedInPost(
     branch: student.branch,
     year: student.semester ? `${ordinal(Math.ceil(student.semester / 2))}-year` : "",
   };
-  const value = (k: string) => (values[k] ?? "").trim();
+  const raw = (k: string) => (values[k] ?? "").trim();
+  const value = (k: string) => (BOLD_KEYS.has(k) ? toBold(raw(k)) : raw(k));
 
-  if (!template) {
-    return `🎉 Congratulations to ${student.fullName} on: ${achievement.title}!\n\n${achievement.description}\n\n${TAGS}`;
+  let body = template
+    ? template.post
+        .replace(/\[\[([\s\S]*?)\]\]/g, (_, part: string) =>
+          [...part.matchAll(/\{(\w+)\}/g)].every(([, k]) => raw(k)) ? part : "",
+        )
+        .replace(/\{(\w+)\}/g, (_, k: string) => value(k))
+    : `🎉 Congratulations to ${toBold(student.fullName)} on: ${achievement.title}!\n\n${achievement.description}\n\n${TAGS}`;
+
+  // The hashtags stay last; the team and the profile links go just above them.
+  const tagsAt = body.lastIndexOf("\n\n#");
+  let main = tagsAt >= 0 ? body.slice(0, tagsAt) : body;
+  const tags = tagsAt >= 0 ? body.slice(tagsAt) : "";
+
+  const others = (achievement.participants ?? []).map((p) => p.name.trim()).filter(Boolean);
+  if (others.length > 0) {
+    const firstBreak = main.indexOf("\n\n", main.indexOf("\n\n") + 2);
+    const line = `👥 Achieved together with ${listNames(others.map(toBold))}.`;
+    main = firstBreak >= 0 ? `${main.slice(0, firstBreak)}\n\n${line}${main.slice(firstBreak)}` : `${main}\n\n${line}`;
   }
-  return template.post
-    .replace(/\[\[([\s\S]*?)\]\]/g, (_, part: string) =>
-      [...part.matchAll(/\{(\w+)\}/g)].every(([, k]) => value(k)) ? part : "",
-    )
-    .replace(/\{(\w+)\}/g, (_, k: string) => value(k))
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
+
+  const profiles = [
+    { name: student.fullName, linkedin: achievement.linkedin },
+    ...(achievement.participants ?? []),
+  ].filter((p) => p.linkedin);
+  if (profiles.length > 0) {
+    main += `\n\n🔗 Connect with ${profiles.length === 1 ? "the achiever" : "the achievers"}:\n${profiles
+      .map((p) => `• ${p.name}: ${p.linkedin}`)
+      .join("\n")}`;
+  }
+
+  body = main + tags;
+  return body.replace(/\n{3,}/g, "\n\n").trim();
 }

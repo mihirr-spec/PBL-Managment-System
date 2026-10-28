@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Trophy } from "lucide-react";
 
-import { AchievementCard } from "@/components/achievements/achievement-card";
+import { AchievementDetail, AchievementRow } from "@/components/achievements/achievement-card";
 import {
   LinkedInPreview,
   pendingLinkedInPreview,
@@ -31,11 +31,13 @@ export default function FacultyAchievementsPage() {
     return id ? { id } : null;
   });
   const [tab, setTab] = useState<(typeof TABS)[number]["key"]>("review");
+  const [openId, setOpenId] = useState<string | null>(() => pendingLinkedInPreview());
 
   if (error) return <p role="alert" className="text-[13px] text-clay-500">{error}</p>;
   if (!data) return <PageSkeleton />;
   // Approving from the preview shows the achievement before it is approved.
   const previewed = data.find((a) => a.id === preview?.id && (preview.approval || a.status === "approved"));
+  const opened = data.find((a) => a.id === openId);
 
   const groups = {
     review: data.filter((a) => a.status === "submitted"),
@@ -44,13 +46,38 @@ export default function FacultyAchievementsPage() {
   };
   const visible = groups[tab];
 
+  const previewModal = previewed ? (
+    <LinkedInPreview
+      achievement={previewed}
+      approval={preview?.approval}
+      onClose={() => setPreview(null)}
+      onChanged={() => void reload()}
+    />
+  ) : null;
+
+  if (opened) {
+    return (
+      <div className="space-y-6">
+        <AchievementDetail
+          achievement={opened}
+          viewer="reviewer"
+          onBack={() => setOpenId(null)}
+          onChanged={() => void reload()}
+          onPreview={() => setPreview({ id: opened.id })}
+          onApproveWithPreview={(approval) => setPreview({ id: opened.id, approval })}
+        />
+        {previewModal}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader
         eyebrow="Achievements"
         title="Student"
         emphasis="achievements."
-        description={`Achievements filed by students in your groups, with their proof. Approve (with up to ${MAX_BONUS_MARKS} bonus marks), ask for more details, comment, or reject - the student is notified each time. Approving shows the LinkedIn post first, then approves and posts it from the university's LinkedIn account. Approved ones go to the Student Excellence Award shortlist.`}
+        description={`Achievements filed by students in your groups, with their proof. Open one to approve it (with up to ${MAX_BONUS_MARKS} bonus marks), ask for more details or reject it. Approving shows the LinkedIn post first, then approves and posts it from the portal's LinkedIn account.`}
         scene="achievements"
       />
       <div className="inline-flex flex-wrap gap-1 rounded-xl bg-white/60 p-1 ring-1 ring-white">
@@ -60,7 +87,7 @@ export default function FacultyAchievementsPage() {
             onClick={() => setTab(t.key)}
             className={cn(
               "rounded-lg px-3.5 py-1.5 text-[13px] font-medium",
-              tab === t.key ? "bg-ink-800 text-white" : "text-stone-600 hover:text-ink-800",
+              tab === t.key ? "bg-azure-600 text-white" : "text-slate-600 hover:text-ink-800",
             )}
           >
             {t.label} ({groups[t.key].length})
@@ -71,28 +98,14 @@ export default function FacultyAchievementsPage() {
         {visible.length === 0 ? (
           <EmptyState icon={<Trophy className="size-5" />} title="Nothing here" scene="achievements" />
         ) : (
-          <div className="divide-y divide-sand-200/70">
+          <div className="divide-y divide-azure-100/70">
             {visible.map((a) => (
-              <AchievementCard
-                key={a.id}
-                achievement={a}
-                viewer="reviewer"
-                onChanged={() => void reload()}
-                onPreview={() => setPreview({ id: a.id })}
-                onApproveWithPreview={(approval) => setPreview({ id: a.id, approval })}
-              />
+              <AchievementRow key={a.id} achievement={a} viewer="reviewer" onOpen={() => setOpenId(a.id)} />
             ))}
           </div>
         )}
       </Card>
-      {previewed ? (
-        <LinkedInPreview
-          achievement={previewed}
-          approval={preview?.approval}
-          onClose={() => setPreview(null)}
-          onChanged={() => void reload()}
-        />
-      ) : null}
+      {previewModal}
     </div>
   );
 }

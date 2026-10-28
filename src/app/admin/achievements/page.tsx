@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Medal, Trophy } from "lucide-react";
 
-import { AchievementCard } from "@/components/achievements/achievement-card";
+import { AchievementDetail, AchievementRow } from "@/components/achievements/achievement-card";
 import {
   LinkedInAccountCard,
   LinkedInPreview,
@@ -33,11 +33,37 @@ export default function AdminAchievementsPage() {
   });
   const [category, setCategory] = useState<string>("all");
   const [showAll, setShowAll] = useState(false);
+  const [openId, setOpenId] = useState<string | null>(() => pendingLinkedInPreview());
 
   if (error) return <p role="alert" className="text-[13px] text-clay-500">{error}</p>;
   if (!data) return <PageSkeleton />;
   // Approving from the preview shows the achievement before it is approved.
   const previewed = data.find((a) => a.id === preview?.id && (preview.approval || a.status === "approved"));
+  const opened = data.find((a) => a.id === openId);
+  const previewModal = previewed ? (
+    <LinkedInPreview
+      achievement={previewed}
+      approval={preview?.approval}
+      onClose={() => setPreview(null)}
+      onChanged={() => void reload()}
+    />
+  ) : null;
+
+  if (opened) {
+    return (
+      <div className="space-y-6">
+        <AchievementDetail
+          achievement={opened}
+          viewer="admin"
+          onBack={() => setOpenId(null)}
+          onChanged={() => void reload()}
+          onPreview={() => setPreview({ id: opened.id })}
+          onApproveWithPreview={(approval) => setPreview({ id: opened.id, approval })}
+        />
+        {previewModal}
+      </div>
+    );
+  }
 
   const approved = data.filter((a) => a.status === "approved");
   const shortlist = rankStudents(approved);
@@ -101,7 +127,7 @@ export default function AdminAchievementsPage() {
               onClick={() => setShowAll(all)}
               className={cn(
                 "rounded-lg px-3.5 py-1.5 text-[13px] font-medium",
-                showAll === all ? "bg-ink-800 text-white" : "text-stone-600 hover:text-ink-800",
+                showAll === all ? "bg-azure-600 text-white" : "text-stone-600 hover:text-ink-800",
               )}
             >
               {all ? `All (${data.length})` : `Approved (${approved.length})`}
@@ -125,28 +151,14 @@ export default function AdminAchievementsPage() {
         {listed.length === 0 ? (
           <EmptyState icon={<Trophy className="size-5" />} title="Nothing to show" scene="achievements" />
         ) : (
-          <div className="divide-y divide-sand-200/70">
+          <div className="divide-y divide-azure-100/70">
             {listed.map((a) => (
-              <AchievementCard
-                key={a.id}
-                achievement={a}
-                viewer="admin"
-                onChanged={() => void reload()}
-                onPreview={() => setPreview({ id: a.id })}
-                onApproveWithPreview={(approval) => setPreview({ id: a.id, approval })}
-              />
+              <AchievementRow key={a.id} achievement={a} viewer="admin" onOpen={() => setOpenId(a.id)} />
             ))}
           </div>
         )}
       </Card>
-      {previewed ? (
-        <LinkedInPreview
-          achievement={previewed}
-          approval={preview?.approval}
-          onClose={() => setPreview(null)}
-          onChanged={() => void reload()}
-        />
-      ) : null}
+      {previewModal}
     </div>
   );
 }
