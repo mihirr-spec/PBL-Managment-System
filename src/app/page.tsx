@@ -147,7 +147,7 @@ export default function LandingPage() {
           className="absolute inset-0 -z-10 opacity-70 [background-image:radial-gradient(circle_at_20%_10%,rgba(255,255,255,0.95),transparent_40%),radial-gradient(circle_at_80%_30%,rgba(255,255,255,0.6),transparent_35%)]"
         />
 
-        <header className="mx-auto flex h-24 w-full max-w-7xl items-center justify-between px-5 sm:px-8">
+        <header className="mx-auto flex w-full max-w-7xl items-center justify-between px-5 pt-6 pb-2 sm:px-8 sm:pt-8">
           <Brand href="/" height={80} priority />
           <ButtonLink
             href="/login"
@@ -161,7 +161,7 @@ export default function LandingPage() {
         </header>
 
         {/* On wide screens the hero fills the viewport; the bottom padding matches the header so the content sits in the true middle. */}
-        <div className="mx-auto grid w-full max-w-7xl items-center gap-12 px-5 pt-2 pb-16 sm:px-8 lg:flex-1 lg:content-center lg:grid-cols-[1.05fr_1fr] lg:gap-10 lg:pb-24">
+        <div className="mx-auto grid w-full max-w-7xl items-center gap-12 px-5 pt-2 pb-16 sm:px-8 lg:flex-1 lg:content-center lg:grid-cols-[1.05fr_1fr] lg:gap-10 lg:pb-28">
           {/* --- words --- */}
           <div className="animate-fade-rise max-w-xl">
             <h1 className="font-display text-[2.5rem] leading-[1.04] tracking-tight text-ink-900 sm:text-[3.4rem] xl:text-[3.9rem]">
