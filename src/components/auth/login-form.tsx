@@ -339,8 +339,11 @@ export function LoginForm({ verified = false }: { verified?: boolean }) {
           onClick={tryDemo}
           className="mt-3 rounded-full border border-[#dbe3ee] bg-white/70 px-3.5 py-1.5 text-[12.5px] text-stone-500 transition-colors hover:border-azure-100 hover:text-azure-600 disabled:pointer-events-none disabled:opacity-60"
         >
-          Try the {tab.demo.label.toLowerCase()}
+          Try as {tab.label}
         </button>
+        <p className="mt-1.5 text-[12px] text-stone-400">
+          {tab.demo.email.split("@")[0]} · {tab.demo.password}
+        </p>
       </div>
     </>
   );
