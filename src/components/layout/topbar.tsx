@@ -47,7 +47,7 @@ export function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
               : "Student Portal"
             : user?.role === "admin"
               ? "Administrator Portal"
-              : "Teacher Portal"}
+              : "Team Supervisor Portal"}
         </p>
       </div>
 

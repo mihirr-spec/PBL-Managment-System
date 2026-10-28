@@ -35,7 +35,7 @@ const FOLD = 210;
 /** Image types LinkedIn accepts in a post. */
 const POSTABLE_IMAGE = /\.(png|jpe?g|gif)$/i;
 /** Shown as the author until the PBL office connects the central account. */
-const FALLBACK_AUTHOR = "MUJ PBL Office";
+const FALLBACK_AUTHOR = "PACE Portal";
 
 const REOPEN_KEY = "linkedin:preview";
 
@@ -234,8 +234,8 @@ export function LinkedInPreview({
       <p className="flex gap-2 text-[12.5px] leading-snug text-stone-600">
         <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-gold-600" />
         {account?.expired
-          ? "The portal's LinkedIn connection has expired. The PBL office needs to connect it again before posts can go out."
-          : "The portal's LinkedIn account is not connected yet. The PBL office connects it once."}
+          ? "The portal's LinkedIn connection has expired. The administrator needs to connect it again before posts can go out."
+          : "The portal's LinkedIn account is not connected yet. The administrator connects it once."}
       </p>
     );
     actions = (
@@ -450,7 +450,7 @@ export function LinkedInAccountCard() {
     <Card>
       <CardHeader
         title="Portal LinkedIn account"
-        description="Every approved achievement is posted from this one account. Teachers only preview the post and approve it; they never see its login."
+        description="Every approved achievement is posted from this one account. Team supervisors only preview the post and approve it; they never see its login."
       />
       <div className="flex flex-wrap items-center gap-4 px-5 pb-5">
         {account === undefined ? (
@@ -471,7 +471,7 @@ export function LinkedInAccountCard() {
             <div className="min-w-0 flex-1 text-[13px]">
               <p className="font-medium text-ink-900">{account.name || "LinkedIn account"}</p>
               <p className="text-stone-500">
-                Connected by {account.connectedBy || "the PBL office"} on {formatDate(account.connectedAt)} ·{" "}
+                Connected by {account.connectedBy || "the administrator"} on {formatDate(account.connectedAt)} ·{" "}
                 {expired ? (
                   <span className="font-medium text-clay-500">expired - connect again</span>
                 ) : (

@@ -59,7 +59,7 @@ const STEPS: ReadonlyArray<{ doodle: DoodleKey; title: string; body: string }> =
   {
     doodle: "triangle",
     title: "Register your mentor",
-    body: "Upload the PBL form your teacher signed. They approve it, or ask for corrections.",
+    body: "Upload the PBL form your supervisor signed. They approve it, or ask for corrections.",
   },
   {
     doodle: "globe",
@@ -81,7 +81,7 @@ const AUDIENCES = [
   },
   {
     icon: UsersRound,
-    title: "Faculty / Coordinators",
+    title: "Team Supervisors",
     body: "Guide students, monitor progress, provide feedback and manage evaluations.",
   },
   {
@@ -172,7 +172,7 @@ export default function LandingPage() {
             <p className="mt-5 max-w-lg text-[15.5px] leading-relaxed text-stone-600">
               Form your team, register your mentor with the signed PBL form,
               submit weekly reports and see your grades - with your mentor and
-              the PBL office on the same page.
+              the administrator on the same page.
             </p>
 
             <div className="mt-8 flex flex-wrap gap-3">
@@ -197,8 +197,8 @@ export default function LandingPage() {
             <ul className="mt-9 flex flex-wrap gap-x-6 gap-y-2 text-[13px] text-stone-600">
               {[
                 { icon: GraduationCap, label: "Students" },
-                { icon: UsersRound, label: "Teachers" },
-                { icon: Building2, label: "PBL office" },
+                { icon: UsersRound, label: "Team Supervisors" },
+                { icon: Building2, label: "Administrators" },
               ].map(({ icon: Icon, label }) => (
                 <li key={label} className="flex items-center gap-2">
                   <span className="flex size-7 items-center justify-center rounded-lg bg-white/80 text-azure-600 ring-1 ring-white">
@@ -251,7 +251,7 @@ export default function LandingPage() {
               className="left-3 bottom-8 sm:-left-10"
               icon={<Bell className="size-4" />}
               tone="bg-gold-50 text-gold-600"
-              title="New from the PBL office"
+              title="New from the administrator"
               note="Final report template"
             />
           </div>

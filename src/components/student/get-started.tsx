@@ -221,7 +221,7 @@ export function GetStarted({
         {/* ------------------------------ mentor ------------------------------ */}
         {/* Lifted above the next card so the name suggestions can overlap it. */}
         <Card className="relative z-10 overflow-visible">
-          <CardHeader title="2 · Your mentor" description="The teacher who agreed to mentor your team and signed your application." />
+          <CardHeader title="2 · Your mentor" description="The supervisor who agreed to mentor your team and signed your application." />
           <CardBody>
             <MentorPicker idPrefix="gs" value={teacher} onChange={setTeacher} />
           </CardBody>

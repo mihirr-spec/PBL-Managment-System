@@ -30,7 +30,7 @@ export default function NotificationsPage() {
         eyebrow="Notifications"
         title="What's"
         emphasis="new for you."
-        description="Announcements and files from your supervisor and the PBL office, plus updates on your reports, grades and queries."
+        description="Announcements and files from your supervisor and the administrator, plus updates on your reports, grades and queries."
         scene="notifications"
         action={
           unreadCount > 0 ? (

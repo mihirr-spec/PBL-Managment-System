@@ -73,14 +73,14 @@ export function ChangeSupervisorForm({
 
   return (
     <form onSubmit={change} className="mt-3 space-y-3 rounded-[14px] border border-azure-100 bg-white/75 p-3.5">
-      <Field label="New supervisor" htmlFor={fieldId} help="Teachers with a portal account. Each can supervise up to 7 groups.">
+      <Field label="New supervisor" htmlFor={fieldId} help="Supervisors with a portal account. Each can supervise up to 7 groups.">
         <select
           id={fieldId}
           value={facultyId}
           onChange={(e) => setFacultyId(e.target.value)}
           className="h-10 w-full rounded-lg border border-sand-200 bg-white px-3 text-[13.5px] text-ink-900 focus:border-azure-500 focus:ring-3 focus:ring-azure-100 focus:outline-none"
         >
-          <option value="">{teachers.data ? "Choose a teacher…" : "Loading teachers…"}</option>
+          <option value="">{teachers.data ? "Choose a supervisor…" : "Loading supervisors…"}</option>
           {options.map((t) => (
             <option key={t.id} value={t.id} disabled={t.groupCount >= t.maxGroups}>
               {t.fullName} - {t.groupCount}/{t.maxGroups} groups{t.groupCount >= t.maxGroups ? " (full)" : ""}

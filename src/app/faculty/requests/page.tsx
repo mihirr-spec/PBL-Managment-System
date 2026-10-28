@@ -26,7 +26,7 @@ const OUTCOME: Record<string, { tone: "sage" | "clay" | "gold"; text: string }> 
   changes_requested: { tone: "gold", text: "Sent back to the team lead with your corrections." },
   already_assigned: {
     tone: "gold",
-    text: "This group was already registered with another teacher, so the request has been closed.",
+    text: "This group was already registered with another supervisor, so the request has been closed.",
   },
   full: { tone: "gold", text: "You already mentor the maximum of 7 groups." },
   closed: { tone: "gold", text: "This request was already closed." },
@@ -62,7 +62,7 @@ export default function RequestsPage() {
         eyebrow="Mentor Requests"
         title="Groups registering"
         emphasis="with you."
-        description="Each team lead uploads the PBL form you signed. Check it, then approve, ask for corrections, or reject. Before approving, the system checks the group isn't already registered with another teacher."
+        description="Each team lead uploads the PBL form you signed. Check it, then approve, ask for corrections, or reject. Before approving, the system checks the group isn't already registered with another supervisor."
         scene="requests"
       />
 

@@ -9,7 +9,7 @@ export default function StudentFacultyPage() {
       <PageHeader
         eyebrow="Faculty Directory"
         title="Find a"
-        emphasis="teacher."
+        emphasis="supervisor."
         description="Every MUJ faculty member with their department, email and area of expertise."
         scene="directory"
       />

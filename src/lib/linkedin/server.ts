@@ -77,7 +77,7 @@ export async function portalUser(request: Request): Promise<{ db: SupabaseClient
 /** The PBL office only: they connect and disconnect the central account. */
 export async function requireAdmin(db: SupabaseClient, userId: string) {
   const { data } = await db.from("profiles").select("role").eq("id", userId).maybeSingle();
-  if (data?.role !== "admin") throw new HttpError(403, "Only the PBL office can connect the portal's LinkedIn account.");
+  if (data?.role !== "admin") throw new HttpError(403, "Only the administrator can connect the portal's LinkedIn account.");
 }
 
 /* -------------------------------------------------------- token at rest */
@@ -102,7 +102,7 @@ export function openToken(sealed: string): string {
     decipher.setAuthTag(tag);
     return Buffer.concat([decipher.update(data), decipher.final()]).toString("utf8");
   } catch {
-    throw new HttpError(401, "The portal's LinkedIn connection can no longer be read. The PBL office needs to connect LinkedIn again.");
+    throw new HttpError(401, "The portal's LinkedIn connection can no longer be read. The administrator needs to connect LinkedIn again.");
   }
 }
 
@@ -111,9 +111,9 @@ export async function centralAccount(db: SupabaseClient): Promise<{ memberUrn: s
   const { data, error } = await db.rpc("linkedin_credentials");
   if (error) throw new HttpError(500, error.message);
   const row = (data as { member_urn: string; token_enc: string; expires_at: string }[] | null)?.[0];
-  if (!row) throw new HttpError(412, "The portal's LinkedIn account is not connected yet. The PBL office connects it.");
+  if (!row) throw new HttpError(412, "The portal's LinkedIn account is not connected yet. The administrator connects it.");
   if (new Date(row.expires_at) <= new Date()) {
-    throw new HttpError(401, "The portal's LinkedIn connection has expired. The PBL office needs to connect LinkedIn again.");
+    throw new HttpError(401, "The portal's LinkedIn connection has expired. The administrator needs to connect LinkedIn again.");
   }
   return { memberUrn: row.member_urn, accessToken: openToken(row.token_enc) };
 }
@@ -153,7 +153,7 @@ async function linkedInError(response: Response, doing: string): Promise<HttpErr
     detail = JSON.parse(body).message ?? JSON.parse(body).error_description ?? body;
   } catch {}
   if (response.status === 401) {
-    return new HttpError(401, "The portal's LinkedIn connection has expired. The PBL office needs to connect LinkedIn again.");
+    return new HttpError(401, "The portal's LinkedIn connection has expired. The administrator needs to connect LinkedIn again.");
   }
   return new HttpError(502, `LinkedIn could not ${doing} (${response.status}): ${detail}`.slice(0, 400));
 }

@@ -17,7 +17,7 @@ function statusOf(q: Ticket): { tone: "gold" | "sage" | "clay" | "neutral"; labe
       case "open":
         return { tone: "gold", label: "With the supervisor" };
       case "forwarded":
-        return { tone: "gold", label: "With the PBL office" };
+        return { tone: "gold", label: "With the administrator" };
       case "resolved":
         return { tone: "sage", label: "Supervisor changed" };
       default:
@@ -91,7 +91,7 @@ function QueryRow({
         <Reply icon={<CornerDownRight className="size-4" />} who="Supervisor" when={q.repliedAt} text={q.reply} />
       ) : null}
       {q.adminReply ? (
-        <Reply icon={<Building2 className="size-4" />} who="PBL office" when={q.adminRepliedAt} text={q.adminReply} />
+        <Reply icon={<Building2 className="size-4" />} who="Administrator" when={q.adminRepliedAt} text={q.adminReply} />
       ) : null}
 
       {canReply && q.status === "open" ? (
@@ -191,20 +191,20 @@ function ReviewChange({ query, onChanged }: { query: Ticket; onChanged?: () => v
   return (
     <div className="mt-3 space-y-2 rounded-[14px] border border-azure-100 bg-white/70 p-3">
       <p className="text-[12.5px] text-stone-600">
-        If you approve, the request goes to the PBL office, who choose the new supervisor.
+        If you approve, the request goes to the administrator, who chooses the new supervisor.
       </p>
       <Textarea
         rows={2}
         value={note}
         onChange={(e) => setNote(e.target.value)}
-        placeholder="Note for the group and the PBL office (required to decline)"
+        placeholder="Note for the group and the administrator (required to decline)"
         aria-label="Note"
       />
       {error ? <p role="alert" className="text-[12.5px] text-clay-500">{error}</p> : null}
       <div className="flex flex-wrap gap-2">
         <Button size="sm" loading={busy === "approve"} disabled={busy !== null} onClick={() => void decide(true)}>
           <Check className="size-3.5" />
-          Approve & send to PBL office
+          Approve & send to administrator
         </Button>
         <Button size="sm" variant="danger" loading={busy === "decline"} disabled={busy !== null} onClick={() => void decide(false)}>
           <X className="size-3.5" />

@@ -258,8 +258,8 @@ export type AuthResult = { ok: true; user: User } | { ok: false; error: string }
 
 const ROLE_LABEL: Record<Role, string> = {
   student: "a student",
-  faculty: "a teacher",
-  supervisor: "a teacher",
+  faculty: "a team supervisor",
+  supervisor: "a team supervisor",
   admin: "an administrator",
 };
 
@@ -297,7 +297,7 @@ export function checkUniversityEmail(email: string, kind?: "student" | "staff"):
   const student = e.endsWith(STUDENT_DOMAIN);
   const staff = e.endsWith(STAFF_DOMAIN);
   if (kind === "student" && !student) return `Students use their ${STUDENT_DOMAIN} address.`;
-  if (kind === "staff" && !staff) return `Teachers and the PBL office use their ${STAFF_DOMAIN} address.`;
+  if (kind === "staff" && !staff) return `Team supervisors and administrators use their ${STAFF_DOMAIN} address.`;
   if (!student && !staff) return `Use your university email (${STUDENT_DOMAIN} or ${STAFF_DOMAIN}).`;
   return null;
 }
@@ -354,7 +354,7 @@ export async function signUp(details: SignUpDetails): Promise<{ ok: true } | { o
       return {
         ok: false,
         error: email.endsWith(STAFF_DOMAIN)
-          ? "We could not find this address in the MUJ faculty list. Contact the PBL office."
+          ? "We could not find this address in the MUJ faculty list. Contact the administrator."
           : "We could not create this account - it may already be registered, or the registration number is taken.",
       };
     }

@@ -37,7 +37,7 @@ export default function AdminDashboardPage() {
       const count = await repo.autoAllocateMentors();
       setMessage(
         count === 0
-          ? "Nothing to allot - every group has a supervisor, or no teacher on the portal has room."
+          ? "Nothing to allot - every group has a supervisor, or no supervisor on the portal has room."
           : `Allotted a supervisor to ${count} group${count > 1 ? "s" : ""}. Their students have been notified.`,
       );
       await reload();
@@ -64,7 +64,7 @@ export default function AdminDashboardPage() {
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatTile icon={GraduationCap} label="Students" value={overview.students} caption={`${ungrouped.length} not in a group`} doodle="books" />
-        <StatTile icon={UsersRound} label="Groups" value={overview.groups} caption={`${overview.teachersOnPortal} teachers on the portal`} tone="sage" doodle="globe" />
+        <StatTile icon={UsersRound} label="Groups" value={overview.groups} caption={`${overview.teachersOnPortal} supervisors on the portal`} tone="sage" doodle="globe" />
         <StatTile icon={UserX} label="Without supervisor" value={overview.unassignedGroups} caption="Waiting for a mentor" tone={overview.unassignedGroups > 0 ? "gold" : "sage"} doodle="bulb" />
         <StatTile icon={MessageCircleQuestion} label="Open queries" value={overview.openTickets} caption="Across all groups" tone={overview.openTickets > 0 ? "clay" : "neutral"} doodle="plane" />
       </div>
@@ -72,7 +72,7 @@ export default function AdminDashboardPage() {
       <Card>
         <CardHeader
           title="Allot supervisors"
-          description="Gives every group without a supervisor a random teacher who is on the portal and has fewer than 7 groups. Pending requests for those groups are closed."
+          description="Gives every group without a supervisor a random supervisor who is on the portal and has fewer than 7 groups. Pending requests for those groups are closed."
           action={
             <Button size="sm" loading={busy} disabled={overview.unassignedGroups === 0} onClick={() => void allocate()}>
               <Shuffle className="size-3.5" />

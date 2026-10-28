@@ -25,7 +25,7 @@ export default function FacultyQueriesPage() {
         eyebrow="Queries"
         title="Student"
         emphasis="queries."
-        description="Questions raised by students in your groups, and requests to change supervisor. Replies notify the student; approved change requests go to the PBL office."
+        description="Questions raised by students in your groups, and requests to change supervisor. Replies notify the student; approved change requests go to the administrator."
         scene="queries"
       />
       <div className="inline-flex gap-1 rounded-xl bg-white/60 p-1 ring-1 ring-white">

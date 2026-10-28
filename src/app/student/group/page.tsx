@@ -101,7 +101,7 @@ function GroupView({
     <div className="space-y-6">
       <div className="grid gap-5 lg:grid-cols-3">
         <Card className="lg:col-span-2">
-          <CardHeader title="Members" description={group.projectIdea ? undefined : "Add a project idea so your teacher knows what you plan."} />
+          <CardHeader title="Members" description={group.projectIdea ? undefined : "Add a project idea so your supervisor knows what you plan."} />
           <ul className="divide-y divide-sand-200/70">
             {group.members.map((m) => (
               <li key={m.studentId} className="flex items-center gap-3 px-5 py-3">
@@ -133,7 +133,7 @@ function GroupView({
           <Card>
             <CardHeader
               title="Mentor registration"
-              description="Agree with your teacher first, then the team lead uploads the signed PBL form here. The teacher reviews it and approves, rejects, or asks for corrections."
+              description="Agree with your supervisor first, then the team lead uploads the signed PBL form here. The supervisor reviews it and approves, rejects, or asks for corrections."
             />
             {requests.data && requests.data.length > 0 ? (
               <ul className="divide-y divide-sand-200/70">
@@ -160,7 +160,7 @@ function GroupView({
 
           {isLeader ? (
             <Card className="relative z-10 overflow-visible">
-              <CardHeader title="Choose your mentor" description="Type the name of the teacher who agreed to mentor you (the department is optional), then send them the signed form." />
+              <CardHeader title="Choose your mentor" description="Type the name of the supervisor who agreed to mentor you (the department is optional), then send them the signed form." />
               <CardBody>
                 <MentorPicker idPrefix="gv" value={target} onChange={setTarget} />
               </CardBody>
@@ -227,7 +227,7 @@ function RequestRow({
           <FormUpload
             idPrefix={`fix-${r.id}`}
             submitLabel="Resubmit form"
-            messageLabel="Note for the teacher (optional)"
+            messageLabel="Note for the supervisor (optional)"
             messageHelp="What did you change?"
             onCancel={() => setFixing(false)}
             onSubmit={async (message, form) => {
@@ -278,7 +278,7 @@ function RequestForm({
         <FormUpload
           idPrefix="req"
           submitLabel="Send for approval"
-          messageLabel="Message to the teacher (optional)"
+          messageLabel="Message to the supervisor (optional)"
           messageHelp="A line or two - e.g. when you discussed the project."
           onSubmit={async (message, form) => {
             await repo.requestMentor({ groupId, facultyId: faculty.id, message, form });

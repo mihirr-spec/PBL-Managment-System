@@ -39,8 +39,8 @@ Three demo logins, one per portal (each sign-in tab also has a one-click demo bu
 | Portal | Email | Password |
 | --- | --- | --- |
 | Student | `demo.2400000001@muj.manipal.edu` | `pace@2026` |
-| Teacher | `demo.teacher@jaipur.manipal.edu` | `pace@2026` |
-| PBL office | `demo.admin@jaipur.manipal.edu` | `pace@2026` |
+| Team supervisor | `demo.teacher@jaipur.manipal.edu` | `pace@2026` |
+| Administrator | `demo.admin@jaipur.manipal.edu` | `pace@2026` |
 
 Everyone else signs up at `/signup` with their university email and confirms it
 from the emailed link:
@@ -48,8 +48,8 @@ from the emailed link:
 | Address | Becomes |
 | --- | --- |
 | `name.regno@muj.manipal.edu` | Student |
-| `@jaipur.manipal.edu` in `app_private.admin_emails` | PBL office (administrator) |
-| any other `@jaipur.manipal.edu` | Teacher, linked to their row in the MUJ faculty directory (821 scraped) |
+| `@jaipur.manipal.edu` in `app_private.admin_emails` | Administrator |
+| any other `@jaipur.manipal.edu` | Team supervisor, linked to their row in the MUJ faculty directory (821 scraped) |
 
 ---
 

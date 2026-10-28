@@ -22,7 +22,7 @@ export function MentorCard({
         <CardHeader title="Supervisor" />
         <EmptyState
           title="No supervisor yet"
-          description="Request a teacher from your group page. Groups without one are allotted a supervisor by the PBL office."
+          description="Request a supervisor from your group page. Groups without one are allotted a supervisor by the administrator."
           scene="requests"
         />
         <div className="px-5 pb-5 text-center">
@@ -45,7 +45,7 @@ export function MentorCard({
               Supervisor changed {lastChange.fromName ? `from ${lastChange.fromName}` : ""}
             </p>
             <p className="mt-0.5 text-stone-500" title={formatDateTime(lastChange.createdAt)}>
-              By the PBL office · {timeAgo(lastChange.createdAt)}
+              By the administrator · {timeAgo(lastChange.createdAt)}
             </p>
             <p className="mt-1.5 whitespace-pre-line text-stone-600">
               <span className="font-semibold text-ink-800">Reason: </span>

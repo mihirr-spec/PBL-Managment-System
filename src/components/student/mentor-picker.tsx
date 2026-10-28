@@ -144,7 +144,7 @@ export function MentorPicker({
               >
                 {shown.length === 0 ? (
                   <li className="px-3 py-2.5 text-[13px] text-stone-500">
-                    No teacher matches{department ? " in this department. Try All departments." : "."}
+                    No faculty member matches{department ? " in this department. Try All departments." : "."}
                   </li>
                 ) : (
                   shown.map((f, i) => (

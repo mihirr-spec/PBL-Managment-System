@@ -10,9 +10,9 @@ import { usePortal } from "@/lib/data/portal-store";
 
 const ROLE_LABEL = {
   student: "Student",
-  faculty: "Teacher",
-  supervisor: "Teacher",
-  admin: "PBL office",
+  faculty: "Team Supervisor",
+  supervisor: "Team Supervisor",
+  admin: "Administrator",
 } as const;
 
 /** The avatar in the top bar: opens a small menu with the account and sign-out. */

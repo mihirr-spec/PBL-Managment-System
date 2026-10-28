@@ -63,7 +63,7 @@ export default function QueriesPage() {
       setBody("");
       setSent(
         isChange
-          ? `Sent to ${mentor?.fullName ?? "your supervisor"}. Once they approve it, the PBL office chooses your new supervisor.`
+          ? `Sent to ${mentor?.fullName ?? "your supervisor"}. Once they approve it, the administrator chooses your new supervisor.`
           : "Query sent - your supervisor has been notified.",
       );
       setCategory("general");
@@ -84,7 +84,7 @@ export default function QueriesPage() {
         description={
           mentor
             ? `Questions, blockers or requests go straight to ${mentor.fullName}.`
-            : "Your group has no supervisor yet - the PBL office will see your query."
+            : "Your group has no supervisor yet - the administrator will see your query."
         }
         scene="queries"
       />
@@ -112,7 +112,7 @@ export default function QueriesPage() {
                     ? "Available once your group has a supervisor."
                     : changeInProgress
                       ? "A change request is already in progress."
-                      : "Your supervisor approves it first, then the PBL office decides."
+                      : "Your supervisor approves it first, then the administrator decides."
                 }
               />
             </div>
@@ -125,7 +125,7 @@ export default function QueriesPage() {
             <Field
               label={isChange ? "Why do you want to change supervisor?" : "Details"}
               htmlFor="q-body"
-              help={isChange ? "This becomes the recorded reason for the change, seen by your supervisor and the PBL office." : undefined}
+              help={isChange ? "This becomes the recorded reason for the change, seen by your supervisor and the administrator." : undefined}
             >
               <Textarea id="q-body" rows={4} required={isChange} value={body} onChange={(e) => setBody(e.target.value)} />
             </Field>

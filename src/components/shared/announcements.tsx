@@ -21,7 +21,7 @@ export function AnnouncementFeed({ items }: { items: Announcement[] }) {
         <EmptyState
           icon={<Megaphone className="size-5" />}
           title="No announcements yet"
-          description="Notices and files from your supervisor and the PBL office appear here."
+          description="Notices and files from your supervisor and the administrator appear here."
         />
       </Card>
     );

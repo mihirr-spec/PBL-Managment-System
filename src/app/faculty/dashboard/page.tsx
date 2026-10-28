@@ -100,7 +100,7 @@ export default function FacultyDashboardPage() {
         <Card>
           <CardHeader
             title="Supervisor changes"
-            description="Groups the PBL office moved to you or away from you, with the reason."
+            description="Groups the administrator moved to you or away from you, with the reason."
           />
           <SupervisorHistory changes={data.changes.slice(0, 6)} showGroup viewerFacultyId={user.profileId} />
         </Card>

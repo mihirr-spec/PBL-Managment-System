@@ -31,17 +31,17 @@ const TABS = [
   },
   {
     key: "teacher",
-    label: "Teacher",
+    label: "Team Supervisor",
     roles: ["faculty", "supervisor"],
     placeholder: "name@jaipur.manipal.edu",
-    demo: { label: "Demo teacher", email: "demo.teacher@jaipur.manipal.edu", password: "pace@2026" },
+    demo: { label: "Demo team supervisor", email: "demo.teacher@jaipur.manipal.edu", password: "pace@2026" },
   },
   {
     key: "admin",
     label: "Administrator",
     roles: ["admin"],
     placeholder: "name@jaipur.manipal.edu",
-    demo: { label: "Demo PBL office", email: "demo.admin@jaipur.manipal.edu", password: "pace@2026" },
+    demo: { label: "Demo administrator", email: "demo.admin@jaipur.manipal.edu", password: "pace@2026" },
   },
 ] as const satisfies ReadonlyArray<{
   key: string;
