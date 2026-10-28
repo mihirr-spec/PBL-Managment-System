@@ -234,6 +234,39 @@ export async function createPost(
   return urn;
 }
 
+const postPath = (urn: string) => `https://api.linkedin.com/rest/posts/${encodeURIComponent(urn)}`;
+
+/**
+ * Whether a post is still on LinkedIn. Reading posts through the API needs a
+ * permission LinkedIn rarely grants, so when the API won't say, the post's
+ * public embed page is asked instead (posts go out public). "unknown" when
+ * neither gives a clear answer - a post is only treated as gone on a clear 404.
+ */
+export async function postStatus(accessToken: string, urn: string): Promise<"live" | "gone" | "unknown"> {
+  const api = await fetch(postPath(urn), { headers: restHeaders(accessToken), cache: "no-store" });
+  if (api.ok) return "live";
+  if (api.status === 404 || api.status === 410) return "gone";
+
+  const embed = await fetch(`https://www.linkedin.com/embed/feed/update/${urn}`, {
+    redirect: "manual",
+    cache: "no-store",
+    headers: { "User-Agent": "Mozilla/5.0 (compatible; PACE portal)" },
+  });
+  if (embed.status === 200) return "live";
+  if (embed.status === 404 || embed.status === 410) return "gone";
+  return "unknown";
+}
+
+/** Deletes a post from the member's feed. A post that is already gone counts as deleted. */
+export async function deletePost(accessToken: string, urn: string): Promise<void> {
+  const response = await fetch(postPath(urn), {
+    method: "DELETE",
+    headers: restHeaders(accessToken),
+  });
+  if (response.ok || response.status === 404 || response.status === 410) return;
+  throw await linkedInError(response, "delete the post");
+}
+
 /**
  * Post text is LinkedIn "little text": its reserved characters must be
  * escaped, and hashtags are written as {hashtag|\#|Tag} so they stay links.

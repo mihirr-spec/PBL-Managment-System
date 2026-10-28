@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Medal, Trophy } from "lucide-react";
 
 import { AchievementDetail, AchievementRow } from "@/components/achievements/achievement-card";
@@ -14,7 +14,7 @@ import { Card, CardHeader, EmptyState } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { PageSkeleton } from "@/components/ui/skeleton";
 import { ACHIEVEMENT_CATEGORIES } from "@/lib/achievements";
-import { listAchievements } from "@/lib/data/repository";
+import { checkLinkedInPosts, listAchievements } from "@/lib/data/repository";
 import type { Achievement } from "@/lib/types";
 import { useLoad } from "@/lib/use-load";
 import { cn } from "@/lib/utils";
@@ -26,6 +26,13 @@ import { cn } from "@/lib/utils";
  */
 export default function AdminAchievementsPage() {
   const { data, error, reload } = useLoad(() => listAchievements(), "achievements");
+  // Posts deleted on LinkedIn lose their link and go back to the supervisor.
+  useEffect(() => {
+    checkLinkedInPosts().then(
+      (removed) => removed.length > 0 && void reload(),
+      () => {},
+    );
+  }, [reload]);
   // Reopens the preview after a "Connect LinkedIn" round trip.
   const [preview, setPreview] = useState<{ id: string; approval?: PendingApproval } | null>(() => {
     const id = pendingLinkedInPreview();

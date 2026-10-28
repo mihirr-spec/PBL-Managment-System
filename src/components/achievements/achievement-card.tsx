@@ -72,7 +72,15 @@ const ACTION_LABEL: Record<AchievementEvent["action"], string> = {
   approved: "approved it",
   rejected: "did not approve it",
   posted: "posted it on LinkedIn",
+  unposted: "took the LinkedIn post down",
 };
+
+/**
+ * Waiting on the supervisor: filed and not yet reviewed, or approved but its
+ * LinkedIn post was deleted, so it needs posting again.
+ */
+export const needsAction = (a: Achievement) =>
+  a.status === "submitted" || (a.status === "approved" && !a.linkedIn && !!a.linkedInRemovedAt);
 
 /** Who is looking: the student who filed it, their supervisor, or the administrator. */
 export type AchievementViewer = "student" | "reviewer" | "admin";
@@ -145,6 +153,9 @@ export function AchievementRow({
         </span>
         <span className="mt-0.5 block truncate font-display text-[16px] text-ink-900">{a.title}</span>
         <span className="mt-0.5 block truncate text-[12.5px] text-slate-500">
+          {a.status === "approved" && !a.linkedIn && a.linkedInRemovedAt ? (
+            <span className="font-medium text-[#0a66c2]">LinkedIn post removed - post again · </span>
+          ) : null}
           {viewer !== "student" && a.student ? `${a.student.fullName} · ` : ""}
           {result ? `${result} · ` : ""}
           {a.participants.length > 0 ? `with ${a.participants.length} other${a.participants.length === 1 ? "" : "s"} · ` : ""}
@@ -283,7 +294,15 @@ export function AchievementDetail({
         <Trail events={a.events} />
         <CommentBox achievementId={a.id} onChanged={onChanged} />
 
-        {a.linkedIn ? <PostedOnLinkedIn achievement={a} onPreview={onPreview} /> : null}
+        {a.linkedIn ? (
+          <PostedOnLinkedIn achievement={a} onPreview={onPreview} canRemove={viewer !== "student"} onChanged={onChanged} />
+        ) : null}
+        {a.status === "approved" && !a.linkedIn && a.linkedInRemovedAt ? (
+          <p className="mt-4 rounded-2xl bg-blue-50/70 px-4 py-3 text-[13px] text-slate-600 ring-1 ring-azure-100">
+            <span className="font-semibold text-[#0a66c2]">The LinkedIn post was removed</span> on {formatDate(a.linkedInRemovedAt)}.
+            {viewer !== "student" ? " It's still approved - preview the post to put it up again." : " It's still approved."}
+          </p>
+        ) : null}
         {a.status === "approved" && !a.linkedIn ? (
           onPreview ? (
             <Button size="sm" className="mt-4 bg-[#0a66c2] text-white hover:bg-[#004182]" onClick={onPreview}>
@@ -803,33 +822,82 @@ function CommentBox({ achievementId, onChanged }: { achievementId: string; onCha
   );
 }
 
-/** "On LinkedIn" with a link to the live post. */
-function PostedOnLinkedIn({ achievement: a, onPreview }: { achievement: Achievement; onPreview?: () => void }) {
+/**
+ * "On LinkedIn" with a link to the live post. Staff can take the post down,
+ * which puts the achievement back in the supervisor's "Action needed" list.
+ */
+function PostedOnLinkedIn({
+  achievement: a,
+  onPreview,
+  canRemove,
+  onChanged,
+}: {
+  achievement: Achievement;
+  onPreview?: () => void;
+  canRemove: boolean;
+  onChanged: () => void;
+}) {
+  const [confirming, setConfirming] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   if (!a.linkedIn) return null;
+
+  async function remove() {
+    setBusy(true);
+    setError(null);
+    try {
+      await repo.removeAchievementFromLinkedIn(a.id);
+      onChanged();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not remove the post.");
+      setBusy(false);
+    }
+  }
+
   return (
-    <p className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-2xl bg-blue-50/70 px-4 py-3 text-[13px] text-slate-600 ring-1 ring-azure-100">
-      <span className="inline-flex items-center gap-1.5 font-semibold text-[#0a66c2]">
-        <LinkedInMark className="size-4" />
-        On LinkedIn
-      </span>
-      <span>
-        Posted by {a.linkedIn.postedBy || "staff"} · {formatDate(a.linkedIn.postedAt)}
-      </span>
-      <a
-        href={`https://www.linkedin.com/feed/update/${a.linkedIn.urn}/`}
-        target="_blank"
-        rel="noreferrer"
-        className="inline-flex items-center gap-1 font-medium text-azure-600 hover:underline"
-      >
-        <ExternalLink className="size-3.5" />
-        View post
-      </a>
-      {onPreview ? (
-        <button onClick={onPreview} className="text-slate-500 hover:text-ink-800 hover:underline">
-          Preview
-        </button>
+    <div className="mt-4 rounded-2xl bg-blue-50/70 px-4 py-3 text-[13px] text-slate-600 ring-1 ring-azure-100">
+      <p className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <span className="inline-flex items-center gap-1.5 font-semibold text-[#0a66c2]">
+          <LinkedInMark className="size-4" />
+          On LinkedIn
+        </span>
+        <span>
+          Posted by {a.linkedIn.postedBy || "staff"} · {formatDate(a.linkedIn.postedAt)}
+        </span>
+        <a
+          href={`https://www.linkedin.com/feed/update/${a.linkedIn.urn}/`}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex items-center gap-1 font-medium text-azure-600 hover:underline"
+        >
+          <ExternalLink className="size-3.5" />
+          View post
+        </a>
+        {onPreview ? (
+          <button onClick={onPreview} className="text-slate-500 hover:text-ink-800 hover:underline">
+            Preview
+          </button>
+        ) : null}
+        {canRemove && !confirming ? (
+          <button onClick={() => setConfirming(true)} className="text-red-600 hover:underline">
+            Remove from LinkedIn
+          </button>
+        ) : null}
+      </p>
+      {confirming ? (
+        <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-azure-100 pt-3">
+          <span className="text-ink-800">Delete this post from LinkedIn? The achievement stays approved and goes back to Action needed.</span>
+          <Button size="sm" variant="danger" loading={busy} onClick={() => void remove()}>
+            <CircleX className="size-3.5" />
+            Delete the post
+          </Button>
+          <Button size="sm" variant="secondary" disabled={busy} onClick={() => setConfirming(false)}>
+            Keep it
+          </Button>
+        </div>
       ) : null}
-    </p>
+      {error ? <p role="alert" className="mt-2 text-red-600">{error}</p> : null}
+    </div>
   );
 }
 

@@ -232,6 +232,7 @@ const toAchievement = (r: any): Achievement => ({
   linkedIn: r.linkedin_post_urn
     ? { urn: r.linkedin_post_urn, postedAt: r.linkedin_posted_at, postedBy: r.linkedin_posted_by ?? "" }
     : undefined,
+  linkedInRemovedAt: r.linkedin_removed_at ?? undefined,
   linkedin: r.linkedin ?? "",
   participants: (r.participants ?? []).map(
     (p: any): AchievementParticipant => ({
@@ -1129,6 +1130,17 @@ export async function postAchievementToLinkedIn(
   imagePath?: string,
 ): Promise<{ urn: string; url: string }> {
   return linkedInApi("post", { achievementId, text, imagePath });
+}
+
+/** Deletes the achievement's post from LinkedIn; it goes back to the supervisor's list. */
+export async function removeAchievementFromLinkedIn(achievementId: string): Promise<void> {
+  await linkedInApi("remove", { achievementId });
+}
+
+/** Checks posted achievements against LinkedIn; returns the ids whose post was deleted there. */
+export async function checkLinkedInPosts(): Promise<string[]> {
+  const { removed } = await linkedInApi<{ removed: string[] }>("check", {});
+  return removed;
 }
 
 /* ------------------------------------------------------- announcements */

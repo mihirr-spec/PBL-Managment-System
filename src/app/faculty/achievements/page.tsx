@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Trophy } from "lucide-react";
 
-import { AchievementDetail, AchievementRow } from "@/components/achievements/achievement-card";
+import { AchievementDetail, AchievementRow, needsAction } from "@/components/achievements/achievement-card";
 import {
   LinkedInPreview,
   pendingLinkedInPreview,
@@ -13,18 +13,25 @@ import { Card, EmptyState } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { PageSkeleton } from "@/components/ui/skeleton";
 import { MAX_BONUS_MARKS } from "@/lib/achievements";
-import { listAchievements } from "@/lib/data/repository";
+import { checkLinkedInPosts, listAchievements } from "@/lib/data/repository";
 import { useLoad } from "@/lib/use-load";
 import { cn } from "@/lib/utils";
 
 const TABS = [
-  { key: "review", label: "Needs you" },
+  { key: "review", label: "Action needed" },
   { key: "waiting", label: "Waiting on student" },
   { key: "decided", label: "Decided" },
 ] as const;
 
 export default function FacultyAchievementsPage() {
   const { data, error, reload } = useLoad(() => listAchievements(), "achievements");
+  // Posts deleted on LinkedIn come back to "Action needed".
+  useEffect(() => {
+    checkLinkedInPosts().then(
+      (removed) => removed.length > 0 && void reload(),
+      () => {},
+    );
+  }, [reload]);
   // Reopens the preview after a "Connect LinkedIn" round trip.
   const [preview, setPreview] = useState<{ id: string; approval?: PendingApproval } | null>(() => {
     const id = pendingLinkedInPreview();
@@ -40,9 +47,9 @@ export default function FacultyAchievementsPage() {
   const opened = data.find((a) => a.id === openId);
 
   const groups = {
-    review: data.filter((a) => a.status === "submitted"),
+    review: data.filter(needsAction),
     waiting: data.filter((a) => a.status === "needs_info"),
-    decided: data.filter((a) => a.status === "approved" || a.status === "rejected"),
+    decided: data.filter((a) => (a.status === "approved" || a.status === "rejected") && !needsAction(a)),
   };
   const visible = groups[tab];
 

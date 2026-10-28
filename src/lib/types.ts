@@ -268,7 +268,7 @@ export interface AchievementEvent {
   id: string;
   actorName: string;
   actorRole: Role;
-  action: "submitted" | "resubmitted" | "comment" | "needs_info" | "approved" | "rejected" | "posted";
+  action: "submitted" | "resubmitted" | "comment" | "needs_info" | "approved" | "rejected" | "posted" | "unposted";
   note: string;
   createdAt: string;
 }
@@ -307,6 +307,8 @@ export interface Achievement {
   reviewedAt?: string;
   /** Set once it has been posted on LinkedIn from the portal. */
   linkedIn?: { urn: string; postedAt: string; postedBy: string };
+  /** When its LinkedIn post was deleted; it then waits to be posted again. */
+  linkedInRemovedAt?: string;
   /** The filing student's LinkedIn profile link, or "". */
   linkedin: string;
   /** Who achieved it with the student. Only they (and the student) are notified. */
