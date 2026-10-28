@@ -136,7 +136,7 @@ export default function LandingPage() {
   return (
     <div className="bg-ivory-100">
       {/* ------------------------------ hero ----------------------------- */}
-      <section className="relative isolate flex flex-col overflow-x-clip">
+      <section className="relative isolate flex flex-col overflow-x-clip lg:min-h-dvh">
         {/* Sky wash, the same one the portal pages sit on */}
         <div
           aria-hidden
@@ -160,7 +160,8 @@ export default function LandingPage() {
           </ButtonLink>
         </header>
 
-        <div className="mx-auto grid w-full max-w-7xl items-center gap-12 px-5 pt-2 pb-16 sm:px-8 lg:grid-cols-[1.05fr_1fr] lg:gap-10 lg:pb-12">
+        {/* On wide screens the hero fills the viewport; the bottom padding matches the header so the content sits in the true middle. */}
+        <div className="mx-auto grid w-full max-w-7xl items-center gap-12 px-5 pt-2 pb-16 sm:px-8 lg:flex-1 lg:content-center lg:grid-cols-[1.05fr_1fr] lg:gap-10 lg:pb-24">
           {/* --- words --- */}
           <div className="animate-fade-rise max-w-xl">
             <h1 className="font-display text-[2.5rem] leading-[1.04] tracking-tight text-ink-900 sm:text-[3.4rem] xl:text-[3.9rem]">
