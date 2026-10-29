@@ -103,11 +103,14 @@ body {
   color: var(--color-stone-800);
 }
 
-/* Focus ring - consistent across every interactive element */
-:where(a, button, input, select, textarea, [tabindex]):focus-visible {
-  outline: 2px solid var(--color-azure-500);
-  outline-offset: 2px;
-  border-radius: 6px;
+/* Focus ring - consistent across every interactive element. In the base
+   layer so a control that draws its own ring (focus:outline-none) can opt out. */
+@layer base {
+  :where(a, button, input, select, textarea, [tabindex]):focus-visible {
+    outline: 2px solid var(--color-azure-500);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
 }
 
 /* Scroll regions that still scroll but never draw a scrollbar. */

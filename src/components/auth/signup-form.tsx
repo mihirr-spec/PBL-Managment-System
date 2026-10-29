@@ -47,11 +47,9 @@ export function SignupForm() {
   const [busy, setBusy] = useState(false);
   const [sentTo, setSentTo] = useState<string | null>(null);
 
-  const [domain, setDomain] = useState<string>(STUDENT_DOMAIN);
-
   // People type only the part before the @; a full address typed in is kept as is.
   const typed = email.trim().toLowerCase();
-  const address = typed.includes("@") ? typed : typed ? `${typed}${domain}` : "";
+  const address = typed.includes("@") ? typed : typed ? `${typed}${STUDENT_DOMAIN}` : "";
   const isStudent = address.endsWith(STUDENT_DOMAIN);
   const isStaff = address.endsWith(STAFF_DOMAIN);
   const emailReg = isStudent ? registrationFromEmail(address) : null;
@@ -109,7 +107,7 @@ export function SignupForm() {
               : undefined
             : isStaff
               ? "Team supervisor or administrator account - matched to the MUJ faculty list."
-              : `Students ${STUDENT_DOMAIN} · supervisors ${STAFF_DOMAIN}`
+              : undefined
         }
       >
         <div className="flex h-11 w-full items-center rounded-lg border border-[#c9d1dc] bg-white/90 pl-4 pr-2 transition-colors hover:border-ink-400/60 focus-within:border-azure-500 focus-within:ring-3 focus-within:ring-azure-100">
@@ -120,22 +118,16 @@ export function SignupForm() {
             autoComplete="username"
             autoCapitalize="none"
             spellCheck={false}
-            placeholder={domain === STUDENT_DOMAIN ? "name.regno" : "name"}
+            placeholder="name.regno"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="h-full min-w-0 flex-1 bg-transparent text-[14.5px] text-ink-900 placeholder:text-stone-400 focus:outline-none"
             required
           />
           {email.includes("@") ? null : (
-            <select
-              aria-label="Email domain"
-              value={domain}
-              onChange={(e) => setDomain(e.target.value)}
-              className="shrink-0 cursor-pointer rounded-md bg-transparent py-1 text-[14.5px] text-stone-500 hover:text-ink-800 focus:outline-none"
-            >
-              <option value={STUDENT_DOMAIN}>{STUDENT_DOMAIN}</option>
-              <option value={STAFF_DOMAIN}>{STAFF_DOMAIN}</option>
-            </select>
+            <label htmlFor="su-email" className="shrink-0 cursor-text pl-1 pr-2 text-[14.5px] text-stone-500 select-none">
+              {STUDENT_DOMAIN}
+            </label>
           )}
         </div>
       </Row>
