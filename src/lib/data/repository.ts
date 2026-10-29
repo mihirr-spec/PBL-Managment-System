@@ -426,6 +426,18 @@ export async function signUp(
   return { ok: true, user: null };
 }
 
+/**
+ * Throws away a sign-up still waiting for its code, so the details can be
+ * corrected and sent again. The password typed on the form proves it is theirs.
+ */
+export async function discardSignup(email: string, password: string): Promise<void> {
+  const { error } = await supabase.rpc("discard_unverified_signup", {
+    p_email: email.trim().toLowerCase(),
+    p_password: password,
+  });
+  fail(error);
+}
+
 /** Sends the verification email (with its code) again. */
 export async function resendConfirmation(email: string): Promise<{ ok: true } | { ok: false; error: string }> {
   const { error } = await supabase.auth.resend({

@@ -8,7 +8,7 @@ import { AlertCircle, ArrowRight, Loader2 } from "lucide-react";
 import { FacultyNameField } from "@/components/auth/faculty-name-field";
 import { VerifyCode } from "@/components/auth/verify-code";
 import { HOME_BY_ROLE } from "@/lib/auth/session";
-import { STAFF_DOMAIN, STUDENT_DOMAIN, signUp, type DirectoryMatch } from "@/lib/data/repository";
+import { STAFF_DOMAIN, STUDENT_DOMAIN, discardSignup, signUp, type DirectoryMatch } from "@/lib/data/repository";
 import { cn } from "@/lib/utils";
 
 const control =
@@ -166,7 +166,20 @@ export function SignupForm({ kind }: { kind: AccountKind }) {
     else setError(result.error);
   }
 
-  if (sentTo) return <VerifyCode email={sentTo} />;
+  /** Back to the form, still filled in, after throwing the unverified sign-up away. */
+  async function editDetails() {
+    if (!sentTo) return;
+    try {
+      await discardSignup(sentTo, password);
+    } catch {
+      // A later sign-up for the same student takes over an unverified one anyway.
+    }
+    setSentTo(null);
+  }
+
+  if (sentTo) {
+    return <VerifyCode email={sentTo} onBack={editDetails} backLabel="Wrong details? Go back" />;
+  }
 
   return (
     <form onSubmit={submit} className="mt-5 space-y-3.5" noValidate>

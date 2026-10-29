@@ -9,9 +9,18 @@ import { resendConfirmation, verifySignupCode } from "@/lib/data/repository";
 
 /**
  * Asks for the code from the verification email. A correct code verifies the
- * account and signs it in, then opens that role's dashboard.
+ * account and signs it in, then opens that role's dashboard. `onBack` and
+ * `backLabel` add a link back to the page before.
  */
-export function VerifyCode({ email, onBack }: { email: string; onBack?: () => void }) {
+export function VerifyCode({
+  email,
+  onBack,
+  backLabel = "Back",
+}: {
+  email: string;
+  onBack?: () => void | Promise<void>;
+  backLabel?: string;
+}) {
   const router = useRouter();
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
@@ -97,8 +106,8 @@ export function VerifyCode({ email, onBack }: { email: string; onBack?: () => vo
           Send a new code
         </button>
         {onBack ? (
-          <button type="button" onClick={onBack} className="text-stone-500 hover:underline">
-            Back
+          <button type="button" onClick={() => void onBack()} className="text-stone-500 hover:underline">
+            {backLabel}
           </button>
         ) : null}
       </div>
