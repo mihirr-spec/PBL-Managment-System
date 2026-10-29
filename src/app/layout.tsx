@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Fraunces, Inter } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 
 import { SessionProvider } from "@/lib/auth/session";
 
@@ -34,6 +35,7 @@ export default function RootLayout({
     <html lang="en" className={`${inter.variable} ${fraunces.variable}`}>
       <body className="antialiased">
         <SessionProvider>{children}</SessionProvider>
+        <Analytics />
       </body>
     </html>
   );
