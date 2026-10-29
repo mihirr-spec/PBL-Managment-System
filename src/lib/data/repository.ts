@@ -333,6 +333,34 @@ export interface SignUpDetails {
   specialization?: string;
   semester?: number;
   section?: string;
+  /** Supervisors and administrators - the faculty list row picked by name. */
+  facultyId?: string;
+}
+
+/** A row of the MUJ faculty list, as shown while typing a name on the sign-up page. */
+export interface DirectoryMatch {
+  id: string;
+  fullName: string;
+  department: string;
+  designation: string;
+  email: string;
+  isAdmin: boolean;
+  hasAccount: boolean;
+}
+
+/** Faculty list names close to `query` (works before sign-in). */
+export async function searchFacultyDirectory(query: string): Promise<DirectoryMatch[]> {
+  const { data, error } = await supabase.rpc("search_faculty_directory", { p_query: query });
+  if (error) throw error;
+  return ((data ?? []) as Record<string, unknown>[]).map((r) => ({
+    id: String(r.id),
+    fullName: String(r.full_name ?? ""),
+    department: String(r.department ?? ""),
+    designation: String(r.designation ?? ""),
+    email: String(r.email ?? ""),
+    isAdmin: Boolean(r.is_admin),
+    hasAccount: Boolean(r.has_account),
+  }));
 }
 
 /**
@@ -362,6 +390,7 @@ export async function signUp(
         specialization: details.specialization?.trim() ?? "",
         semester: details.semester ? String(details.semester) : "",
         section: details.section?.trim() ?? "",
+        faculty_id: details.facultyId ?? "",
       },
     },
   });
