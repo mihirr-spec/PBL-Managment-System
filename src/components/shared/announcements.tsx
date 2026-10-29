@@ -1,7 +1,7 @@
 "use client";
 
-import { useRef, useState, type FormEvent } from "react";
-import { Bold, Eye, Link2, List, ListOrdered, Megaphone, PencilLine, Send, Table, type LucideIcon } from "lucide-react";
+import { useRef, useState, type ClipboardEvent, type FormEvent } from "react";
+import { Bold, Eye, Highlighter, Link2, List, ListOrdered, Megaphone, PencilLine, Send, Table, type LucideIcon } from "lucide-react";
 
 import { FileLink } from "@/components/shared/file-link";
 import { RichText } from "@/components/shared/rich-text";
@@ -11,6 +11,7 @@ import { Card, CardBody, CardHeader, EmptyState } from "@/components/ui/card";
 import { Field, Input, Textarea } from "@/components/ui/field";
 import { FileDrop } from "@/components/ui/file-drop";
 import { postAnnouncement } from "@/lib/data/repository";
+import { htmlToMarks } from "@/lib/paste-html";
 import type { Announcement, User } from "@/lib/types";
 import { cn, formatDateTime, timeAgo } from "@/lib/utils";
 
@@ -59,16 +60,17 @@ export function AnnouncementFeed({ items }: { items: Announcement[] }) {
   );
 }
 
-/** Formatting buttons above the message box. */
-const TOOLS: Array<{ label: string; icon: LucideIcon; apply: (selected: string) => string }> = [
-  { label: "Bold", icon: Bold, apply: (s) => `**${s || "bold text"}**` },
+/** Formatting buttons above the message box; `inline` ones wrap the selection in place. */
+const TOOLS: Array<{ label: string; icon: LucideIcon; inline?: boolean; apply: (selected: string) => string }> = [
+  { label: "Bold", icon: Bold, inline: true, apply: (s) => `**${s || "bold text"}**` },
+  { label: "Green highlight", icon: Highlighter, inline: true, apply: (s) => `==${s || "highlighted text"}==` },
   { label: "Bulleted list", icon: List, apply: (s) => (s || "First point").split("\n").map((l) => `- ${l}`).join("\n") },
   {
     label: "Numbered list",
     icon: ListOrdered,
     apply: (s) => (s || "First step").split("\n").map((l, i) => `${i + 1}. ${l}`).join("\n"),
   },
-  { label: "Link", icon: Link2, apply: (s) => `[${s || "link text"}](https://)` },
+  { label: "Link", icon: Link2, inline: true, apply: (s) => `[${s || "link text"}](https://)` },
   {
     label: "Table",
     icon: Table,
@@ -86,23 +88,38 @@ export function AnnouncementComposer({ user, onPosted }: { user: User; onPosted:
   const [error, setError] = useState<string | null>(null);
   const bodyRef = useRef<HTMLTextAreaElement>(null);
 
+  /** Put `insert` in place of the selection and move the caret after it. */
+  function replaceSelection(insert: string) {
+    const el = bodyRef.current;
+    if (!el) return;
+    const { selectionStart: start, selectionEnd: end } = el;
+    setBody(body.slice(0, start) + insert + body.slice(end));
+    requestAnimationFrame(() => {
+      el.focus();
+      el.setSelectionRange(start + insert.length, start + insert.length);
+    });
+  }
+
   /** Replace the selection with the tool's formatting, on its own lines for blocks. */
   function format(tool: (typeof TOOLS)[number]) {
     const el = bodyRef.current;
     if (!el) return;
     const { selectionStart: start, selectionEnd: end } = el;
     let insert = tool.apply(body.slice(start, end));
-    const block = tool.label !== "Bold" && tool.label !== "Link";
-    if (block) {
+    if (!tool.inline) {
       if (start > 0 && body[start - 1] !== "\n") insert = `\n${insert}`;
       if (end < body.length && body[end] !== "\n") insert = `${insert}\n`;
     }
-    const next = body.slice(0, start) + insert + body.slice(end);
-    setBody(next);
-    requestAnimationFrame(() => {
-      el.focus();
-      el.setSelectionRange(start + insert.length, start + insert.length);
-    });
+    replaceSelection(insert);
+  }
+
+  /** Pasting from Outlook, Gmail or Word keeps bold, green text, lists, links and tables. */
+  function paste(event: ClipboardEvent<HTMLTextAreaElement>) {
+    const html = event.clipboardData.getData("text/html");
+    const marks = html ? htmlToMarks(html) : "";
+    if (!marks) return;
+    event.preventDefault();
+    replaceSelection(marks);
   }
 
   async function submit(event: FormEvent) {
@@ -192,13 +209,14 @@ export function AnnouncementComposer({ user, onPosted }: { user: User; onPosted:
                   rows={9}
                   value={body}
                   onChange={(e) => setBody(e.target.value)}
+                  onPaste={paste}
                   placeholder={"Dear Students,\n\nThe **Mid-Term Evaluation** will be held as follows:\n- **Date:** Thursday, 8 October\n- **Venue:** Room 014, AB1"}
                   className="rounded-none border-0 bg-transparent font-mono text-[13px] leading-relaxed shadow-none focus:ring-0"
                 />
               )}
             </div>
             <p className="mt-1.5 text-[12px] text-slate-500">
-              Use the buttons for bold, lists, links and tables. Check Preview to see what students will get.
+              Paste straight from Outlook or Word to keep its formatting, or use the buttons. Dates and times turn green on their own. Check Preview to see what students will get.
             </p>
           </div>
           <Field label="Attach a file (optional)" htmlFor="ann-file">
