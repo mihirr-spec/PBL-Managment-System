@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CircleCheck, ListChecks, Medal, Trophy } from "lucide-react";
+import { CircleCheck, ListChecks, Trophy } from "lucide-react";
 
 import { AchievementDetail, AchievementRow } from "@/components/achievements/achievement-card";
 import {
@@ -10,6 +10,7 @@ import {
   pendingLinkedInPreview,
   type PendingApproval,
 } from "@/components/achievements/linkedin-preview";
+import { PlainMedal } from "@/components/achievements/medal-icons";
 import { Card, CardHeader, EmptyState } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { PageSkeleton } from "@/components/ui/skeleton";
@@ -95,7 +96,7 @@ export default function AdminAchievementsPage() {
           description="Ranked by approved achievements, then by bonus marks."
         />
         {shortlist.length === 0 ? (
-          <EmptyState icon={<Medal className="size-5" />} title="No approved achievements yet" scene="achievements" />
+          <EmptyState icon={<PlainMedal className="size-5" />} title="No approved achievements yet" scene="achievements" />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[34rem] text-[13px]">

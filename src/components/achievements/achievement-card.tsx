@@ -24,7 +24,6 @@ import {
   Link2,
   MapPin,
   Maximize2,
-  Medal,
   MessageSquare,
   PencilLine,
   Rocket,
@@ -44,6 +43,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/field";
 import type { PendingApproval } from "@/components/achievements/linkedin-preview";
+import { PlainMedal, SecondMedal, ThirdMedal } from "@/components/achievements/medal-icons";
 import { achievementResult, findTemplate, linkedInPost, MAX_BONUS_MARKS, placement } from "@/lib/achievements";
 import * as repo from "@/lib/data/repository";
 import type { Achievement, AchievementDocument, AchievementEvent, AchievementStatus, Student } from "@/lib/types";
@@ -92,7 +92,7 @@ const CATEGORY_ICON: Record<string, LucideIcon> = {
   hackathons: Code2,
   research: BookOpen,
   patents: Lightbulb,
-  sports: Medal,
+  sports: PlainMedal,
   awards: Award,
   clubs: UsersRound,
   competitions: Star,
@@ -105,8 +105,8 @@ const CATEGORY_ICON: Record<string, LucideIcon> = {
 function emblem(a: Achievement): { icon: LucideIcon; tint: string; ring: string } {
   const place = placement(a);
   if (place === 1) return { icon: Trophy, tint: "text-azure-600", ring: "from-azure-100 via-white to-blue-50" };
-  if (place === 2) return { icon: Medal, tint: "text-slate-500", ring: "from-slate-200 via-white to-slate-50" };
-  if (place === 3) return { icon: Medal, tint: "text-amber-700", ring: "from-amber-100 via-white to-orange-50" };
+  if (place === 2) return { icon: SecondMedal, tint: "text-slate-500", ring: "from-slate-200 via-white to-slate-50" };
+  if (place === 3) return { icon: ThirdMedal, tint: "text-amber-700", ring: "from-amber-100 via-white to-orange-50" };
   return { icon: CATEGORY_ICON[a.category] ?? Sparkles, tint: "text-azure-600", ring: "from-azure-100 via-white to-blue-50" };
 }
 
@@ -200,7 +200,8 @@ export function AchievementDetail({
   const open = a.status === "submitted" || a.status === "needs_info";
   const who = student ?? a.student;
   const result = achievementResult(a);
-  const first = placement(a) === 1;
+  const place = placement(a);
+  const ResultIcon = place === 1 ? Trophy : place === 2 ? SecondMedal : place === 3 ? ThirdMedal : PlainMedal;
 
   return (
     <div className="animate-fade-rise overflow-hidden rounded-[26px] bg-white/85 shadow-[0_30px_80px_-50px_rgba(13,31,63,0.55)] ring-1 ring-white">
@@ -236,7 +237,7 @@ export function AchievementDetail({
             <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-[13px] text-slate-600">
               {result ? (
                 <span className="inline-flex items-center gap-2 rounded-full bg-azure-50 px-3 py-1.5 font-semibold text-azure-600 ring-1 ring-azure-100">
-                  {first ? <Trophy className="size-4" /> : <Medal className="size-4" />}
+                  <ResultIcon className="size-4" />
                   {result}
                 </span>
               ) : null}
@@ -337,7 +338,7 @@ const FIELD_ICON: Record<string, LucideIcon> = {
   competition: Star,
   position: Award,
   rank: Hash,
-  medal: Medal,
+  medal: PlainMedal,
   award: Award,
   organiser: Building2,
   by: Building2,
@@ -361,7 +362,7 @@ const FIELD_ICON: Record<string, LucideIcon> = {
   invention: Lightbulb,
   startup: Rocket,
   milestone: Flag,
-  sport: Medal,
+  sport: PlainMedal,
   level: Flag,
 };
 
