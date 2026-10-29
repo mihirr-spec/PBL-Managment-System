@@ -26,13 +26,10 @@ function Row({ label, htmlFor, help, children }: { label: string; htmlFor: strin
   );
 }
 
-type AccountKind = "student" | "supervisor" | "admin";
+export type AccountKind = "student" | "supervisor" | "admin";
 
-const KINDS: { kind: AccountKind; label: string }[] = [
-  { kind: "student", label: "Student" },
-  { kind: "supervisor", label: "Team supervisor" },
-  { kind: "admin", label: "Administrator" },
-];
+/** The sign-in tab each kind of account goes back to. */
+const LOGIN_TAB: Record<AccountKind, string> = { student: "student", supervisor: "teacher", admin: "admin" };
 
 /** Name without a title, as lower-case letters: "Dr. Preeti Narooka" -> ["preeti", "narooka"]. */
 function nameWords(name: string): string[] {
@@ -97,15 +94,14 @@ function EmailBox({
 }
 
 /**
- * Account creation. The person first says whether they are a student, a team
- * supervisor or an administrator. Staff find their name in the MUJ faculty
- * list, which fills in their email; students give their name and
- * registration number and their email is suggested from those. Either email
- * can still be changed. Supabase emails a code to verify the address.
+ * Account creation for the kind of account picked on the sign-in tabs. Staff
+ * find their name in the MUJ faculty list, which fills in their email;
+ * students give their name and registration number and their email is
+ * suggested from those. Either email can still be changed. Supabase emails a
+ * code to verify the address.
  */
-export function SignupForm() {
+export function SignupForm({ kind }: { kind: AccountKind }) {
   const router = useRouter();
-  const [kind, setKind] = useState<AccountKind | null>(null);
   const [fullName, setFullName] = useState("");
   const [picked, setPicked] = useState<DirectoryMatch | null>(null);
   const [registration, setRegistration] = useState("");
@@ -129,18 +125,9 @@ export function SignupForm() {
   const typed = email.trim().toLowerCase();
   const address = typed.includes("@") ? typed : typed ? `${typed}${domain}` : "";
 
-  function choose(next: AccountKind) {
-    if (next === kind) return;
-    setKind(next);
-    setPicked(null);
-    setEmailEdit(null);
-    setError(null);
-  }
-
   async function submit(event: FormEvent) {
     event.preventDefault();
     setError(null);
-    if (!kind) return;
     if (!fullName.trim()) {
       setError("Enter your full name.");
       return;
@@ -183,34 +170,7 @@ export function SignupForm() {
 
   return (
     <form onSubmit={submit} className="mt-5 space-y-3.5" noValidate>
-      <div>
-        <p id="su-kind" className="mb-1.5 text-[14px] font-medium text-ink-900">
-          I am a
-        </p>
-        <div role="radiogroup" aria-labelledby="su-kind" className="grid grid-cols-3 gap-1 rounded-lg bg-[#e8edf4] p-1">
-          {KINDS.map((k) => (
-            <button
-              key={k.kind}
-              type="button"
-              role="radio"
-              aria-checked={kind === k.kind}
-              onClick={() => choose(k.kind)}
-              className={cn(
-                "h-9 rounded-md px-1 text-[13.5px] font-medium transition-colors",
-                kind === k.kind ? "bg-white text-ink-900 shadow-sm" : "text-stone-500 hover:text-ink-900",
-              )}
-            >
-              {k.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {kind === null ? (
-        <p className="text-center text-[13.5px] text-stone-500">Choose who the account is for to continue.</p>
-      ) : null}
-
-      {kind && !isStudent ? (
+      {!isStudent ? (
         <>
           <Row
             label="Full name"
@@ -280,33 +240,31 @@ export function SignupForm() {
         </>
       ) : null}
 
-      {kind ? (
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Row label="Password" htmlFor="su-pass">
-            <input
-              id="su-pass"
-              type="password"
-              autoComplete="new-password"
-              placeholder="At least 8 characters"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className={control}
-              required
-            />
-          </Row>
-          <Row label="Confirm password" htmlFor="su-confirm">
-            <input
-              id="su-confirm"
-              type="password"
-              autoComplete="new-password"
-              value={confirm}
-              onChange={(e) => setConfirm(e.target.value)}
-              className={control}
-              required
-            />
-          </Row>
-        </div>
-      ) : null}
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Row label="Password" htmlFor="su-pass">
+          <input
+            id="su-pass"
+            type="password"
+            autoComplete="new-password"
+            placeholder="At least 8 characters"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className={control}
+            required
+          />
+        </Row>
+        <Row label="Confirm password" htmlFor="su-confirm">
+          <input
+            id="su-confirm"
+            type="password"
+            autoComplete="new-password"
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+            className={control}
+            required
+          />
+        </Row>
+      </div>
 
       {error ? (
         <p role="alert" className="flex items-start gap-2 rounded-lg bg-clay-100/80 px-3.5 py-3 text-[14px] text-clay-500">
@@ -317,7 +275,7 @@ export function SignupForm() {
 
       <button
         type="submit"
-        disabled={busy || !kind}
+        disabled={busy}
         className={cn(
           "flex h-11 w-full items-center justify-center gap-2.5 rounded-lg bg-[linear-gradient(90deg,#173b7e_0%,#1d4b93_55%,#2f62a6_100%)] text-[16px] font-medium text-white shadow-[0_14px_30px_-18px_rgba(13,31,63,0.95)] transition-[filter,transform] hover:brightness-110 active:translate-y-px disabled:pointer-events-none disabled:opacity-70",
         )}
@@ -337,7 +295,7 @@ export function SignupForm() {
 
       <p className="text-center text-[13.5px] text-stone-500">
         Already have an account?{" "}
-        <Link href="/login" className="text-azure-600 hover:underline">
+        <Link href={`/login?as=${LOGIN_TAB[kind]}`} className="text-azure-600 hover:underline">
           Sign in
         </Link>
       </p>

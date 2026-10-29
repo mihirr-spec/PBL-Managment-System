@@ -10,10 +10,10 @@ export default async function LoginPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const { verified } = await searchParams;
+  const { verified, as } = await searchParams;
   return (
     <AuthShell title="Welcome" emphasis="back" subtitle="Sign in with your university email and password.">
-      <LoginForm verified={verified != null} />
+      <LoginForm verified={verified != null} initialTab={typeof as === "string" ? as : undefined} />
     </AuthShell>
   );
 }

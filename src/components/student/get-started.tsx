@@ -41,7 +41,6 @@ export function GetStarted({
 }) {
   const [createdId, setCreatedId] = useState<string | null>(null);
   const groupId = group?.id ?? createdId;
-  const sent = useLoad(repo.listSentInvitations, groupId ? `sent:${groupId}` : null);
 
   const [teacher, setTeacher] = useState<Faculty | null>(null);
   const [form, setForm] = useState<File | null>(null);
@@ -54,8 +53,15 @@ export function GetStarted({
   const [error, setError] = useState<string | null>(null);
 
   const joined = (group?.members ?? []).filter((m) => m.studentId !== student.id);
-  const pending = (sent.data ?? []).filter((i) => i.status === "pending");
-  const declined = (sent.data ?? []).filter((i) => i.status === "declined");
+  // Reloaded when someone joins, so an accepted request does not linger as "Request sent".
+  const sent = useLoad(
+    repo.listSentInvitations,
+    groupId ? `sent:${groupId}:${joined.map((m) => m.studentId).join(",")}` : null,
+  );
+  const joinedRegs = new Set(joined.map((m) => m.registrationNumber));
+  const open = (sent.data ?? []).filter((i) => !joinedRegs.has(i.registrationNumber));
+  const pending = open.filter((i) => i.status === "pending");
+  const declined = open.filter((i) => i.status === "declined");
   const room = MAX_TEAMMATES - joined.length - pending.length;
 
   /** Sends one classmate a request; the first one creates the team. */

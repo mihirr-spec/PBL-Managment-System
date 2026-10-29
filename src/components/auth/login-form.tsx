@@ -72,12 +72,20 @@ const emailBox =
 const fieldIcon =
   "pointer-events-none absolute top-1/2 left-4 size-[18px] -translate-y-1/2 text-ink-800";
 
-/** `verified`: back from the confirmation link in the sign-up email. */
-export function LoginForm({ verified = false }: { verified?: boolean }) {
+/** The sign-up page's name for each tab's kind of account. */
+const SIGNUP_KIND: Record<TabKey, string> = { student: "student", teacher: "supervisor", admin: "admin" };
+
+/**
+ * `verified`: back from the confirmation link in the sign-up email.
+ * `initialTab`: the tab to open on, e.g. when coming back from sign-up.
+ */
+export function LoginForm({ verified = false, initialTab }: { verified?: boolean; initialTab?: string }) {
   const { signIn, user, loading } = useSession();
   const router = useRouter();
 
-  const [tabKey, setTabKey] = useState<TabKey>("student");
+  const [tabKey, setTabKey] = useState<TabKey>(
+    () => TABS.find((t) => t.key === initialTab)?.key ?? "student",
+  );
   const tab = TABS.find((t) => t.key === tabKey) ?? TABS[0];
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -335,7 +343,7 @@ export function LoginForm({ verified = false }: { verified?: boolean }) {
       <div className="mt-4 text-center">
         <p className="text-[13.5px] text-stone-500">
           New to the portal?{" "}
-          <Link href="/signup" className="text-azure-600 hover:underline">
+          <Link href={`/signup?as=${SIGNUP_KIND[tab.key]}`} className="text-azure-600 hover:underline">
             Create your account
           </Link>
         </p>
