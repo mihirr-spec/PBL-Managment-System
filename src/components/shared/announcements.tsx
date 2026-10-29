@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
-import { Megaphone, Send } from "lucide-react";
+import { useRef, useState, type FormEvent } from "react";
+import { Bold, Eye, Link2, List, ListOrdered, Megaphone, PencilLine, Send, Table, type LucideIcon } from "lucide-react";
 
 import { FileLink } from "@/components/shared/file-link";
+import { RichText } from "@/components/shared/rich-text";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardHeader, EmptyState } from "@/components/ui/card";
@@ -11,9 +12,9 @@ import { Field, Input, Textarea } from "@/components/ui/field";
 import { FileDrop } from "@/components/ui/file-drop";
 import { postAnnouncement } from "@/lib/data/repository";
 import type { Announcement, User } from "@/lib/types";
-import { formatDateTime, timeAgo } from "@/lib/utils";
+import { cn, formatDateTime, timeAgo } from "@/lib/utils";
 
-/** Announcements, newest first, with any attached file. */
+/** Announcements, newest first, each laid out like a clean email. */
 export function AnnouncementFeed({ items }: { items: Announcement[] }) {
   if (items.length === 0) {
     return (
@@ -27,41 +28,82 @@ export function AnnouncementFeed({ items }: { items: Announcement[] }) {
     );
   }
   return (
-    <ul className="space-y-3">
+    <ul className="space-y-4">
       {items.map((a) => (
         <li
           key={a.id}
-          className="rounded-[18px] border border-white/70 bg-white/70 p-5 shadow-[0_16px_40px_-32px_rgba(61,78,92,0.5)] backdrop-blur-xl"
+          className="overflow-hidden rounded-[20px] border border-sand-200 bg-white shadow-[0_18px_44px_-34px_rgba(21,80,200,0.45)]"
         >
-          <div className="flex items-start gap-3">
+          <div className="flex items-center gap-3 border-b border-sand-100 bg-slate-50/60 px-5 py-3 sm:px-7">
             <Avatar name={a.postedByName} size="sm" />
             <div className="min-w-0 flex-1">
-              <p className="font-display text-[17px] tracking-tight text-ink-900">{a.title}</p>
-              <p className="text-[12px] text-stone-500" title={formatDateTime(a.createdAt)}>
-                {a.postedByName} · {a.scope === "all" ? "All students" : "Your supervisor's groups"} ·{" "}
-                {timeAgo(a.createdAt)}
+              <p className="truncate text-[13.5px] font-semibold text-ink-900">{a.postedByName}</p>
+              <p className="text-[12px] text-slate-500">
+                To {a.scope === "all" ? "all students" : "the supervisor's groups"}
               </p>
             </div>
+            <p className="shrink-0 text-[12px] text-slate-500" title={formatDateTime(a.createdAt)}>
+              {timeAgo(a.createdAt)}
+            </p>
           </div>
-          {a.body ? (
-            <p className="mt-3 text-[13.5px] leading-relaxed whitespace-pre-line text-stone-600">{a.body}</p>
-          ) : null}
-          {a.attachmentPath && a.attachmentName ? (
-            <FileLink bucket="announcements" path={a.attachmentPath} name={a.attachmentName} className="mt-3" />
-          ) : null}
+          <div className="px-5 py-5 sm:px-7 sm:py-6">
+            <h3 className="font-display text-[1.3rem] leading-snug tracking-tight text-ink-900">{a.title}</h3>
+            {a.body ? <RichText text={a.body} className="mt-3" /> : null}
+            {a.attachmentPath && a.attachmentName ? (
+              <FileLink bucket="announcements" path={a.attachmentPath} name={a.attachmentName} className="mt-5" />
+            ) : null}
+          </div>
         </li>
       ))}
     </ul>
   );
 }
 
-/** Posting form for teachers (to their groups) and admins (to every student). */
+/** Formatting buttons above the message box. */
+const TOOLS: Array<{ label: string; icon: LucideIcon; apply: (selected: string) => string }> = [
+  { label: "Bold", icon: Bold, apply: (s) => `**${s || "bold text"}**` },
+  { label: "Bulleted list", icon: List, apply: (s) => (s || "First point").split("\n").map((l) => `- ${l}`).join("\n") },
+  {
+    label: "Numbered list",
+    icon: ListOrdered,
+    apply: (s) => (s || "First step").split("\n").map((l, i) => `${i + 1}. ${l}`).join("\n"),
+  },
+  { label: "Link", icon: Link2, apply: (s) => `[${s || "link text"}](https://)` },
+  {
+    label: "Table",
+    icon: Table,
+    apply: () => "| Heading | Heading |\n| --- | --- |\n| Cell | Cell |\n| Cell | Cell |",
+  },
+];
+
+/** Posting form for supervisors (to their groups) and the administrator (to every student). */
 export function AnnouncementComposer({ user, onPosted }: { user: User; onPosted: () => void }) {
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
+  const [preview, setPreview] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const bodyRef = useRef<HTMLTextAreaElement>(null);
+
+  /** Replace the selection with the tool's formatting, on its own lines for blocks. */
+  function format(tool: (typeof TOOLS)[number]) {
+    const el = bodyRef.current;
+    if (!el) return;
+    const { selectionStart: start, selectionEnd: end } = el;
+    let insert = tool.apply(body.slice(start, end));
+    const block = tool.label !== "Bold" && tool.label !== "Link";
+    if (block) {
+      if (start > 0 && body[start - 1] !== "\n") insert = `\n${insert}`;
+      if (end < body.length && body[end] !== "\n") insert = `${insert}\n`;
+    }
+    const next = body.slice(0, start) + insert + body.slice(end);
+    setBody(next);
+    requestAnimationFrame(() => {
+      el.focus();
+      el.setSelectionRange(start + insert.length, start + insert.length);
+    });
+  }
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -72,6 +114,7 @@ export function AnnouncementComposer({ user, onPosted }: { user: User; onPosted:
       await postAnnouncement({ user, title: title.trim(), body: body.trim(), file: file ?? undefined });
       setTitle("");
       setBody("");
+      setPreview(false);
       setFile(null);
       onPosted();
     } catch (e) {
@@ -89,11 +132,75 @@ export function AnnouncementComposer({ user, onPosted }: { user: User; onPosted:
       <form onSubmit={submit}>
         <CardBody className="space-y-4">
           <Field label="Title" htmlFor="ann-title">
-            <Input id="ann-title" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={160} />
+            <Input
+              id="ann-title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              maxLength={160}
+              placeholder="e.g. PBL-III Mid-Term Evaluation"
+            />
           </Field>
-          <Field label="Message" htmlFor="ann-body">
-            <Textarea id="ann-body" rows={4} value={body} onChange={(e) => setBody(e.target.value)} />
-          </Field>
+          <div>
+            <label htmlFor="ann-body" className="mb-1.5 block text-[13px] font-medium text-ink-800">Message</label>
+            <div className="overflow-hidden rounded-[14px] border border-sand-200 bg-white focus-within:border-azure-500">
+              <div className="flex flex-wrap items-center gap-1 border-b border-sand-100 bg-slate-50/70 px-2 py-1.5">
+                {TOOLS.map((t) => (
+                  <button
+                    key={t.label}
+                    type="button"
+                    title={t.label}
+                    aria-label={t.label}
+                    disabled={preview}
+                    onClick={() => format(t)}
+                    className="rounded-lg p-1.5 text-slate-500 hover:bg-white hover:text-ink-900 disabled:opacity-40"
+                  >
+                    <t.icon className="size-4" />
+                  </button>
+                ))}
+                <div className="ml-auto flex rounded-lg bg-white p-0.5 ring-1 ring-sand-200">
+                  {[
+                    { on: false, label: "Write", icon: PencilLine },
+                    { on: true, label: "Preview", icon: Eye },
+                  ].map((m) => (
+                    <button
+                      key={m.label}
+                      type="button"
+                      onClick={() => setPreview(m.on)}
+                      className={cn(
+                        "inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[12px] font-medium",
+                        preview === m.on ? "bg-azure-50 text-azure-600" : "text-slate-500 hover:text-ink-900",
+                      )}
+                    >
+                      <m.icon className="size-3.5" />
+                      {m.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {preview ? (
+                <div className="min-h-[12rem] px-4 py-3.5">
+                  {body.trim() ? (
+                    <RichText text={body} />
+                  ) : (
+                    <p className="text-[13.5px] text-slate-400">Nothing to preview yet.</p>
+                  )}
+                </div>
+              ) : (
+                <Textarea
+                  id="ann-body"
+                  ref={bodyRef}
+                  rows={9}
+                  value={body}
+                  onChange={(e) => setBody(e.target.value)}
+                  placeholder={"Dear Students,\n\nThe **Mid-Term Evaluation** will be held as follows:\n- **Date:** Thursday, 8 October\n- **Venue:** Room 014, AB1"}
+                  className="rounded-none border-0 bg-transparent font-mono text-[13px] leading-relaxed shadow-none focus:ring-0"
+                />
+              )}
+            </div>
+            <p className="mt-1.5 text-[12px] text-slate-500">
+              Use the buttons for bold, lists, links and tables. Check Preview to see what students will get.
+            </p>
+          </div>
           <Field label="Attach a file (optional)" htmlFor="ann-file">
             <FileDrop
               id="ann-file"
