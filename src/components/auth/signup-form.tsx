@@ -2,13 +2,13 @@
 
 import Link from "next/link";
 import { useState, type FormEvent, type ReactNode } from "react";
-import { AlertCircle, ArrowRight, Loader2, MailCheck } from "lucide-react";
+import { AlertCircle, ArrowRight, Loader2 } from "lucide-react";
 
+import { VerifyCode } from "@/components/auth/verify-code";
 import {
   STAFF_DOMAIN,
   STUDENT_DOMAIN,
   registrationFromEmail,
-  resendConfirmation,
   signUp,
 } from "@/lib/data/repository";
 import { cn } from "@/lib/utils";
@@ -31,7 +31,7 @@ function Row({ label, htmlFor, help, children }: { label: string; htmlFor: strin
 /**
  * Account creation. Students give their academic details (used only if the
  * university roster has no record for them yet); teachers and the PBL office
- * need nothing but their address. Supabase emails a link to verify it.
+ * need nothing but their address. Supabase emails a code to verify it.
  */
 export function SignupForm() {
   const [email, setEmail] = useState("");
@@ -46,9 +46,12 @@ export function SignupForm() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [sentTo, setSentTo] = useState<string | null>(null);
-  const [resent, setResent] = useState(false);
 
-  const address = email.trim().toLowerCase();
+  const [domain, setDomain] = useState<string>(STUDENT_DOMAIN);
+
+  // People type only the part before the @; a full address typed in is kept as is.
+  const typed = email.trim().toLowerCase();
+  const address = typed.includes("@") ? typed : typed ? `${typed}${domain}` : "";
   const isStudent = address.endsWith(STUDENT_DOMAIN);
   const isStaff = address.endsWith(STAFF_DOMAIN);
   const emailReg = isStudent ? registrationFromEmail(address) : null;
@@ -92,38 +95,7 @@ export function SignupForm() {
     else setError(result.error);
   }
 
-  if (sentTo) {
-    return (
-      <div className="mt-6 space-y-4 text-center">
-        <MailCheck className="mx-auto size-10 text-azure-600" strokeWidth={1.5} />
-        <p className="text-[15px] text-ink-900">
-          We sent a verification link to <span className="font-semibold">{sentTo}</span>.
-        </p>
-        <p className="text-[13.5px] text-stone-600">
-          Open it to activate your account, then sign in. Check your spam folder if it has not arrived in a few minutes.
-        </p>
-        <button
-          type="button"
-          disabled={resent}
-          onClick={async () => {
-            const r = await resendConfirmation(sentTo);
-            if (r.ok) setResent(true);
-            else setError(r.error);
-          }}
-          className="text-[13.5px] text-azure-600 hover:underline disabled:text-stone-400 disabled:no-underline"
-        >
-          {resent ? "Sent again" : "Resend the link"}
-        </button>
-        {error ? <p className="text-[13px] text-clay-500">{error}</p> : null}
-        <Link
-          href="/login"
-          className="flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-ink-800/70 bg-white text-[15px] font-medium text-ink-900 hover:bg-azure-50"
-        >
-          Back to sign in
-        </Link>
-      </div>
-    );
-  }
+  if (sentTo) return <VerifyCode email={sentTo} />;
 
   return (
     <form onSubmit={submit} className="mt-5 space-y-3.5" noValidate>
@@ -140,16 +112,32 @@ export function SignupForm() {
               : `Students ${STUDENT_DOMAIN} · supervisors ${STAFF_DOMAIN}`
         }
       >
-        <input
-          id="su-email"
-          type="email"
-          autoComplete="username"
-          placeholder="name.regno@muj.manipal.edu"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className={control}
-          required
-        />
+        <div className="flex h-11 w-full items-center rounded-lg border border-[#c9d1dc] bg-white/90 pl-4 pr-2 transition-colors hover:border-ink-400/60 focus-within:border-azure-500 focus-within:ring-3 focus-within:ring-azure-100">
+          <input
+            id="su-email"
+            type="text"
+            inputMode="email"
+            autoComplete="username"
+            autoCapitalize="none"
+            spellCheck={false}
+            placeholder={domain === STUDENT_DOMAIN ? "name.regno" : "name"}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="h-full min-w-0 flex-1 bg-transparent text-[14.5px] text-ink-900 placeholder:text-stone-400 focus:outline-none"
+            required
+          />
+          {email.includes("@") ? null : (
+            <select
+              aria-label="Email domain"
+              value={domain}
+              onChange={(e) => setDomain(e.target.value)}
+              className="shrink-0 cursor-pointer rounded-md bg-transparent py-1 text-[14.5px] text-stone-500 hover:text-ink-800 focus:outline-none"
+            >
+              <option value={STUDENT_DOMAIN}>{STUDENT_DOMAIN}</option>
+              <option value={STAFF_DOMAIN}>{STAFF_DOMAIN}</option>
+            </select>
+          )}
+        </div>
       </Row>
 
       {isStudent ? (

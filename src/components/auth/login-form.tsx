@@ -15,6 +15,7 @@ import {
   Mail,
 } from "lucide-react";
 
+import { VerifyCode } from "@/components/auth/verify-code";
 import { HOME_BY_ROLE, useSession } from "@/lib/auth/session";
 import { resendConfirmation } from "@/lib/data/repository";
 import type { Role } from "@/lib/types";
@@ -85,6 +86,8 @@ export function LoginForm({ verified = false }: { verified?: boolean }) {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [unverified, setUnverified] = useState(false);
+  /** Address waiting for its verification code, if any. */
+  const [verifying, setVerifying] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(
     verified ? "Email verified. Sign in to continue." : null,
   );
@@ -121,12 +124,13 @@ export function LoginForm({ verified = false }: { verified?: boolean }) {
     setSubmitting(false);
   }
 
+  /** Sends a fresh code and switches to the code box. */
   async function resend() {
     const result = await resendConfirmation(fullEmail(email));
     setUnverified(false);
     if (result.ok) {
       setError(null);
-      setNotice(`We sent a new verification link to ${fullEmail(email).toLowerCase()}.`);
+      setVerifying(fullEmail(email).toLowerCase());
     } else {
       setError(result.error);
     }
@@ -146,6 +150,8 @@ export function LoginForm({ verified = false }: { verified?: boolean }) {
     setError(null);
     setUnverified(false);
   }
+
+  if (verifying) return <VerifyCode email={verifying} onBack={() => setVerifying(null)} />;
 
   return (
     <>
@@ -271,7 +277,7 @@ export function LoginForm({ verified = false }: { verified?: boolean }) {
               {error}
               {unverified ? (
                 <button type="button" onClick={() => void resend()} className="ml-1 font-medium text-azure-600 underline">
-                  Resend the link
+                  Send a code
                 </button>
               ) : null}
             </span>

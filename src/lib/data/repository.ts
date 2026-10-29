@@ -382,7 +382,7 @@ export async function signUp(details: SignUpDetails): Promise<{ ok: true } | { o
   return { ok: true };
 }
 
-/** Sends the confirmation email again. */
+/** Sends the verification email (with its code) again. */
 export async function resendConfirmation(email: string): Promise<{ ok: true } | { ok: false; error: string }> {
   const { error } = await supabase.auth.resend({
     type: "signup",
@@ -390,6 +390,33 @@ export async function resendConfirmation(email: string): Promise<{ ok: true } | 
     options: { emailRedirectTo: `${window.location.origin}/login?verified=1` },
   });
   return error ? { ok: false, error: error.message } : { ok: true };
+}
+
+/**
+ * Checks the code from the sign-up email. A code is used instead of the link
+ * because Outlook's link scanner opens links before the student does, which
+ * uses up a one-time link. On success the account is verified and signed in.
+ */
+export async function verifySignupCode(email: string, code: string): Promise<AuthResult> {
+  const { data, error } = await supabase.auth.verifyOtp({
+    email: email.trim().toLowerCase(),
+    token: code.replace(/\s/g, ""),
+    type: "signup",
+  });
+  if (error || !data.user) {
+    return {
+      ok: false,
+      error: /expired/i.test(error?.message ?? "")
+        ? "This code has expired. Send a new one and try again."
+        : "That code is not right. Check the latest email and try again.",
+    };
+  }
+  const user = await loadUser(data.user.id, data.user.last_sign_in_at);
+  if (!user) {
+    await supabase.auth.signOut();
+    return { ok: false, error: "This account has no portal profile yet. Contact your PBL coordinator." };
+  }
+  return { ok: true, user };
 }
 
 // No address check here: the database only has accounts it accepted.
@@ -400,7 +427,7 @@ export async function authenticate({ email, password, roles }: Credentials): Pro
     password,
   });
   if (error?.code === "email_not_confirmed") {
-    return { ok: false, error: "Verify your email first - open the link we sent to your inbox." };
+    return { ok: false, error: "Verify your email first with the code we sent to your inbox." };
   }
   // A paused or unreachable backend is not a wrong password - say so.
   if (error && (isAuthRetryableFetchError(error) || error.status === 0 || (error.status ?? 0) >= 500)) {
