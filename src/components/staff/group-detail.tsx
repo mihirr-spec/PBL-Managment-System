@@ -32,8 +32,9 @@ async function loadGroupDetail(groupId: string) {
 }
 
 /**
- * Everything about one team, for its supervisor and the PBL office. The PBL
- * office (`isAdmin`) can also move the group to another supervisor.
+ * Everything about one team, for its supervisor and the PBL office. Only the
+ * supervisor grades and sets the report count; the PBL office (`isAdmin`) sees
+ * it read-only and can move the group to another supervisor.
  */
 export function GroupDetail({ groupId, isAdmin = false }: { groupId: string; isAdmin?: boolean }) {
   const [changing, setChanging] = useState(false);
@@ -120,7 +121,10 @@ export function GroupDetail({ groupId, isAdmin = false }: { groupId: string; isA
 
       {/* --------------------------- students --------------------------- */}
       <Card>
-        <CardHeader title="Students" description="Grade individuals and note what each should improve." />
+        <CardHeader
+          title="Students"
+          description={isAdmin ? "Grades given by the supervisor." : "Grade individuals and note what each should improve."}
+        />
         <ul className="divide-y divide-sand-200/70">
           {group.members.map((m) => (
             <StudentRow
@@ -128,6 +132,7 @@ export function GroupDetail({ groupId, isAdmin = false }: { groupId: string; isA
               member={m}
               isLeader={m.studentId === group.leaderStudentId}
               grades={grades.filter((g) => g.studentId === m.studentId)}
+              canGrade={!isAdmin}
               onGraded={reload}
             />
           ))}
@@ -138,14 +143,16 @@ export function GroupDetail({ groupId, isAdmin = false }: { groupId: string; isA
       <Card>
         <CardHeader
           title="Weekly reports"
-          description={`${reports.filter((r) => r.week <= group.reportCount).length} of ${group.reportCount} submitted. Grade out of 10 with feedback - students are notified.`}
-          action={<ReportCountPicker groupId={group.id} value={group.reportCount} onChanged={reload} />}
+          description={`${reports.filter((r) => r.week <= group.reportCount).length} of ${group.reportCount} submitted. ${
+            isAdmin ? "Graded out of 10 by the supervisor." : "Grade out of 10 with feedback - students are notified."
+          }`}
+          action={isAdmin ? null : <ReportCountPicker groupId={group.id} value={group.reportCount} onChanged={reload} />}
         />
         <ul className="divide-y divide-sand-200/70">
           {Array.from({ length: group.reportCount }, (_, i) => i + 1).map((week) => {
             const r = reports.find((x) => x.week === week);
             return r ? (
-              <ReportRow key={r.id} report={r} onGraded={reload} />
+              <ReportRow key={r.id} report={r} canGrade={!isAdmin} onGraded={reload} />
             ) : (
               <li key={week} className="flex items-center gap-2 px-5 py-3">
                 <FileText className="size-4 text-stone-300" />
@@ -174,11 +181,13 @@ function StudentRow({
   member,
   isLeader,
   grades,
+  canGrade,
   onGraded,
 }: {
   member: Group["members"][number];
   isLeader: boolean;
   grades: StudentGrade[];
+  canGrade: boolean;
   onGraded: () => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -231,10 +240,12 @@ function StudentRow({
             </p>
           ) : null}
         </div>
-        <Button size="sm" variant="secondary" onClick={() => setOpen((v) => !v)}>
-          <Award className="size-3.5" />
-          {open ? "Cancel" : "Give grade"}
-        </Button>
+        {canGrade ? (
+          <Button size="sm" variant="secondary" onClick={() => setOpen((v) => !v)}>
+            <Award className="size-3.5" />
+            {open ? "Cancel" : "Give grade"}
+          </Button>
+        ) : null}
       </div>
 
       {grades.length > 0 ? (
@@ -248,7 +259,7 @@ function StudentRow({
         </ul>
       ) : null}
 
-      {open ? (
+      {canGrade && open ? (
         <form onSubmit={submit} className="mt-4 grid gap-3 rounded-[14px] bg-white/60 p-4 sm:grid-cols-[1fr_6rem_6rem]">
           <Field label="What is this grade for?" htmlFor={`t-${member.studentId}`}>
             <Input id={`t-${member.studentId}`} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Review II presentation" />
@@ -300,7 +311,7 @@ function ReportCountPicker({ groupId, value, onChanged }: { groupId: string; val
   );
 }
 
-function ReportRow({ report, onGraded }: { report: WeeklyReport; onGraded: () => void }) {
+function ReportRow({ report, canGrade, onGraded }: { report: WeeklyReport; canGrade: boolean; onGraded: () => void }) {
   const [grade, setGrade] = useState("");
   const [feedback, setFeedback] = useState("");
   const [busy, setBusy] = useState(false);
@@ -342,6 +353,8 @@ function ReportRow({ report, onGraded }: { report: WeeklyReport; onGraded: () =>
 
       {report.grade != null ? (
         report.feedback ? <p className="mt-2 text-[12.5px] text-stone-500">Feedback: {report.feedback}</p> : null
+      ) : !canGrade ? (
+        <p className="mt-2 text-[12.5px] text-stone-500">Waiting for the supervisor to grade.</p>
       ) : (
         <form onSubmit={submit} className="mt-3 flex flex-wrap items-end gap-3 rounded-[14px] bg-white/60 p-3">
           <Field label="Grade /10" htmlFor={`g-${report.id}`} className="w-24">
