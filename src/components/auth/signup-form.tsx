@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState, type FormEvent, type ReactNode } from "react";
 import { AlertCircle, ArrowRight, Loader2 } from "lucide-react";
 
 import { VerifyCode } from "@/components/auth/verify-code";
+import { HOME_BY_ROLE } from "@/lib/auth/session";
 import {
   STAFF_DOMAIN,
   STUDENT_DOMAIN,
@@ -34,6 +36,7 @@ function Row({ label, htmlFor, help, children }: { label: string; htmlFor: strin
  * need nothing but their address. Supabase emails a code to verify it.
  */
 export function SignupForm() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -88,6 +91,10 @@ export function SignupForm() {
           }
         : {}),
     });
+    if (result.ok && result.user) {
+      router.replace(HOME_BY_ROLE[result.user.role]);
+      return;
+    }
     setBusy(false);
     if (result.ok) setSentTo(address);
     else setError(result.error);

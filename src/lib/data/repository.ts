@@ -336,11 +336,14 @@ export interface SignUpDetails {
 }
 
 /**
- * Creates the account. Supabase emails a confirmation link; the account can
- * sign in only after it is opened. The database decides the role from the
- * address (see the sign-up trigger) and refuses anything that is not MUJ.
+ * Creates the account. With email confirmation on in Supabase, a code is
+ * emailed and `user` is null until it is entered; with it off, the account is
+ * signed in straight away and `user` is set. The database decides the role
+ * from the address (see the sign-up trigger) and refuses anything not MUJ.
  */
-export async function signUp(details: SignUpDetails): Promise<{ ok: true } | { ok: false; error: string }> {
+export async function signUp(
+  details: SignUpDetails,
+): Promise<{ ok: true; user: User | null } | { ok: false; error: string }> {
   const email = details.email.trim().toLowerCase();
   const invalid = checkUniversityEmail(email);
   if (invalid) return { ok: false, error: invalid };
@@ -363,6 +366,9 @@ export async function signUp(details: SignUpDetails): Promise<{ ok: true } | { o
     },
   });
   if (error) {
+    if (error.code === "over_email_send_rate_limit") {
+      return { ok: false, error: "Too many verification emails were sent just now. Please try again in a little while." };
+    }
     // The sign-up trigger's own message does not reach the client.
     if (/database error/i.test(error.message)) {
       return {
@@ -379,7 +385,16 @@ export async function signUp(details: SignUpDetails): Promise<{ ok: true } | { o
   if (data.user && (data.user.identities ?? []).length === 0) {
     return { ok: false, error: "An account with this email already exists. Sign in instead." };
   }
-  return { ok: true };
+  // No confirmation needed: Supabase has already signed the account in.
+  if (data.session && data.user) {
+    const user = await loadUser(data.user.id, data.user.last_sign_in_at);
+    if (!user) {
+      await supabase.auth.signOut();
+      return { ok: false, error: "This account has no portal profile yet. Contact your PBL coordinator." };
+    }
+    return { ok: true, user };
+  }
+  return { ok: true, user: null };
 }
 
 /** Sends the verification email (with its code) again. */
@@ -389,6 +404,9 @@ export async function resendConfirmation(email: string): Promise<{ ok: true } | 
     email: email.trim().toLowerCase(),
     options: { emailRedirectTo: `${window.location.origin}/login?verified=1` },
   });
+  if (error?.code === "over_email_send_rate_limit") {
+    return { ok: false, error: "Too many verification emails were sent just now. Please try again in a little while." };
+  }
   return error ? { ok: false, error: error.message } : { ok: true };
 }
 

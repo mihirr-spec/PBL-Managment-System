@@ -10,7 +10,7 @@ export default function SignupPage() {
     <AuthShell
       title="Create your"
       emphasis="account"
-      subtitle="Use your MUJ email. We will send a code to verify it."
+      subtitle="Use your MUJ email to get started."
     >
       <SignupForm />
     </AuthShell>
