@@ -1,6 +1,7 @@
 import {
   Award,
   Bell,
+  BookOpen,
   BookUser,
   FileText,
   Inbox,
@@ -41,6 +42,7 @@ const teacherNav: NavSection[] = [
       { label: "Achievements", href: "/faculty/achievements", icon: Trophy },
       { label: "Announcements", href: "/faculty/announcements", icon: Megaphone },
       { label: "Notifications", href: "/faculty/notifications", icon: Bell, badge: "notifications" },
+      { label: "PBL Handout", href: "/faculty/handout", icon: BookOpen },
     ],
   },
 ];
@@ -63,6 +65,7 @@ export const NAV_BY_ROLE: Record<Role, NavSection[]> = {
       heading: "Stay informed",
       items: [
         { label: "Notifications", href: "/student/notifications", icon: Bell, badge: "notifications" },
+        { label: "PBL Handout", href: "/student/handout", icon: BookOpen },
         { label: "Faculty Directory", href: "/student/faculty", icon: BookUser },
       ],
     },
@@ -84,7 +87,8 @@ export const NAV_BY_ROLE: Record<Role, NavSection[]> = {
         { label: "Overview", href: "/admin/dashboard", icon: LayoutDashboard, matchPrefix: "/admin/groups" },
         { label: "Announcements", href: "/admin/announcements", icon: Megaphone },
         { label: "Excellence & LinkedIn", href: "/admin/achievements", icon: Trophy },
-      { label: "Notifications", href: "/admin/notifications", icon: Bell, badge: "notifications" },
+        { label: "Notifications", href: "/admin/notifications", icon: Bell, badge: "notifications" },
+        { label: "PBL Handout", href: "/admin/handout", icon: BookOpen },
       ],
     },
   ],
