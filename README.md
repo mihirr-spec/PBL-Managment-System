@@ -59,9 +59,9 @@ from the emailed link:
 
 | Portal | Pages |
 | --- | --- |
-| **Student** `/student/...` | Dashboard · My Group & Mentor (team, supervisor, signed PBL form) · Requests (invitations) · Weekly Reports · Grades & Feedback · Achievements · Queries · Notifications · Faculty Directory · My Profile · Settings |
-| **Teacher** `/faculty/...` | My Groups · Mentor Requests (review the signed form: approve, ask for changes, reject) · Queries · Achievements (review, bonus marks, **approve and post to LinkedIn**) · Announcements |
-| **PBL office** `/admin/...` | Overview of every group and unassigned student · move groups between supervisors · Announcements · Excellence & LinkedIn (portal LinkedIn account, award shortlist, posting) |
+| **Student** `/student/...` | Dashboard · My Group & Mentor (team, project idea, supervisor, signed PBL form) · Requests (invitations) · Weekly Reports (per-week cards: file + optional summary, mentor score tile, feedback) · Grades & Feedback · Achievements · Queries · Notifications · Faculty Directory · My Profile · Settings |
+| **Teacher** `/faculty/...` | My Groups · Mentor Requests (review the signed form: approve, ask for changes, reject; messages render like a clean email) · Queries · Achievements (review, bonus marks, **approve and post to LinkedIn**) · Announcements · Notifications |
+| **PBL office** `/admin/...` | Overview of every group and unassigned student · move groups between supervisors · Announcements · Excellence & LinkedIn (portal LinkedIn account, award shortlist, posting) · Notifications |
 
 Documents (PDFs, images) open in an in-portal viewer built on PDF.js.
 
@@ -136,6 +136,8 @@ the interface and Fraunces for display headings.
 
 ## Still to do
 
+- **Assessment plan per group**: the marking scheme (updated synopsis 10 · weekly progress 15 · analysis PPT 15 · design & implementation 20 · end term exam 40, total 100) and a separate final-grading window, with the two synopsis marks averaged to 10.
+- **Milestones on the report timeline**: eight weekly reports with a midterm presentation/evaluation after week 3 (PPT + synopsis submissions) and an endterm submission after week 7.
 - Teacher accounts: the 821 faculty in the directory must sign up before they can review.
 - University single sign-on and "Forgot password" still show a *later release* message.
 - Posting as an official LinkedIn Page instead of a member profile (needs LinkedIn's Community Management API approval).
