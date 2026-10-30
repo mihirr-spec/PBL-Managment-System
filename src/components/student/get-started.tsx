@@ -45,6 +45,7 @@ export function GetStarted({
   const [teacher, setTeacher] = useState<Faculty | null>(null);
   const [form, setForm] = useState<File | null>(null);
   const [title, setTitle] = useState("");
+  const [idea, setIdea] = useState("");
   const [mate, setMate] = useState({ fullName: "", registrationNumber: "" });
   const [sending, setSending] = useState(false);
   const [teamError, setTeamError] = useState<string | null>(null);
@@ -69,6 +70,7 @@ export function GetStarted({
     setTeamError(null);
     const teammate = { fullName: mate.fullName.trim(), registrationNumber: mate.registrationNumber.trim() };
     if (!title.trim() && !group) return setTeamError("Give your project title first.");
+    if (!group && !idea.trim()) return setTeamError("Describe your project idea first - your supervisor reads it before approving.");
     if (!teammate.fullName || !teammate.registrationNumber) {
       return setTeamError("Give your teammate's name and registration number.");
     }
@@ -82,7 +84,7 @@ export function GetStarted({
           await repo.createGroup({
             name: `${student.fullName.split(" ")[0]}'s team`,
             projectTitle: title.trim(),
-            projectIdea: "",
+            projectIdea: idea.trim(),
             domain: "",
             teammates: [teammate],
           }),
@@ -162,6 +164,33 @@ export function GetStarted({
                 disabled={groupId != null}
               />
             </Field>
+            <Field label="Project idea" htmlFor="gs-idea" help="A few sentences: what you will build and why. Your supervisor reads this before approving your team.">
+              <Textarea
+                id="gs-idea"
+                rows={2}
+                value={group?.projectIdea ?? idea}
+                onChange={(e) => setIdea(e.target.value)}
+                placeholder="e.g. A campus wayfinder app that shows queues and class schedules"
+              />
+            </Field>
+            {group && !group.projectIdea && idea.trim() ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                onClick={async () => {
+                  setTeamError(null);
+                  try {
+                    await repo.setGroupIdea(idea.trim());
+                    await onGroupCreated();
+                  } catch (e) {
+                    setTeamError(e instanceof Error ? e.message : "Could not save the idea.");
+                  }
+                }}
+              >
+                Save idea
+              </Button>
+            ) : null}
 
             <div className="space-y-2.5">
               <p className="text-[12px] font-medium tracking-wide text-stone-500 uppercase">Team</p>

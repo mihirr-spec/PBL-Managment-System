@@ -66,10 +66,13 @@ export function GroupTable({
                       </p>
                       <p className="tnum text-[12px] text-stone-500">{leader?.registrationNumber}</p>
                     </td>
-                    <td className="max-w-[18rem] px-5 py-3.5">
-                      <p className="truncate text-[13.5px] text-ink-900">{g.projectTitle}</p>
-                      <p className="text-[12px] text-stone-500">
-                        {g.domain || "-"} · {g.progress}% done
+                    <td className="max-w-[20rem] px-5 py-3.5">
+                      <p className="truncate text-[13.5px] font-medium text-ink-900">{g.projectTitle}</p>
+                      <p className="mt-0.5 line-clamp-2 text-[12px] leading-snug text-stone-500" title={g.projectIdea || undefined}>
+                        {g.projectIdea || "No idea described yet."}
+                      </p>
+                      <p className="mt-1 text-[11px] text-stone-400">
+                        {g.domain || "No domain"} · {g.progress}% done
                       </p>
                     </td>
                     <td className="px-5 py-3.5 text-[12.5px]">

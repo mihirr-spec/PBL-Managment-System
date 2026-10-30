@@ -674,6 +674,12 @@ export async function createGroup(input: {
 
 /* --------------------------------------------------------- invitations */
 
+/** Saves the team's project idea after the group has been created. */
+export async function setGroupIdea(idea: string): Promise<void> {
+  const { error } = await supabase.rpc("set_group_idea", { p_idea: idea });
+  fail(error);
+}
+
 /** Invitations waiting for the signed-in student. */
 export async function listMyInvitations(): Promise<GroupInvitation[]> {
   const { data, error } = await supabase.rpc("my_invitations");
