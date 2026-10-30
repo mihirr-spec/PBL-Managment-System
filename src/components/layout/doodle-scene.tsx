@@ -27,7 +27,7 @@ import { cn } from "@/lib/utils";
  */
 const SCENES = {
   group: { backdrop: "campus", icon: UsersRound },
-  reports: { backdrop: "dome", icon: FileText },
+  reports: { backdrop: "desk", icon: FileText },
   grades: { backdrop: "sky", icon: GraduationCap },
   queries: { backdrop: "sky", icon: MessageCircleQuestion },
   notifications: { backdrop: "sky", icon: Bell },
@@ -38,7 +38,7 @@ const SCENES = {
   settings: { backdrop: "sky", icon: Settings },
   team: { backdrop: "campus", icon: UsersRound },
   achievements: { backdrop: "campus", icon: Trophy },
-} as const satisfies Record<string, { backdrop: "campus" | "dome" | "sky"; icon: LucideIcon }>;
+} as const satisfies Record<string, { backdrop: "campus" | "dome" | "sky" | "desk"; icon: LucideIcon }>;
 
 export type SceneKey = keyof typeof SCENES;
 
@@ -82,19 +82,27 @@ export function DoodleScene({ scene, className }: { scene: SceneKey; className?:
         <Sky />
       ) : (
         <Image
-          src={backdrop === "campus" ? "/art/login-bg.webp" : "/campus.webp"}
+          src={
+            backdrop === "campus" ? "/art/login-bg.webp"
+            : backdrop === "desk" ? "/art/weekly-reports.webp"
+            : "/campus.webp"
+          }
           alt=""
           fill
           sizes="(max-width: 640px) 100vw, 720px"
           className={cn(
             "object-cover [filter:saturate(0.6)_brightness(1.06)]",
-            backdrop === "campus" ? "object-[85%_62%]" : "object-[center_22%]",
+            backdrop === "campus" ? "object-[85%_62%]"
+            : backdrop === "desk" ? "object-right"
+            : "object-[center_22%]",
             FADE,
           )}
         />
       )}
       {/* A pale blue veil keeps the paintings in the same cool key. */}
-      {backdrop === "sky" ? null : <div className="absolute inset-0 bg-gradient-to-r from-white via-white/10 to-[#dcebf9]/30" />}
+      {backdrop === "sky" || backdrop === "desk" ? null : (
+        <div className="absolute inset-0 bg-gradient-to-r from-white via-white/10 to-[#dcebf9]/30" />
+      )}
     </div>
   );
 }

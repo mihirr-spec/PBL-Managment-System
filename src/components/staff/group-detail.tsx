@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { ArrowRightLeft, Award, Crown, FileText, Mail, MessageCircleQuestion } from "lucide-react";
+import { ArrowRightLeft, Award, ChevronDown, Crown, Eye, FileText, Info, Mail, MessageCircleQuestion, Save, Trophy } from "lucide-react";
 
 import { FileLink } from "@/components/shared/file-link";
 import { QueryList } from "@/components/shared/queries";
 import { ChangeSupervisorForm, SupervisorHistory } from "@/components/staff/supervisor-change";
 import { Avatar } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardHeader, EmptyState } from "@/components/ui/card";
 import { Field, Input, Textarea } from "@/components/ui/field";
@@ -16,7 +17,7 @@ import { PageSkeleton } from "@/components/ui/skeleton";
 import * as repo from "@/lib/data/repository";
 import type { Group, StudentGrade, WeeklyReport } from "@/lib/types";
 import { useLoad } from "@/lib/use-load";
-import { formatDateTime, timeAgo } from "@/lib/utils";
+import { cn, formatDateTime, timeAgo } from "@/lib/utils";
 
 async function loadGroupDetail(groupId: string) {
   const group = await repo.getGroup(groupId);
@@ -148,20 +149,12 @@ export function GroupDetail({ groupId, isAdmin = false }: { groupId: string; isA
           }`}
           action={isAdmin ? null : <ReportCountPicker groupId={group.id} value={group.reportCount} onChanged={reload} />}
         />
-        <ul className="divide-y divide-sand-200/70">
+        <div className="space-y-3 p-4 sm:p-5">
           {Array.from({ length: group.reportCount }, (_, i) => i + 1).map((week) => {
             const r = reports.find((x) => x.week === week);
-            return r ? (
-              <ReportRow key={r.id} report={r} canGrade={!isAdmin} onGraded={reload} />
-            ) : (
-              <li key={week} className="flex items-center gap-2 px-5 py-3">
-                <FileText className="size-4 text-stone-300" />
-                <span className="font-display text-[15px] text-stone-500">Week {week}</span>
-                <span className="rounded-full bg-gold-50 px-2 py-0.5 text-[11px] font-semibold text-gold-600">Pending</span>
-              </li>
-            );
+            return <WeekRow key={week} week={week} report={r} canGrade={!isAdmin} onGraded={reload} />;
           })}
-        </ul>
+        </div>
       </Card>
 
       {/* ----------------------------- queries ---------------------------- */}
@@ -311,64 +304,203 @@ function ReportCountPicker({ groupId, value, onChanged }: { groupId: string; val
   );
 }
 
-function ReportRow({ report, canGrade, onGraded }: { report: WeeklyReport; canGrade: boolean; onGraded: () => void }) {
+/** One week's row in the supervisor's list; expands into the evaluation panel. */
+function WeekRow({
+  week,
+  report,
+  canGrade,
+  onGraded,
+}: {
+  week: number;
+  report: WeeklyReport | undefined;
+  canGrade: boolean;
+  onGraded: () => void;
+}) {
+  const submitted = report != null;
+  const graded = report?.grade != null;
+  const [open, setOpen] = useState(false);
   const [grade, setGrade] = useState("");
   const [feedback, setFeedback] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function submit(event: FormEvent) {
+  async function save(event: FormEvent) {
     event.preventDefault();
+    if (!report) return;
     setBusy(true);
     setError(null);
     try {
       await repo.gradeReport(report.id, Number(grade), feedback.trim());
       onGraded();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not save the grade.");
+      setError(e instanceof Error ? e.message : "Could not save the evaluation.");
       setBusy(false);
     }
   }
 
   return (
-    <li className="px-5 py-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <p className="font-display text-[16px] text-ink-900">Week {report.week}</p>
-          <p className="text-[12px] text-stone-500" title={formatDateTime(report.submittedAt)}>
-            Submitted {timeAgo(report.submittedAt)}
-          </p>
-          {report.summary ? (
-            <p className="mt-2 text-[13.5px] leading-relaxed whitespace-pre-line text-stone-600">{report.summary}</p>
-          ) : null}
-          {report.filePath && report.fileName ? (
-            <FileLink bucket="submissions" path={report.filePath} name={report.fileName} className="mt-2" />
-          ) : null}
-        </div>
-        {report.grade != null ? (
-          <div className="rounded-xl bg-sage-100 px-3 py-2 text-center text-sage-500">
-            <p className="tnum font-display text-xl leading-none">{report.grade}</p>
-            <p className="mt-1 text-[10.5px] font-semibold tracking-wide uppercase">out of 10</p>
+    <div className="rounded-[14px] border border-sand-200/70 bg-white/70">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left"
+        aria-expanded={open}
+      >
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-ivory-200/80 text-stone-500">
+            <FileText className="size-4" />
+          </span>
+          <div className="min-w-0">
+            <p className="flex flex-wrap items-center gap-2">
+              <span className="font-display text-[15px] text-ink-900">Week {week}</span>
+              <Badge tone={graded ? "sage" : submitted ? "sky" : "gold"} dot>
+                {graded ? "Graded" : submitted ? "Submitted" : "Pending"}
+              </Badge>
+            </p>
+            <p className="mt-0.5 truncate text-[12px] text-stone-500">
+              {report
+                ? `${graded ? "Evaluated" : "Submitted"} ${timeAgo(graded ? (report.gradedAt ?? report.submittedAt) : report.submittedAt)}`
+                : "No submission yet"}
+            </p>
+            {report?.summary ? (
+              <p className="mt-1 truncate text-[12.5px] text-stone-600">{report.summary}</p>
+            ) : null}
           </div>
-        ) : null}
-      </div>
+        </div>
+        <span className="flex shrink-0 items-center gap-2">
+          {submitted ? (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setGrade(report!.grade != null ? String(report!.grade) : "");
+                setFeedback(report!.feedback ?? "");
+                setOpen(true);
+              }}
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] font-medium ring-1 ring-inset transition-colors",
+                graded
+                  ? "bg-azure-50 text-azure-600 ring-azure-100 hover:bg-azure-50/70"
+                  : "bg-ivory-200/80 text-stone-400 ring-sand-200",
+              )}
+            >
+              <Eye className="size-3.5" />
+              {graded ? "Review evaluation" : "Evaluate"}
+            </button>
+          ) : (
+            <span className="inline-flex items-center gap-1.5 rounded-lg bg-ivory-200/70 px-3 py-1.5 text-[13px] text-stone-400 ring-1 ring-inset ring-sand-200">
+              Review submission
+            </span>
+          )}
+          <ChevronDown className={cn("size-4 text-stone-400 transition-transform", open && "rotate-180")} />
+        </span>
+      </button>
 
-      {report.grade != null ? (
-        report.feedback ? <p className="mt-2 text-[12.5px] text-stone-500">Feedback: {report.feedback}</p> : null
-      ) : !canGrade ? (
-        <p className="mt-2 text-[12.5px] text-stone-500">Waiting for the supervisor to grade.</p>
-      ) : (
-        <form onSubmit={submit} className="mt-3 flex flex-wrap items-end gap-3 rounded-[14px] bg-white/60 p-3">
-          <Field label="Grade /10" htmlFor={`g-${report.id}`} className="w-24">
-            <Input id={`g-${report.id}`} type="number" min={0} max={10} step="0.5" required value={grade} onChange={(e) => setGrade(e.target.value)} />
-          </Field>
-          <Field label="Feedback" htmlFor={`f-${report.id}`} className="min-w-[14rem] flex-1">
-            <Input id={`f-${report.id}`} value={feedback} onChange={(e) => setFeedback(e.target.value)} placeholder="What went well, what to fix next week" />
-          </Field>
-          <Button type="submit" size="sm" loading={busy}>Grade</Button>
-          {error ? <p role="alert" className="w-full text-[12.5px] text-clay-500">{error}</p> : null}
-        </form>
-      )}
-    </li>
+      {open && submitted ? (
+        <div className="border-t border-sand-200/70 p-4">
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
+            {/* Left: the score (when graded) and the file itself. */}
+            <div className="space-y-3">
+              {graded ? (
+                <div className="rounded-[14px] bg-sage-100 p-4 text-sage-500 ring-1 ring-sage-500/15">
+                  <div className="flex items-center justify-between">
+                    <p>
+                      <span className="tnum font-display text-[2.1rem] leading-none">{report!.grade}</span>
+                      <span className="text-[14px] text-sage-500/80"> / 10</span>
+                    </p>
+                    <span className="flex size-9 items-center justify-center rounded-full bg-sage-500/15">
+                      <Trophy className="size-4.5" />
+                    </span>
+                  </div>
+                  <p className="mt-2 text-[13px] font-medium">{scoreCaption(report!.grade ?? 0)}</p>
+                </div>
+              ) : null}
+
+              <div>
+                <p className="text-[11px] font-semibold tracking-[0.12em] text-ink-400 uppercase">Submitted report</p>
+                {report!.filePath && report!.fileName ? (
+                  <div className="mt-2 flex items-center justify-between gap-3 rounded-[12px] bg-white/70 px-3 py-2.5 ring-1 ring-sand-200">
+                    <div className="flex min-w-0 items-center gap-2.5">
+                      <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-clay-100 text-clay-500 ring-1 ring-clay-500/15">
+                        <FileText className="size-4" />
+                      </span>
+                      <div className="min-w-0">
+                        <p className="truncate text-[13px] font-medium text-ink-900">{report!.fileName}</p>
+                        <p className="text-[11.5px] text-stone-500">
+                          {report!.fileName.split(".").pop()?.toUpperCase() ?? "File"} · Submitted {timeAgo(report!.submittedAt)}
+                        </p>
+                      </div>
+                    </div>
+                    <FileLink bucket="submissions" path={report!.filePath} name={report!.fileName} />
+                  </div>
+                ) : (
+                  <p className="mt-2 text-[12.5px] text-stone-500">No file was attached to this submission.</p>
+                )}
+              </div>
+            </div>
+
+            {/* Right: the evaluation panel. */}
+            {canGrade ? (
+              <form onSubmit={save} className="rounded-[14px] bg-azure-50/60 p-4 ring-1 ring-azure-100">
+                <p className="text-[14px] font-semibold text-ink-900">Evaluate submission</p>
+                <div className="mt-3 grid gap-3 sm:grid-cols-[7rem_1fr]">
+                  <Field label="Grade (out of 10)" htmlFor={`g-${week}`}>
+                    <Input
+                      id={`g-${week}`}
+                      type="number"
+                      min={0}
+                      max={10}
+                      step="0.5"
+                      required
+                      value={grade}
+                      onChange={(e) => setGrade(e.target.value)}
+                    />
+                  </Field>
+                  <Field label="Feedback for student" htmlFor={`f-${week}`}>
+                    <Textarea
+                      id={`f-${week}`}
+                      rows={3}
+                      maxLength={500}
+                      value={feedback}
+                      onChange={(e) => setFeedback(e.target.value)}
+                      placeholder="What went well, what to improve"
+                    />
+                  </Field>
+                </div>
+                <p className="mt-1 text-right text-[11px] text-stone-400">{feedback.length}/500</p>
+                {error ? <p role="alert" className="mt-1 text-[12.5px] text-clay-500">{error}</p> : null}
+                <div className="mt-2 flex items-center gap-2">
+                  <Button type="submit" size="sm" loading={busy}>
+                    <Save className="size-3.5" />
+                    Save evaluation
+                  </Button>
+                  <Button type="button" size="sm" variant="secondary" onClick={() => setOpen(false)} disabled={busy}>
+                    Cancel
+                  </Button>
+                </div>
+                <p className="mt-3 flex items-center gap-1.5 text-[12px] text-stone-500">
+                  <Info className="size-3.5" />
+                  The student will be notified once you save the evaluation.
+                </p>
+              </form>
+            ) : (
+              <p className="text-[12.5px] text-stone-500">Waiting for the supervisor to grade.</p>
+            )}
+          </div>
+        </div>
+      ) : open ? (
+        <div className="border-t border-sand-200/70 px-4 py-3 text-[12.5px] text-stone-500">
+          Nothing to review yet - the team has not submitted week {week}.
+        </div>
+      ) : null}
+    </div>
   );
+}
+
+/** A one-line verdict shown next to a saved score. */
+function scoreCaption(grade: number): string {
+  if (grade >= 9) return "Excellent performance";
+  if (grade >= 7) return "Strong progress";
+  if (grade >= 5) return "Good work, keep it up";
+  return "Needs attention - read the feedback";
 }
