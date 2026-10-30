@@ -40,6 +40,7 @@ const teacherNav: NavSection[] = [
       { label: "Queries", href: "/faculty/queries", icon: MessageCircleQuestion },
       { label: "Achievements", href: "/faculty/achievements", icon: Trophy },
       { label: "Announcements", href: "/faculty/announcements", icon: Megaphone },
+      { label: "Notifications", href: "/faculty/notifications", icon: Bell, badge: "notifications" },
     ],
   },
 ];
@@ -83,6 +84,7 @@ export const NAV_BY_ROLE: Record<Role, NavSection[]> = {
         { label: "Overview", href: "/admin/dashboard", icon: LayoutDashboard, matchPrefix: "/admin/groups" },
         { label: "Announcements", href: "/admin/announcements", icon: Megaphone },
         { label: "Excellence & LinkedIn", href: "/admin/achievements", icon: Trophy },
+      { label: "Notifications", href: "/admin/notifications", icon: Bell, badge: "notifications" },
       ],
     },
   ],

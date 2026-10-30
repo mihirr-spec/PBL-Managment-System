@@ -5,17 +5,23 @@ import { useEffect, useRef, useState } from "react";
 import { Bell } from "lucide-react";
 
 import { NotificationIcon } from "@/components/notifications/notification-icon";
-import { HOME_BY_ROLE, useSession } from "@/lib/auth/session";
+import { useSession } from "@/lib/auth/session";
 import { usePortal } from "@/lib/data/portal-store";
 import { cn, timeAgo } from "@/lib/utils";
+
+/** Where a notification with no link of its own lands, per role. */
+const NOTIFICATION_HOME: Record<string, string> = {
+  student: "/student/notifications",
+  faculty: "/faculty/notifications",
+  supervisor: "/faculty/notifications",
+  admin: "/admin/notifications",
+};
 
 export function NotificationBell() {
   const { user } = useSession();
   const { notifications, unreadCount, markNotificationRead, markAllRead } =
     usePortal();
-  // Students have a full notifications page; staff work from the dropdown.
-  const isStudent = user?.role === "student";
-  const fallbackHref = isStudent ? "/student/notifications" : user ? HOME_BY_ROLE[user.role] : "/";
+  const fallbackHref = user ? NOTIFICATION_HOME[user.role] ?? "/student/notifications" : "/";
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -38,6 +44,7 @@ export function NotificationBell() {
     };
   }, [open]);
 
+  const isStudent = user?.role === "student";
   const recent = notifications.slice(0, isStudent ? 5 : 10);
 
   return (
@@ -125,9 +132,9 @@ export function NotificationBell() {
             </ul>
           )}
 
-          {isStudent ? (
+          {user ? (
             <Link
-              href="/student/notifications"
+              href={NOTIFICATION_HOME[user.role] ?? "/student/notifications"}
               onClick={() => setOpen(false)}
               className="block border-t border-sand-200 bg-ivory-50 px-4 py-2.5 text-center text-[12.5px] font-medium text-stone-600 hover:bg-ivory-200 hover:text-stone-800"
             >
