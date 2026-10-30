@@ -89,7 +89,9 @@ export default function ReportsPage() {
                           <p className="text-[12px] text-stone-500" title={formatDateTime(r.submittedAt)}>
                             Submitted {timeAgo(r.submittedAt)}
                           </p>
-                          <p className="mt-2 text-[13.5px] leading-relaxed whitespace-pre-line text-stone-600">{r.summary}</p>
+                          {r.summary ? (
+                            <p className="mt-2 text-[13.5px] leading-relaxed whitespace-pre-line text-stone-600">{r.summary}</p>
+                          ) : null}
                           {r.filePath && r.fileName ? (
                             <FileLink bucket="submissions" path={r.filePath} name={r.fileName} className="mt-2" />
                           ) : null}
@@ -188,11 +190,10 @@ function SubmitReport({
           disabled={busy}
         />
       </Field>
-      <Field label="What did the team do this week?" htmlFor={`r-summary-${week}`}>
+      <Field label="What did the team do this week? (optional)" htmlFor={`r-summary-${week}`}>
         <Textarea
           id={`r-summary-${week}`}
           rows={3}
-          required
           value={summary}
           onChange={(e) => setSummary(e.target.value)}
           placeholder="Progress, blockers and next week's plan"

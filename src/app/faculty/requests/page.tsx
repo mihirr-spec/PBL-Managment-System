@@ -5,6 +5,7 @@ import { Check, Crown, FileWarning, PencilLine, UserPlus, X } from "lucide-react
 
 import { DocumentPreview } from "@/components/shared/document-viewer";
 import { FileLink } from "@/components/shared/file-link";
+import { RichText } from "@/components/shared/rich-text";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardHeader, EmptyState } from "@/components/ui/card";
@@ -157,9 +158,9 @@ function RequestCard({ request, onDecided }: { request: Request; onDecided: () =
             </p>
           ) : null}
           {request.message ? (
-            <blockquote className="rounded-[12px] border-l-4 border-azure-500 bg-azure-50/60 px-4 py-2.5 text-[13.5px] text-ink-800">
-              {request.message}
-            </blockquote>
+            <div className="rounded-[12px] border-l-4 border-azure-500 bg-azure-50/60 px-4 py-2.5">
+              <RichText text={request.message} className="text-[13.5px] text-ink-800" />
+            </div>
           ) : null}
           {group?.projectIdea ? (
             <div>

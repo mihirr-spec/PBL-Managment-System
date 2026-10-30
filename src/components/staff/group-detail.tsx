@@ -338,7 +338,9 @@ function ReportRow({ report, canGrade, onGraded }: { report: WeeklyReport; canGr
           <p className="text-[12px] text-stone-500" title={formatDateTime(report.submittedAt)}>
             Submitted {timeAgo(report.submittedAt)}
           </p>
-          <p className="mt-2 text-[13.5px] leading-relaxed whitespace-pre-line text-stone-600">{report.summary}</p>
+          {report.summary ? (
+            <p className="mt-2 text-[13.5px] leading-relaxed whitespace-pre-line text-stone-600">{report.summary}</p>
+          ) : null}
           {report.filePath && report.fileName ? (
             <FileLink bucket="submissions" path={report.filePath} name={report.fileName} className="mt-2" />
           ) : null}
