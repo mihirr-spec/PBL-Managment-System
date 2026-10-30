@@ -230,8 +230,8 @@ function RequestRow({
             messageLabel="Note for the supervisor (optional)"
             messageHelp="What did you change?"
             onCancel={() => setFixing(false)}
-            onSubmit={async (message, form) => {
-              await repo.resubmitMentorRequest({ requestId: r.id, groupId, message, form });
+            onSubmit={async (message, forms) => {
+              await repo.resubmitMentorRequest({ requestId: r.id, groupId, message, forms });
               setFixing(false);
               onResubmitted();
             }}
@@ -280,8 +280,8 @@ function RequestForm({
           submitLabel="Send for approval"
           messageLabel="Message to the supervisor (optional)"
           messageHelp="A line or two - e.g. when you discussed the project."
-          onSubmit={async (message, form) => {
-            await repo.requestMentor({ groupId, facultyId: faculty.id, message, form });
+          onSubmit={async (message, forms) => {
+            await repo.requestMentor({ groupId, facultyId: faculty.id, message, forms });
             onSent();
           }}
         />
@@ -303,24 +303,25 @@ function FormUpload({
   submitLabel: string;
   messageLabel: string;
   messageHelp: string;
-  onSubmit: (message: string, form: File) => Promise<void>;
+  onSubmit: (message: string, forms: File[]) => Promise<void>;
   onCancel?: () => void;
 }) {
   const [message, setMessage] = useState("");
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
-    if (!file) {
+    if (files.length === 0) {
       setError("Attach the signed PBL form.");
       return;
     }
     setBusy(true);
     setError(null);
     try {
-      await onSubmit(message.trim(), file);
+      await onSubmit(message.trim(), files);
+      setFiles([]);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not send the form.");
       setBusy(false);
@@ -329,13 +330,14 @@ function FormUpload({
 
   return (
     <form onSubmit={submit} className="mt-3 space-y-3">
-      <Field label="Signed PBL form" htmlFor={`${idPrefix}-form`}>
+      <Field label="Signed PBL form" htmlFor={`${idPrefix}-form`} help="Attach the form plus any supporting files - pick several at once.">
         <FileDrop
           id={`${idPrefix}-form`}
-          files={file ? [file] : []}
-          onChange={(files) => setFile(files[0] ?? null)}
-          accept=".pdf,image/png,image/jpeg"
-          specs="PDF, or a clear scan or photo (PNG, JPG) · up to 25 MB"
+          files={files}
+          onChange={setFiles}
+          multiple
+          accept=".pdf,.doc,.docx,.ppt,.pptx,.zip,image/png,image/jpeg"
+          specs="PDF, Word, PowerPoint, ZIP or images · up to 25 MB each"
           disabled={busy}
         />
       </Field>

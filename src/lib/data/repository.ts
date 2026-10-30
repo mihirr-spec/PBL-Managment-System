@@ -20,6 +20,7 @@ import type {
   SentInvitation,
   Student,
   StudentGrade,
+  StoredFile,
   SupervisorChange,
   Ticket,
   TicketAttachment,
@@ -129,6 +130,14 @@ const toGroup = (r: any): Group => ({
     ),
 });
 
+/** The `files` jsonb column on a row, as uploaded files. */
+const toFiles = (r: any): StoredFile[] =>
+  Array.isArray(r.files)
+    ? r.files
+        .filter((f: any) => f && f.path && f.name)
+        .map((f: any) => ({ path: String(f.path), name: String(f.name) }))
+    : [];
+
 const toReport = (r: any): WeeklyReport => ({
   id: r.id,
   groupId: r.group_id,
@@ -136,6 +145,7 @@ const toReport = (r: any): WeeklyReport => ({
   summary: r.summary,
   filePath: r.file_path ?? undefined,
   fileName: r.file_name ?? undefined,
+  files: toFiles(r),
   submittedBy: r.submitted_by ?? undefined,
   submittedAt: r.submitted_at,
   grade: r.grade == null ? undefined : Number(r.grade),
@@ -147,6 +157,7 @@ const toMilestone = (r: any): GroupMilestone => ({
   slot: r.slot,
   filePath: r.file_path ?? undefined,
   fileName: r.file_name ?? undefined,
+  files: toFiles(r),
   submittedBy: r.submitted_by ?? undefined,
   submittedAt: r.submitted_at,
 });
@@ -756,6 +767,7 @@ function requestFields(r: any) {
     status: r.status,
     formPath: r.form_path ?? undefined,
     formName: r.form_name ?? undefined,
+    files: toFiles(r),
     reviewNote: r.review_note ?? "",
     createdAt: r.created_at,
     resubmittedAt: r.resubmitted_at ?? undefined,
@@ -783,41 +795,45 @@ export async function listRequestsForFaculty(
   }));
 }
 
-async function uploadMentorForm(groupId: string, file: File) {
-  const path = `${groupId}/mentor-form/${Date.now()}-${safeFileName(file.name)}`;
-  const upload = await supabase.storage.from("submissions").upload(path, file, { contentType: file.type });
-  fail(upload.error);
-  return { p_form_path: path, p_form_name: file.name };
+async function uploadMentorForms(groupId: string, files: File[]) {
+  const rows: StoredFile[] = [];
+  for (const file of files) {
+    const path = `${groupId}/mentor-form/${Date.now()}-${safeFileName(file.name)}`;
+    const upload = await supabase.storage.from("submissions").upload(path, file, { contentType: file.type });
+    fail(upload.error);
+    rows.push({ path, name: file.name });
+  }
+  return { p_files: rows };
 }
 
-/** Team lead only: sends the signed PBL form to the agreed teacher. */
+/** Team lead only: sends the signed PBL form(s) to the agreed teacher. */
 export async function requestMentor(input: {
   groupId: string;
   facultyId: string;
   message: string;
-  form: File;
+  forms: File[];
 }): Promise<void> {
-  const form = await uploadMentorForm(input.groupId, input.form);
+  const files = await uploadMentorForms(input.groupId, input.forms);
   const { error } = await supabase.rpc("request_mentor", {
     p_faculty_id: input.facultyId,
     p_message: input.message,
-    ...form,
+    ...files,
   });
   fail(error);
 }
 
-/** Team lead only: sends a corrected form after the teacher asked for changes. */
+/** Team lead only: sends corrected form(s) after the teacher asked for changes. */
 export async function resubmitMentorRequest(input: {
   requestId: string;
   groupId: string;
   message: string;
-  form: File;
+  forms: File[];
 }): Promise<void> {
-  const form = await uploadMentorForm(input.groupId, input.form);
+  const files = await uploadMentorForms(input.groupId, input.forms);
   const { error } = await supabase.rpc("resubmit_mentor_request", {
     p_request: input.requestId,
     p_message: input.message,
-    ...form,
+    ...files,
   });
   fail(error);
 }
@@ -859,16 +875,24 @@ export async function submitReport(input: {
   studentId: string;
   week: number;
   summary: string;
-  file?: File;
+  files?: File[];
 }): Promise<void> {
-  let file: { file_path: string; file_name: string } | Record<string, never> = {};
-  if (input.file) {
-    const path = `${input.groupId}/week-${input.week}/${Date.now()}-${safeFileName(input.file.name)}`;
-    const upload = await supabase.storage
-      .from("submissions")
-      .upload(path, input.file, { contentType: input.file.type });
-    fail(upload.error);
-    file = { file_path: path, file_name: input.file.name };
+  let file: { file_path: string; file_name: string; files: StoredFile[] } | Record<string, never> = {};
+  if (input.files && input.files.length > 0) {
+    const rows: StoredFile[] = [];
+    for (const f of input.files) {
+      const path = `${input.groupId}/week-${input.week}/${Date.now()}-${safeFileName(f.name)}`;
+      const upload = await supabase.storage
+        .from("submissions")
+        .upload(path, f, { contentType: f.type });
+      fail(upload.error);
+      rows.push({ path, name: f.name });
+    }
+    file = {
+      file_path: rows[0].path,
+      file_name: rows[0].name,
+      files: rows,
+    };
   }
 
   const { data: existing, error: lookupError } = await supabase
@@ -939,17 +963,21 @@ export async function listMilestones(groupId: string): Promise<GroupMilestone[]>
   return (data ?? []).map(toMilestone);
 }
 
-/** Uploads (or replaces) one of the group's milestone files. */
-export async function submitMilestone(groupId: string, slot: MilestoneSlot, file: File): Promise<void> {
-  const path = `${groupId}/milestone-${slot}/${Date.now()}-${safeFileName(file.name)}`;
-  const upload = await supabase.storage
-    .from("submissions")
-    .upload(path, file, { contentType: file.type });
-  fail(upload.error);
+/** Uploads (or adds to) one of the group's milestone files. */
+export async function submitMilestone(groupId: string, slot: MilestoneSlot, files: File[]): Promise<void> {
+  if (files.length === 0) return;
+  const rows: StoredFile[] = [];
+  for (const file of files) {
+    const path = `${groupId}/milestone-${slot}/${Date.now()}-${safeFileName(file.name)}`;
+    const upload = await supabase.storage
+      .from("submissions")
+      .upload(path, file, { contentType: file.type });
+    fail(upload.error);
+    rows.push({ path, name: file.name });
+  }
   const { error } = await supabase.rpc("submit_milestone", {
     p_slot: slot,
-    p_file_path: path,
-    p_file_name: file.name,
+    p_files: rows,
   });
   fail(error);
 }

@@ -140,9 +140,11 @@ export interface MentorRequest {
   facultyName: string;
   message: string;
   status: RequestStatus;
-  /** The signed PBL form, in the submissions bucket. */
+  /** The first signed PBL form, in the submissions bucket. */
   formPath?: string;
   formName?: string;
+  /** Every file attached to the request (the first is formPath/formName). */
+  files: StoredFile[];
   /** The teacher's note: what to change, or why it was rejected. */
   reviewNote: string;
   createdAt: string;
@@ -157,12 +159,20 @@ export interface WeeklyReport {
   summary: string;
   filePath?: string;
   fileName?: string;
+  /** Every file submitted with this report (the first is filePath/fileName). */
+  files: StoredFile[];
   submittedBy?: string;
   submittedAt: string;
   /** Out of 10, set by the mentor. */
   grade?: number;
   feedback?: string;
   gradedAt?: string;
+}
+
+/** One uploaded file in the private `submissions` bucket. */
+export interface StoredFile {
+  path: string;
+  name: string;
 }
 
 /** One milestone slot: the PPT or synopsis due in a phase. */
@@ -172,6 +182,8 @@ export interface GroupMilestone {
   slot: MilestoneSlot;
   filePath?: string;
   fileName?: string;
+  /** Every file in this slot (the first is filePath/fileName). */
+  files: StoredFile[];
   submittedBy?: string;
   submittedAt: string;
 }

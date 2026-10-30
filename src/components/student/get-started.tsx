@@ -43,7 +43,7 @@ export function GetStarted({
   const groupId = group?.id ?? createdId;
 
   const [teacher, setTeacher] = useState<Faculty | null>(null);
-  const [form, setForm] = useState<File | null>(null);
+  const [forms, setForms] = useState<File[]>([]);
   const [title, setTitle] = useState("");
   const [idea, setIdea] = useState("");
   const [mate, setMate] = useState({ fullName: "", registrationNumber: "" });
@@ -113,11 +113,11 @@ export function GetStarted({
     setError(null);
     if (!groupId) return setError("Send a request to at least one teammate first.");
     if (!teacher) return setError("Choose your mentor: type their name and pick them from the list.");
-    if (!form) return setError("Attach the application your mentor signed.");
+    if (forms.length === 0) return setError("Attach the application your mentor signed.");
 
     setBusy(true);
     try {
-      await repo.requestMentor({ groupId, facultyId: teacher.id, message: message.trim(), form });
+      await repo.requestMentor({ groupId, facultyId: teacher.id, message: message.trim(), forms });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not send the request.");
       setBusy(false);
@@ -266,13 +266,14 @@ export function GetStarted({
         <Card>
           <CardHeader title="3 · Signed application" />
           <CardBody className="space-y-5">
-            <Field label="Signed application" htmlFor="gs-form">
+            <Field label="Signed application" htmlFor="gs-form" help="Attach the signed form plus any supporting files - pick several at once.">
               <FileDrop
                 id="gs-form"
-                files={form ? [form] : []}
-                onChange={(files) => setForm(files[0] ?? null)}
-                accept=".pdf,image/png,image/jpeg"
-                specs="PDF, or a clear scan or photo (PNG, JPG) · up to 25 MB"
+                files={forms}
+                onChange={setForms}
+                multiple
+                accept=".pdf,.doc,.docx,.ppt,.pptx,.zip,image/png,image/jpeg"
+                specs="PDF, Word, PowerPoint, ZIP or images · up to 25 MB each"
                 disabled={busy}
               />
             </Field>

@@ -390,11 +390,11 @@ function RequestCard({ request, onDecided }: { request: Request; onDecided: () =
   );
 }
 
-/** Shows the signed form inline, drawn in place; the link opens it full screen. */
+/** Shows the signed form inline, plus any other attached files; the link opens one full screen. */
 function FormPreview({ request }: { request: Request }) {
-  const { formPath, formName } = request;
+  const files = request.files.length > 0 ? request.files : request.formPath ? [{ path: request.formPath, name: request.formName ?? "" }] : [];
 
-  if (!formPath || !formName) {
+  if (files.length === 0) {
     return (
       <div className="flex min-h-40 flex-col items-center justify-center gap-2 rounded-[14px] bg-ivory-200/70 p-6 text-center text-[13px] text-stone-500">
         <FileWarning className="size-5" />
@@ -403,15 +403,28 @@ function FormPreview({ request }: { request: Request }) {
     );
   }
 
+  const primary = files[0];
+  const rest = files.slice(1);
+
   return (
     <div className="space-y-2">
       <DocumentPreview
         bucket="submissions"
-        path={formPath}
-        name={formName}
+        path={primary.path}
+        name={primary.name}
         className="h-[28rem] rounded-[14px] ring-1 ring-sand-200"
       />
-      <FileLink bucket="submissions" path={formPath} name={formName} />
+      <div className="space-y-1.5">
+        {files.map((f) => (
+          <div key={f.path} className="flex items-center justify-between gap-3">
+            <span className="truncate text-[12.5px] font-medium text-ink-900">{f.name}</span>
+            <FileLink bucket="submissions" path={f.path} name={f.name} />
+          </div>
+        ))}
+      </div>
+      {rest.length > 0 ? (
+        <p className="text-[11.5px] text-stone-400">{files.length} files attached to this request.</p>
+      ) : null}
     </div>
   );
 }

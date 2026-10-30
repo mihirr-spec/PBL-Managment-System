@@ -207,13 +207,17 @@ function ReportBody({ report, mentorName }: { report: WeeklyReport; mentorName: 
           {report.summary ? (
             <p className="text-[13.5px] leading-relaxed whitespace-pre-line text-stone-600">{report.summary}</p>
           ) : null}
-          {report.filePath && report.fileName ? (
-            <div className="flex items-center justify-between gap-3 rounded-[12px] bg-white/70 px-3 py-2.5 ring-1 ring-sand-200">
-              <div className="flex min-w-0 items-center gap-2.5">
-                <FileIcon />
-                <span className="truncate text-[13px] font-medium text-ink-900">{report.fileName}</span>
-              </div>
-              <FileLink bucket="submissions" path={report.filePath} name={report.fileName} />
+          {report.files.length > 0 ? (
+            <div className="space-y-1.5">
+              {report.files.map((f) => (
+                <div key={f.path} className="flex items-center justify-between gap-3 rounded-[12px] bg-white/70 px-3 py-2.5 ring-1 ring-sand-200">
+                  <div className="flex min-w-0 items-center gap-2.5">
+                    <FileIcon />
+                    <span className="truncate text-[13px] font-medium text-ink-900">{f.name}</span>
+                  </div>
+                  <FileLink bucket="submissions" path={f.path} name={f.name} />
+                </div>
+              ))}
             </div>
           ) : null}
           {graded ? (
@@ -245,7 +249,7 @@ function scoreCaption(grade: number): string {
 function SubmitForm({ week, onSubmitted }: { week: number; onSubmitted: (week: number) => void }) {
   const { student, group } = usePortal();
   const [summary, setSummary] = useState("");
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -255,9 +259,9 @@ function SubmitForm({ week, onSubmitted }: { week: number; onSubmitted: (week: n
     setBusy(true);
     setError(null);
     try {
-      await repo.submitReport({ groupId: group.id, studentId: student.id, week, summary: summary.trim(), file: file ?? undefined });
+      await repo.submitReport({ groupId: group.id, studentId: student.id, week, summary: summary.trim(), files: files.length ? files : undefined });
       setSummary("");
-      setFile(null);
+      setFiles([]);
       onSubmitted(week);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not submit the report.");
@@ -273,10 +277,11 @@ function SubmitForm({ week, onSubmitted }: { week: number; onSubmitted: (week: n
           <Label htmlFor={`r-file-${week}`}>Report file (optional)</Label>
           <FileDrop
             id={`r-file-${week}`}
-            files={file ? [file] : []}
-            onChange={(files) => setFile(files[0] ?? null)}
+            files={files}
+            onChange={setFiles}
+            multiple
             accept=".pdf,.doc,.docx,.ppt,.pptx,.zip,image/png,image/jpeg"
-            specs="PDF, Word, PowerPoint, ZIP or images · up to 25 MB"
+            specs="PDF, Word, PowerPoint, ZIP or images · up to 25 MB each"
             disabled={busy}
           />
         </div>
@@ -335,15 +340,15 @@ function MilestonePhase({
   const [busy, setBusy] = useState<MilestoneSlot | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  async function upload(slot: MilestoneSlot, file: File) {
-    if (!group) return;
+  async function upload(slot: MilestoneSlot, picked: File[]) {
+    if (!group || picked.length === 0) return;
     setBusy(slot);
     setError(null);
     try {
-      await repo.submitMilestone(group.id, slot, file);
+      await repo.submitMilestone(group.id, slot, picked);
       await reload();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not upload the file.");
+      setError(e instanceof Error ? e.message : "Could not upload the files.");
     } finally {
       setBusy(null);
     }
@@ -366,38 +371,42 @@ function MilestonePhase({
       <div className="grid gap-3 border-t border-sand-200/70 px-5 py-4 sm:grid-cols-2">
         {items.map(({ slot, label, icon: Icon }) => {
           const m = get(slot);
-          const filePath = m?.filePath;
-          const fileName = m?.fileName;
+          const attached = m?.files ?? [];
           return (
             <div key={slot} className="rounded-[12px] bg-white/70 p-3 ring-1 ring-sand-200">
               <p className="flex items-center gap-1.5 text-[12px] font-medium tracking-wide text-stone-500">
                 <Icon className="size-3.5 text-azure-600" />
                 {label}
               </p>
-              {filePath && fileName ? (
-                <div className="mt-2.5 flex items-center justify-between gap-3">
-                  <div className="flex min-w-0 items-center gap-2">
-                    <FileIcon />
-                    <span className="truncate text-[12.5px] font-medium text-ink-900">{fileName}</span>
-                  </div>
-                  <FileLink bucket="submissions" path={filePath} name={fileName} />
+              {attached.length > 0 ? (
+                <div className="mt-2.5 space-y-1.5">
+                  {attached.map((f) => (
+                    <div key={f.path} className="flex items-center justify-between gap-3">
+                      <div className="flex min-w-0 items-center gap-2">
+                        <FileIcon />
+                        <span className="truncate text-[12.5px] font-medium text-ink-900">{f.name}</span>
+                      </div>
+                      <FileLink bucket="submissions" path={f.path} name={f.name} />
+                    </div>
+                  ))}
                 </div>
               ) : null}
               <label className="mt-2.5 block cursor-pointer">
                 <input
                   type="file"
                   className="sr-only"
-                  accept=".pdf,.ppt,.pptx"
+                  accept=".pdf,.ppt,.pptx,.doc,.docx,.zip,image/png,image/jpeg"
+                  multiple
                   disabled={busy != null}
                   onChange={(e) => {
-                    const f = e.target.files?.[0];
-                    if (f) void upload(slot, f);
+                    const picked = Array.from(e.target.files ?? []);
+                    if (picked.length > 0) void upload(slot, picked);
                     e.target.value = "";
                   }}
                 />
                 <span className="inline-flex items-center gap-1.5 rounded-lg bg-azure-50 px-2.5 py-1.5 text-[12px] font-medium text-azure-600 ring-1 ring-azure-100 transition-colors hover:bg-azure-50/70 disabled:opacity-50">
                   <Upload className="size-3.5" />
-                  {busy === slot ? "Uploading..." : filePath && fileName ? "Replace file" : "Upload"}
+                  {busy === slot ? "Uploading..." : attached.length > 0 ? "Add more files" : "Upload files"}
                 </span>
               </label>
             </div>
