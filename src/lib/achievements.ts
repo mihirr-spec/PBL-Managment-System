@@ -342,6 +342,167 @@ export function findTemplate(category: string, template: string) {
   return { category: c, template: c?.templates.find((t) => t.key === template) };
 }
 
+/**
+ * Plausible prototype data for one template, so the form can be filled with a
+ * click while demonstrating the portal. The two stock sets - a hackathon win
+ * and a published research paper - are the richest; the rest are quick fills.
+ */
+export const DUMMY_DETAILS: Record<
+  string,
+  { answers: Record<string, string>; description: string; date: string }
+> = {
+  hackathon_win: {
+    date: "2026-06-14",
+    answers: {
+      event: "Smart India Hackathon 2026 - Software Edition",
+      position: "1st Prize - Winner",
+      organiser: "Ministry of Education's Innovation Cell & AICTE",
+      venue: "IIT Jammu",
+      team: "Team Agni (6 members)",
+      problem:
+        "An offline, AI-powered crop-disease detection and advisory platform for farmers, with SMS fallback where internet is weak.",
+      role: "Team lead - model training and on-device optimisation",
+      prize: "₹1,00,000 cash prize",
+    },
+    description:
+      "Led the six-member team end to end: gathered field data with three village cooperatives, trained a lightweight CNN that runs offline, and built the farmer-facing advisory flow.",
+  },
+  coding_contest: {
+    date: "2026-04-02",
+    answers: {
+      contest: "ICPC Asia - Jaipur Regional 2026",
+      rank: "All India Rank 37",
+      participants: "4,200 teams",
+      organiser: "ICPC Foundation",
+    },
+    description:
+      "All three rounds solved solo-then-paired; the 37th all-India rank came from a careful greedy on the medium set that most teams missed.",
+  },
+  paper_presented: {
+    date: "2026-07-21",
+    answers: {
+      paper: "Lightweight CNNs for On-Device Leaf Disease Classification",
+      conference: "International Conference on Intelligent Computing and Vision (ICICV 2026)",
+      publisher: "IEEE",
+      venue: "BINUS University, Indonesia",
+      coauthors: "Dr. A. Verma (faculty guide)",
+      link: "https://doi.org/10.1109/icicv.2026.00481",
+    },
+    description:
+      "First author. Reduced the model to 2.1 MB for phone deployment while holding 94.6% accuracy on the PlantVillage test split.",
+  },
+  journal_publication: {
+    date: "2026-05-09",
+    answers: {
+      paper: "Federated Scheduling for Edge Video Analytics",
+      journal: "IEEE Transactions on Edge Computing",
+      indexing: "SCI-E, Q1",
+      coauthors: "Dr. R. Khanna, Prof. M. Bhatt",
+      link: "https://doi.org/10.1109/tedgc.2026.3321044",
+    },
+    description:
+      "Second author. Designed the scheduler and ran the experiments across the lab's 12-node edge testbed.",
+  },
+  patent: {
+    date: "2026-03-18",
+    answers: {
+      invention: "Solar-Tracker Mounting Bracket for Rooftop Panels",
+      stage: "Published",
+      office: "Indian Patent Office",
+      number: "6134/JP/2025",
+      inventors: "K. Agarwal (2427010030)",
+      summary: "A low-cost single-axis bracket that adds 9% daily yield with no controllers.",
+    },
+    description: "Prototype built in the maker lab over two semesters; torque tests done on a 300 W array.",
+  },
+  startup: {
+    date: "2026-02-27",
+    answers: {
+      startup: "Aarthik Labs",
+      milestone: "Shortlisted in the T-Hub pre-incubation batch 2026",
+      by: "T-Hub, Telangana",
+      what: "A marketplace connecting rural artisans directly with boutique hotels, cutting middlemen margins.",
+    },
+    description: "Founded the idea with two teammates; built the MVP and completed 14 sales conversations before the application.",
+  },
+  sports_medal: {
+    date: "2026-01-11",
+    answers: {
+      sport: "10 m Air Pistol (Men's)",
+      medal: "Silver",
+      event: "AIU National Championship 2026",
+      level: "National",
+      venue: "Bhilai Steel House, Raipur",
+      organiser: "All India University Sport Control Board",
+    },
+    description: "Second in the national round after leading by two rings through matchplay; a 9.9 final series kept the gold just out of reach.",
+  },
+  sports_selection: {
+    date: "2026-05-30",
+    answers: {
+      team: "Rajasthan state team",
+      sport: "Athletics - 4 x 400 m relay",
+      event: "National Inter-University Games 2026",
+      recognition: "Honoured at the university's sports day",
+    },
+    description: "Ran the anchor leg; the team qualified in 3:14.8 against the entry standard of 3:16.",
+  },
+  excellence_award: {
+    date: "2026-08-01",
+    answers: {
+      award: "Student Excellence Award 2026 - Innovation",
+      by: "Department of Computer Science & Engineering, SoCSE",
+      for: "Outstanding contribution to innovation, shown by the published paper and two prototypes this year.",
+    },
+    description: "The award recognises the year's research output: a Q1 journal paper plus the two on-device prototypes.",
+  },
+  national_recognition: {
+    date: "2026-06-02",
+    answers: {
+      recognition: "Entry in the India Book of Records",
+      by: "India Book of Records",
+      for: "Largest student-built solar microgrid: 48 kW powering a 12-class block through a monsoon year.",
+    },
+    description: "Designed the array layout and the charge controller; the block ran fully on solar for 214 days.",
+  },
+  scholarship: {
+    date: "2026-04-22",
+    answers: {
+      scholarship: "MITACS Globalink Research Internship 2026",
+      host: "University of Toronto, Canada",
+      value: "12 weeks, fully funded with travel",
+      topic: "Graph neural networks for traffic signal coordination",
+    },
+    description: "Selected from 600+ applicants for a 12-week summer internship; project placed with the transportation group.",
+  },
+  club_award: {
+    date: "2026-03-05",
+    answers: {
+      club: "IEEE Student Branch, CSE",
+      award: "#1 Club at MUJ",
+      by: "Directorate of Student Welfare (DSW)",
+      role: "Chairperson",
+      highlights: "Ran the department's first 100+ attendee symposium and a weekly problem-solving circle.",
+    },
+    description: "Grew the branch from 60 to 214 active members and led the two largest technical events of the year.",
+  },
+  competition_win: {
+    date: "2026-09-13",
+    answers: {
+      competition: "CoA National Awards 2026 - Thesis",
+      position: "Special Mention",
+      organiser: "Centre for Atmospheric Research",
+      entry: "A wind-shear prediction model for the Jaipur corridor using 5 years of station data.",
+    },
+    description: "Third of twelve special mentions out of 400+ thesis entries; the model's error metric beat the benchmark by 11%.",
+  },
+};
+
+/** The prototype set for a template, or null when it has none. */
+export function dummyFor(template: AchievementTemplate | null | undefined) {
+  return template ? (DUMMY_DETAILS[template.key] ?? null) : null;
+}
+
 /** Search: every typed word must appear in the title, the student, the people, the category or an answer. */
 export function achievementMatches(a: Achievement, query: string): boolean {
   const words = query.toLowerCase().split(/\s+/).filter(Boolean);

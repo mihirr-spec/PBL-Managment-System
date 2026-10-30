@@ -10,7 +10,7 @@ import { Field, Input, Textarea } from "@/components/ui/field";
 import { FileDrop } from "@/components/ui/file-drop";
 import { PageHeader } from "@/components/ui/page-header";
 import { PageSkeleton } from "@/components/ui/skeleton";
-import { ACHIEVEMENT_CATEGORIES, findTemplate, MAX_BONUS_MARKS, type AchievementTemplate } from "@/lib/achievements";
+import { ACHIEVEMENT_CATEGORIES, dummyFor, findTemplate, MAX_BONUS_MARKS, type AchievementTemplate } from "@/lib/achievements";
 import * as repo from "@/lib/data/repository";
 import { usePortal } from "@/lib/data/portal-store";
 import type { Achievement, GroupMember, Student } from "@/lib/types";
@@ -212,6 +212,30 @@ function AchievementForm({
     if (!titleTouched && template) setTitle(template.title(next));
   }
 
+  /** Fills the template's fields with plausible prototype data, a proof
+   *  placeholder, and the generated title - for demonstrating the portal. */
+  function fillDummy(t: AchievementTemplate) {
+    const dummy = dummyFor(t);
+    if (!dummy) return;
+    setTemplate(t);
+    setTitleTouched(false);
+    setTitle(t.title(dummy.answers));
+    setAnswers({ ...dummy.answers });
+    setDescription(dummy.description);
+    setAchievedOn(dummy.date);
+    const name = `dummy-proof-${t.key}.txt`;
+    setFiles([
+      new File(
+        [
+          `Placeholder proof document for the demo achievement "${t.label}".\n\n` +
+            `In the real portal this would be a certificate, results page or screenshot.\n`,
+        ],
+        name,
+        { type: "text/plain" },
+      ),
+    ]);
+  }
+
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (!template || !categoryKey) return;
@@ -302,17 +326,32 @@ function AchievementForm({
           }
         />
         <CardBody className="grid gap-3">
-          {category.templates.map((t) => (
-            <button
-              key={t.key}
-              type="button"
-              onClick={() => { setTemplate(t); setTitle(""); setTitleTouched(false); }}
-              className="rounded-[14px] bg-white/65 p-4 text-left ring-1 ring-white transition-colors hover:bg-white hover:ring-azure-100"
-            >
-              <p className="font-medium text-ink-900">{t.label}</p>
-              <p className="mt-0.5 text-[12.5px] text-stone-500">{t.hint}</p>
-            </button>
-          ))}
+          {category.templates.map((t) => {
+            const hasDummy = !!dummyFor(t);
+            return (
+              <div key={t.key} className="rounded-[14px] bg-white/65 p-4 ring-1 ring-white transition-colors hover:ring-azure-100">
+                <button
+                  type="button"
+                  onClick={() => { setTemplate(t); setTitle(""); setTitleTouched(false); }}
+                  className="block w-full text-left"
+                >
+                  <p className="font-medium text-ink-900">{t.label}</p>
+                  <p className="mt-0.5 text-[12.5px] text-stone-500">{t.hint}</p>
+                </button>
+                {hasDummy ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    className="mt-2.5"
+                    onClick={() => fillDummy(t)}
+                  >
+                    Fill in dummy details
+                  </Button>
+                ) : null}
+              </div>
+            );
+          })}
         </CardBody>
       </Card>
     );
