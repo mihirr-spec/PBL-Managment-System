@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import { ArrowRightLeft, Award, ChevronDown, Crown, Eye, FileText, Info, Mail, MessageCircleQuestion, Save, Trophy } from "lucide-react";
 
 import { FileLink } from "@/components/shared/file-link";
+import { GradingPlanCard } from "@/components/staff/grading-plan";
 import { QueryList } from "@/components/shared/queries";
 import { ChangeSupervisorForm, SupervisorHistory } from "@/components/staff/supervisor-change";
 import { Avatar } from "@/components/ui/avatar";
@@ -22,14 +23,17 @@ import { cn, formatDateTime, timeAgo } from "@/lib/utils";
 async function loadGroupDetail(groupId: string) {
   const group = await repo.getGroup(groupId);
   if (!group) throw new Error("This group does not exist or is not visible to you.");
-  const [mentor, reports, grades, tickets, changes] = await Promise.all([
+  const [mentor, reports, grades, tickets, changes, milestones, groupGrade, weeklyAverage] = await Promise.all([
     repo.getFaculty(group.mentorId),
     repo.listReports(group.id),
     repo.listGrades(group.members.map((m) => m.studentId)),
     repo.listTickets(group.id),
     repo.listSupervisorChanges(group.id),
+    repo.listMilestones(group.id),
+    repo.getGroupGrade(group.id),
+    repo.weeklyAverage(group.id),
   ]);
-  return { group, mentor, reports, grades, tickets, changes };
+  return { group, mentor, reports, grades, tickets, changes, milestones, groupGrade, weeklyAverage };
 }
 
 /**
@@ -44,7 +48,7 @@ export function GroupDetail({ groupId, isAdmin = false }: { groupId: string; isA
   if (error) return <Card><EmptyState title="Could not load this group" description={error} /></Card>;
   if (!data) return <PageSkeleton />;
 
-  const { group, mentor, reports, grades, tickets, changes } = data;
+  const { group, mentor, reports, grades, tickets, changes, milestones, groupGrade, weeklyAverage } = data;
 
   return (
     <div className="space-y-6">
@@ -141,6 +145,13 @@ export function GroupDetail({ groupId, isAdmin = false }: { groupId: string; isA
       </Card>
 
       {/* ------------------------- weekly reports ------------------------ */}
+      <GradingPlanCard
+        groupId={group.id}
+        milestones={milestones}
+        grade={groupGrade}
+        weeklyAverage={weeklyAverage}
+        canGrade={!isAdmin}
+      />
       <Card>
         <CardHeader
           title="Weekly reports"
@@ -242,12 +253,14 @@ function StudentRow({
       </div>
 
       {grades.length > 0 ? (
-        <ul className="mt-3 space-y-1.5 pl-[3.25rem]">
+        <ul className="mt-3 space-y-2.5 pl-[3.25rem]">
           {grades.map((g) => (
-            <li key={g.id} className="text-[12.5px] text-stone-600">
-              <span className="tnum font-semibold text-ink-900">{g.score}/{g.maxScore}</span> · {g.title}
-              {g.improvements ? <span className="text-stone-500"> - {g.improvements}</span> : null}
-            </li>
+            <EditableGrade
+              key={g.id}
+              grade={g}
+              canGrade={canGrade}
+              onChanged={onGraded}
+            />
           ))}
         </ul>
       ) : null}
@@ -272,6 +285,103 @@ function StudentRow({
           </div>
         </form>
       ) : null}
+    </li>
+  );
+}
+
+/** One saved mark; the group's supervisor can correct the score or the note. */
+function EditableGrade({
+  grade,
+  canGrade,
+  onChanged,
+}: {
+  grade: StudentGrade;
+  canGrade: boolean;
+  onChanged: () => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [score, setScore] = useState(String(grade.score));
+  const [improvements, setImprovements] = useState(grade.improvements);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function save(event: FormEvent) {
+    event.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      await repo.updateStudentGrade(grade.id, Number(score), improvements.trim());
+      onChanged();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not save the change.");
+      setBusy(false);
+    }
+  }
+
+  if (!canGrade || !editing) {
+    return (
+      <li className="group text-[12.5px] text-stone-600">
+        <span className="tnum font-semibold text-ink-900">{grade.score}/{grade.maxScore}</span>
+        <span className="font-medium text-ink-800"> · {grade.title}</span>
+        {grade.improvements ? <span className="text-stone-500"> - {grade.improvements}</span> : null}
+        {canGrade ? (
+          <button
+            type="button"
+            onClick={() => {
+              setScore(String(grade.score));
+              setImprovements(grade.improvements);
+              setEditing(true);
+            }}
+            className="ml-2 text-[11.5px] font-medium text-azure-600 opacity-0 transition-opacity group-hover:opacity-100"
+          >
+            Edit
+          </button>
+        ) : null}
+      </li>
+    );
+  }
+
+  return (
+    <li className="mt-1">
+      <form onSubmit={save} className="grid gap-2.5 rounded-[12px] bg-white/70 p-3 ring-1 ring-sand-200">
+        <div className="grid gap-2.5 sm:grid-cols-[7rem_1fr]">
+          <Field label={`Score / ${grade.maxScore}`} htmlFor={`sg-${grade.id}`}>
+            <Input
+              id={`sg-${grade.id}`}
+              type="number"
+              min={0}
+              max={grade.maxScore}
+              step="0.5"
+              required
+              value={score}
+              onChange={(e) => setScore(e.target.value)}
+            />
+          </Field>
+          <Field label="Improvements to make" htmlFor={`si-${grade.id}`}>
+            <Textarea
+              id={`si-${grade.id}`}
+              rows={2}
+              value={improvements}
+              onChange={(e) => setImprovements(e.target.value)}
+            />
+          </Field>
+        </div>
+        {error ? <p role="alert" className="text-[12px] text-clay-500 sm:col-span-2">{error}</p> : null}
+        <div className="flex gap-2">
+          <Button type="submit" size="sm" loading={busy}>
+            Save
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="secondary"
+            onClick={() => setEditing(false)}
+            disabled={busy}
+          >
+            Cancel
+          </Button>
+        </div>
+      </form>
     </li>
   );
 }

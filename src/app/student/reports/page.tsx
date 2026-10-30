@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
-import { ChevronDown, FileText, MessageCircleQuestion, Trophy, Upload } from "lucide-react";
+import { useState, type FormEvent, type ReactNode } from "react";
+import { ChevronDown, FileText, MessageCircleQuestion, Presentation, ScrollText, Trophy, Upload, type LucideIcon } from "lucide-react";
 
 import { FileLink } from "@/components/shared/file-link";
 import { Badge } from "@/components/ui/badge";
@@ -14,7 +14,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { PageSkeleton } from "@/components/ui/skeleton";
 import * as repo from "@/lib/data/repository";
 import { usePortal } from "@/lib/data/portal-store";
-import type { WeeklyReport } from "@/lib/types";
+import type { GroupMilestone, MilestoneSlot, WeeklyReport } from "@/lib/types";
 import { useLoad } from "@/lib/use-load";
 import { timeAgo, cn } from "@/lib/utils";
 
@@ -22,6 +22,7 @@ import { timeAgo, cn } from "@/lib/utils";
 export default function ReportsPage() {
   const { loading, student, group, mentor, refresh } = usePortal();
   const reports = useLoad(() => repo.listReports(group!.id), group ? group.id : null);
+  const milestones = useLoad(() => (group ? repo.listMilestones(group.id) : Promise.resolve([])), group ? group.id : null);
   const [submittedWeek, setSubmittedWeek] = useState<number | null>(null);
 
   if (loading || !student) return <PageSkeleton />;
@@ -49,13 +50,57 @@ export default function ReportsPage() {
   const weeks = Array.from({ length: group.reportCount }, (_, i) => i + 1);
   const submitted = weeks.filter((w) => byWeek.has(w)).length;
 
+  const slotOf = (s: MilestoneSlot) => (milestones.data ?? []).find((m) => m.slot === s);
+
+  /** One week's card, plus a milestone block after week 3 (midterm) and 7 (endterm). */
+  function weekBlock(week: number): ReactNode {
+    return (
+      <div key={week} className="space-y-4">
+        <WeekCard
+          week={week}
+          report={byWeek.get(week)}
+          mentorName={mentor?.fullName ? mentor.fullName : "your supervisor"}
+          onSubmitted={(w) => {
+            setSubmittedWeek(w);
+            void reports.reload();
+            void refresh();
+          }}
+        />
+        {week === 3 ? (
+          <MilestonePhase
+            title="Midterm"
+            note="After week 3"
+            items={[
+              { slot: "mid_ppt", label: "Analysis process PPT", icon: Presentation },
+              { slot: "mid_synopsis", label: "Synopsis", icon: ScrollText },
+            ]}
+            get={slotOf}
+            reload={() => void milestones.reload()}
+          />
+        ) : null}
+        {week === 7 ? (
+          <MilestonePhase
+            title="Endterm"
+            note="After week 7"
+            items={[
+              { slot: "ete_ppt", label: "Updated PPT", icon: Presentation },
+              { slot: "ete_synopsis", label: "Updated synopsis", icon: ScrollText },
+            ]}
+            get={slotOf}
+            reload={() => void milestones.reload()}
+          />
+        ) : null}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader
         eyebrow="Weekly Reports"
         title="Weekly"
         emphasis="reports."
-        description={`${submitted} of ${group.reportCount} submitted. One report per week for the whole team - you can replace one until your supervisor grades it.`}
+        description={`${submitted} of ${group.reportCount} submitted. One report per week for the whole team - you can replace one until your supervisor grades it. PPT and synopsis submissions come in after week 3 (midterm) and week 7 (endterm).`}
         scene="reports"
       />
 
@@ -66,19 +111,7 @@ export default function ReportsPage() {
       ) : null}
 
       <div className="space-y-4">
-        {weeks.map((week) => (
-          <WeekCard
-            key={week}
-            week={week}
-            report={byWeek.get(week)}
-            mentorName={mentor?.fullName ? mentor.fullName : "your supervisor"}
-            onSubmitted={(w) => {
-              setSubmittedWeek(w);
-              void reports.reload();
-              void refresh();
-            }}
-          />
-        ))}
+        {weeks.map((week) => weekBlock(week))}
       </div>
     </div>
   );
@@ -275,5 +308,103 @@ function FileIcon() {
     <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-clay-100 text-clay-500 ring-1 ring-clay-500/15">
       <FileText className="size-4" />
     </span>
+  );
+}
+
+interface MilestoneItem {
+  slot: MilestoneSlot;
+  label: string;
+  icon: LucideIcon;
+}
+
+/** A midterm or endterm block: one upload slot for each deliverable. */
+function MilestonePhase({
+  title,
+  note,
+  items,
+  get,
+  reload,
+}: {
+  title: string;
+  note: string;
+  items: MilestoneItem[];
+  get: (slot: MilestoneSlot) => GroupMilestone | undefined;
+  reload: () => void;
+}) {
+  const { group } = usePortal();
+  const [busy, setBusy] = useState<MilestoneSlot | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function upload(slot: MilestoneSlot, file: File) {
+    if (!group) return;
+    setBusy(slot);
+    setError(null);
+    try {
+      await repo.submitMilestone(group.id, slot, file);
+      await reload();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not upload the file.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  return (
+    <Card>
+      <div className="flex items-center justify-between gap-3 px-5 py-3.5">
+        <div className="flex items-center gap-3">
+          <span className="flex size-8 items-center justify-center rounded-lg bg-gold-50 text-gold-600">
+            <ScrollText className="size-4" />
+          </span>
+          <div>
+            <p className="text-[14px] font-semibold text-ink-900">{title} submissions</p>
+            <p className="text-[12px] text-stone-500">{note}</p>
+          </div>
+        </div>
+        <Badge tone="gold" dot>{note.replace("After ", "Due after ")}</Badge>
+      </div>
+      <div className="grid gap-3 border-t border-sand-200/70 px-5 py-4 sm:grid-cols-2">
+        {items.map(({ slot, label, icon: Icon }) => {
+          const m = get(slot);
+          const filePath = m?.filePath;
+          const fileName = m?.fileName;
+          return (
+            <div key={slot} className="rounded-[12px] bg-white/70 p-3 ring-1 ring-sand-200">
+              <p className="flex items-center gap-1.5 text-[12px] font-medium tracking-wide text-stone-500">
+                <Icon className="size-3.5 text-azure-600" />
+                {label}
+              </p>
+              {filePath && fileName ? (
+                <div className="mt-2.5 flex items-center justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <FileIcon />
+                    <span className="truncate text-[12.5px] font-medium text-ink-900">{fileName}</span>
+                  </div>
+                  <FileLink bucket="submissions" path={filePath} name={fileName} />
+                </div>
+              ) : null}
+              <label className="mt-2.5 block cursor-pointer">
+                <input
+                  type="file"
+                  className="sr-only"
+                  accept=".pdf,.ppt,.pptx"
+                  disabled={busy != null}
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) void upload(slot, f);
+                    e.target.value = "";
+                  }}
+                />
+                <span className="inline-flex items-center gap-1.5 rounded-lg bg-azure-50 px-2.5 py-1.5 text-[12px] font-medium text-azure-600 ring-1 ring-azure-100 transition-colors hover:bg-azure-50/70 disabled:opacity-50">
+                  <Upload className="size-3.5" />
+                  {busy === slot ? "Uploading..." : filePath && fileName ? "Replace file" : "Upload"}
+                </span>
+              </label>
+            </div>
+          );
+        })}
+      </div>
+      {error ? <p role="alert" className="px-5 pb-3 text-[13px] text-clay-500">{error}</p> : null}
+    </Card>
   );
 }

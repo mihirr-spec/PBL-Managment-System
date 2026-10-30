@@ -9,9 +9,12 @@ import type {
   Announcement,
   Faculty,
   Group,
+  GroupGrade,
   GroupInvitation,
+  GroupMilestone,
   GroupMember,
   MentorRequest,
+  MilestoneSlot,
   Notification,
   Role,
   SentInvitation,
@@ -19,6 +22,7 @@ import type {
   StudentGrade,
   SupervisorChange,
   Ticket,
+  TicketAttachment,
   TicketCategory,
   User,
   WeeklyReport,
@@ -139,6 +143,14 @@ const toReport = (r: any): WeeklyReport => ({
   gradedAt: r.graded_at ?? undefined,
 });
 
+const toMilestone = (r: any): GroupMilestone => ({
+  slot: r.slot,
+  filePath: r.file_path ?? undefined,
+  fileName: r.file_name ?? undefined,
+  submittedBy: r.submitted_by ?? undefined,
+  submittedAt: r.submitted_at,
+});
+
 const toGrade = (r: any): StudentGrade => ({
   id: r.id,
   studentId: r.student_id,
@@ -159,6 +171,10 @@ const toTicket = (r: any): Ticket => ({
   body: r.body,
   category: r.category ?? "general",
   status: r.status,
+  attachments: (r.ticket_attachments ?? []).map((a: any) => ({
+    filePath: a.file_path,
+    fileName: a.file_name,
+  })),
   reply: r.reply ?? undefined,
   createdAt: r.created_at,
   repliedAt: r.replied_at ?? undefined,
@@ -912,6 +928,103 @@ export async function gradeReport(reportId: string, grade: number, feedback: str
 
 export type FileBucket = "submissions" | "announcements" | "achievements";
 
+/** A group's milestone uploads (midterm and endterm PPT and synopsis). */
+export async function listMilestones(groupId: string): Promise<GroupMilestone[]> {
+  const { data, error } = await supabase
+    .from("group_milestones")
+    .select("*")
+    .eq("group_id", groupId)
+    .order("slot");
+  fail(error);
+  return (data ?? []).map(toMilestone);
+}
+
+/** Uploads (or replaces) one of the group's milestone files. */
+export async function submitMilestone(groupId: string, slot: MilestoneSlot, file: File): Promise<void> {
+  const path = `${groupId}/milestone-${slot}/${Date.now()}-${safeFileName(file.name)}`;
+  const upload = await supabase.storage
+    .from("submissions")
+    .upload(path, file, { contentType: file.type });
+  fail(upload.error);
+  const { error } = await supabase.rpc("submit_milestone", {
+    p_slot: slot,
+    p_file_path: path,
+    p_file_name: file.name,
+  });
+  fail(error);
+}
+
+/** The saved 100-point grading for one group, or null. */
+export async function getGroupGrade(groupId: string): Promise<GroupGrade | null> {
+  const { data, error } = await supabase
+    .from("group_grades")
+    .select("*")
+    .eq("group_id", groupId)
+    .maybeSingle();
+  fail(error);
+  if (!data) return null;
+  return {
+    groupId: data.group_id,
+    synopsis1: data.synopsis1 == null ? null : Number(data.synopsis1),
+    synopsis2: data.synopsis2 == null ? null : Number(data.synopsis2),
+    weekly15: data.weekly15 == null ? null : Number(data.weekly15),
+    ppt15: data.ppt15 == null ? null : Number(data.ppt15),
+    design20: data.design20 == null ? null : Number(data.design20),
+    ete40: data.ete40 == null ? null : Number(data.ete40),
+    visible: Boolean(data.visible),
+    updatedAt: data.updated_at,
+  };
+}
+
+/** Makes the group's saved grading visible to its students. */
+export async function publishGroupGrades(groupId: string): Promise<void> {
+  const { error } = await supabase.rpc("publish_group_grades", { p_group: groupId });
+  fail(error);
+}
+
+/** Corrects one student's existing mark and note. */
+export async function updateStudentGrade(gradeId: string, score: number | null, improvements: string): Promise<void> {
+  const { error } = await supabase.rpc("update_student_grade", {
+    p_grade: gradeId,
+    p_score: score,
+    p_improvements: improvements,
+  });
+  fail(error);
+}
+
+/** Saves the group's final grading. `weekly15` may be null to keep the average. */
+export async function saveGroupGrades(
+  groupId: string,
+  marks: {
+    synopsis1: number | null;
+    synopsis2: number | null;
+    weekly15: number | null;
+    ppt15: number | null;
+    design20: number | null;
+    ete40: number | null;
+  },
+): Promise<void> {
+  const { error } = await supabase.rpc("save_group_grades", {
+    p_group: groupId,
+    p_s1: marks.synopsis1,
+    p_s2: marks.synopsis2,
+    p_weekly: marks.weekly15,
+    p_ppt: marks.ppt15,
+    p_design: marks.design20,
+    p_ete: marks.ete40,
+  });
+  fail(error);
+}
+
+/** The average of the group's graded weekly reports, scaled to the 15-point component. */
+export async function weeklyAverage(groupId: string): Promise<number | null> {
+  const reports = await listReports(groupId);
+  const graded = reports.map((r) => r.grade).filter((g): g is number => g != null);
+  if (graded.length === 0) return null;
+  const avg = graded.reduce((a, b) => a + b, 0) / graded.length;
+  return Math.round(avg * 1.5 * 10) / 10;
+}
+
 /** Short-lived link to a private file (report or announcement attachment). */
 export async function getFileUrl(bucket: FileBucket, path: string): Promise<string> {
   const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path, 60 * 10);
@@ -955,7 +1068,7 @@ export async function gradeStudent(input: {
 export async function listTickets(groupId?: string): Promise<Ticket[]> {
   let query = supabase
     .from("tickets")
-    .select("*, groups(number), students(full_name)")
+    .select("*, groups(number), students(full_name), ticket_attachments(file_path, file_name)")
     .order("created_at", { ascending: false });
   if (groupId) query = query.eq("group_id", groupId);
   const { data, error } = await query;
@@ -969,18 +1082,65 @@ export async function raiseTicket(input: {
   subject: string;
   body: string;
   category?: TicketCategory;
-}): Promise<void> {
-  const { error } = await supabase.from("tickets").insert({
+  files?: File[];
+}): Promise<string> {
+  const { data, error } = await supabase.from("tickets").insert({
     group_id: input.groupId,
     student_id: input.studentId,
     subject: input.subject,
     body: input.body,
     category: input.category ?? "general",
-  });
+  }).select("id");
   if (error?.code === "23505") {
     throw new Error("Your group already has a change-of-supervisor request in progress.");
   }
   fail(error);
+  const ticketId = String(data![0].id);
+  if (input.files?.length) {
+    for (const file of input.files) {
+      const path = `${input.groupId}/ticket-${ticketId}/${Date.now()}-${safeFileName(file.name)}`;
+      const upload = await supabase.storage
+        .from("submissions")
+        .upload(path, file, { contentType: file.type });
+      fail(upload.error);
+      const row = await supabase.from("ticket_attachments").insert({
+        ticket_id: ticketId,
+        file_path: path,
+        file_name: file.name,
+      });
+      fail(row.error);
+    }
+  }
+  return ticketId;
+}
+
+/** Attaches more files to an already-raised query. */
+export async function addTicketAttachment(ticketId: string, file: File): Promise<void> {
+  const ticket = await supabase.from("tickets").select("group_id").eq("id", ticketId).single();
+  fail(ticket.error);
+  if (!ticket.data) return;
+  const path = `${ticket.data.group_id}/ticket-${ticketId}/${Date.now()}-${safeFileName(file.name)}`;
+  const upload = await supabase.storage
+    .from("submissions")
+    .upload(path, file, { contentType: file.type });
+  fail(upload.error);
+  const row = await supabase.from("ticket_attachments").insert({
+    ticket_id: ticketId,
+    file_path: path,
+    file_name: file.name,
+  });
+  fail(row.error);
+}
+
+/** A ticket's attached files. */
+export async function listTicketAttachments(ticketId: string): Promise<TicketAttachment[]> {
+  const { data, error } = await supabase
+    .from("ticket_attachments")
+    .select("*")
+    .eq("ticket_id", ticketId)
+    .order("created_at");
+  fail(error);
+  return (data ?? []).map((r) => ({ filePath: r.file_path, fileName: r.file_name }));
 }
 
 /* --------------------------------------------------- supervisor changes */

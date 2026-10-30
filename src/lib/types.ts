@@ -165,6 +165,33 @@ export interface WeeklyReport {
   gradedAt?: string;
 }
 
+/** One milestone slot: the PPT or synopsis due in a phase. */
+export type MilestoneSlot = "mid_ppt" | "mid_synopsis" | "ete_ppt" | "ete_synopsis";
+
+export interface GroupMilestone {
+  slot: MilestoneSlot;
+  filePath?: string;
+  fileName?: string;
+  submittedBy?: string;
+  submittedAt: string;
+}
+
+/** The supervisor's 100-point assessment for one group. */
+export interface GroupGrade {
+  groupId: string;
+  /** Each 0-10; the two average to the 10-point "updated synopsis" component. */
+  synopsis1: number | null;
+  synopsis2: number | null;
+  /** 0-15. May be null, in which case the average of the weekly grades is used. */
+  weekly15: number | null;
+  ppt15: number | null;
+  design20: number | null;
+  ete40: number | null;
+  /** False until the supervisor publishes it; students see the score only after that. */
+  visible: boolean;
+  updatedAt: string;
+}
+
 export interface StudentGrade {
   id: string;
   studentId: string;
@@ -182,6 +209,12 @@ export type TicketStatus = "open" | "forwarded" | "resolved" | "declined";
 /** A query is general, or a request to change the group's supervisor. */
 export type TicketCategory = "general" | "supervisor_change";
 
+/** One file attached to a student query. */
+export interface TicketAttachment {
+  filePath: string;
+  fileName: string;
+}
+
 export interface Ticket {
   id: string;
   groupId: string;
@@ -192,6 +225,8 @@ export interface Ticket {
   body: string;
   category: TicketCategory;
   status: TicketStatus;
+  /** Files the student attached: screenshots, certificates, PDFs. */
+  attachments: TicketAttachment[];
   /** The supervisor's reply (or their note when reviewing a change request). */
   reply?: string;
   createdAt: string;
