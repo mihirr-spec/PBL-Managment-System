@@ -1,22 +1,23 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Crown, FileWarning, PencilLine, UserPlus, X } from "lucide-react";
+import { Check, ChevronDown, Crown, FileWarning, PencilLine, Search, UserPlus, X } from "lucide-react";
 
 import { DocumentPreview } from "@/components/shared/document-viewer";
 import { FileLink } from "@/components/shared/file-link";
 import { RichText } from "@/components/shared/rich-text";
+import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardHeader, EmptyState } from "@/components/ui/card";
-import { Field, Textarea } from "@/components/ui/field";
+import { Field, Input, Textarea } from "@/components/ui/field";
 import { PageHeader } from "@/components/ui/page-header";
 import { PageSkeleton } from "@/components/ui/skeleton";
 import { useSession } from "@/lib/auth/session";
 import * as repo from "@/lib/data/repository";
 import type { Group, MentorRequest, RequestStatus } from "@/lib/types";
 import { useLoad } from "@/lib/use-load";
-import { timeAgo } from "@/lib/utils";
+import { formatDateTime, timeAgo } from "@/lib/utils";
 
 type Request = MentorRequest & { group: Group | null };
 
@@ -44,6 +45,8 @@ const STATUS: Record<RequestStatus, { tone: "gold" | "sage" | "clay" | "neutral"
 export default function RequestsPage() {
   const { user } = useSession();
   const { data, error, reload } = useLoad(() => repo.listRequestsForFaculty(user!.profileId), user ? user.id : null);
+  const [query, setQuery] = useState("");
+  const [status, setStatus] = useState<RequestStatus | "all">("all");
 
   if (error) {
     return (
@@ -55,7 +58,25 @@ export default function RequestsPage() {
   if (!user || !data) return <PageSkeleton />;
 
   const pending = data.filter((r) => r.status === "pending");
-  const others = data.filter((r) => r.status !== "pending");
+  const approved = data.filter((r) => r.status === "approved").length;
+  const changes = data.filter((r) => r.status === "changes_requested").length;
+  const history = data
+    .filter((r) => r.status !== "pending")
+    .filter((r) => status === "all" || r.status === status)
+    .filter((r) => {
+      const q = query.trim().toLowerCase();
+      if (!q) return true;
+      const hay = [
+        r.group?.name,
+        r.group?.projectTitle,
+        ...(r.group?.members ?? []).map((m) => m.fullName),
+        r.facultyName,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return hay.includes(q);
+    });
 
   return (
     <div className="space-y-6">
@@ -67,44 +88,181 @@ export default function RequestsPage() {
         scene="requests"
       />
 
-      {pending.length === 0 ? (
-        <Card>
-          <EmptyState icon={<UserPlus className="size-5" />} title="No forms waiting for review" scene="requests" />
-        </Card>
-      ) : (
-        <div className="space-y-4">
-          {pending.map((r) => (
-            <RequestCard key={r.id} request={r} onDecided={reload} />
-          ))}
-        </div>
-      )}
+      <div className="grid gap-4 sm:grid-cols-3">
+        <StatTile label="Pending requests" value={pending.length} caption="Groups awaiting your review" />
+        <StatTile label="Approved" value={approved} caption="Groups registered" tone="sage" />
+        <StatTile label="Corrections requested" value={changes} caption="Groups sent back for changes" tone="gold" />
+      </div>
 
-      {others.length > 0 ? (
-        <Card>
-          <CardHeader title="Earlier requests" description="Requests sent back for corrections return to the top once the group resubmits." />
-          <ul className="divide-y divide-sand-200/70">
-            {others.map((r) => (
-              <li key={r.id} className="px-5 py-3">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div>
-                    <p className="text-[14px] font-medium text-ink-900">
-                      {r.group ? `Group ${r.group.number} · ${r.group.projectTitle}` : "Group"}
-                    </p>
-                    <p className="text-[12px] text-stone-500">
-                      {r.decidedAt ? `Reviewed ${timeAgo(r.decidedAt)}` : `Sent ${timeAgo(r.createdAt)}`}
-                    </p>
-                  </div>
-                  <Badge tone={STATUS[r.status].tone} dot>{STATUS[r.status].label}</Badge>
-                </div>
-                {r.reviewNote ? (
-                  <p className="mt-1.5 text-[12.5px] whitespace-pre-line text-stone-600">Your note: {r.reviewNote}</p>
-                ) : null}
-              </li>
+      <Card>
+        <CardHeader
+          title="Pending registrations"
+          description="New group registrations submitted by team leads will appear here."
+        />
+        {pending.length === 0 ? (
+          <EmptyState
+            icon={<UserPlus className="size-5" />}
+            title="No pending requests"
+            description="New submissions will appear here."
+            scene="requests"
+          />
+        ) : (
+          <div className="space-y-4 p-4 sm:p-5">
+            {pending.map((r) => (
+              <RequestCard key={r.id} request={r} onDecided={reload} />
             ))}
-          </ul>
-        </Card>
-      ) : null}
+          </div>
+        )}
+      </Card>
+
+      <Card>
+        <CardHeader
+          title="Request history"
+          description="Previously reviewed group registrations."
+          action={
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="relative">
+                <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-stone-400" aria-hidden />
+                <Input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search groups..."
+                  aria-label="Search groups"
+                  className="w-44 pl-8"
+                />
+              </div>
+              <Field label="" htmlFor="req-status">
+                <div className="relative">
+                  <select
+                    id="req-status"
+                    value={status}
+                    onChange={(e) => setStatus(e.target.value as RequestStatus | "all")}
+                    className="cursor-pointer appearance-none rounded-lg border border-sand-200 bg-white/75 py-1.5 pr-8 pl-3 text-[13px] text-stone-800"
+                  >
+                    <option value="all">All statuses</option>
+                    <option value="approved">Approved</option>
+                    <option value="rejected">Rejected</option>
+                    <option value="changes_requested">Corrections requested</option>
+                    <option value="closed">Closed</option>
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute top-1/2 right-2.5 size-4 -translate-y-1/2 text-stone-500" aria-hidden />
+                </div>
+              </Field>
+            </div>
+          }
+        />
+        {history.length === 0 ? (
+          <CardBody>
+            <p className="text-[13px] text-stone-500">No reviewed requests match.</p>
+          </CardBody>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[52rem] text-left">
+              <thead>
+                <tr className="border-b border-sand-200/60 bg-white/40 text-[10.5px] tracking-[0.12em] text-ink-400 uppercase">
+                  <th className="px-5 py-2.5 font-semibold">Group</th>
+                  <th className="px-5 py-2.5 font-semibold">Submitted on</th>
+                  <th className="px-5 py-2.5 font-semibold">Reviewed on</th>
+                  <th className="px-5 py-2.5 font-semibold">Submitted by</th>
+                  <th className="px-5 py-2.5 font-semibold">Status</th>
+                  <th className="w-8" />
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-sand-200/70">
+                {history.map((r) => (
+                  <HistoryRow key={r.id} request={r} />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
     </div>
+  );
+}
+
+/** One of the three counts above the lists. */
+function StatTile({
+  label,
+  value,
+  caption,
+  tone = "neutral",
+}: {
+  label: string;
+  value: number;
+  caption: string;
+  tone?: "neutral" | "sage" | "gold";
+}) {
+  return (
+    <div className="rounded-[18px] border border-white/80 bg-white/85 px-4 py-4 shadow-[0_1px_2px_rgba(61,78,92,0.05),0_18px_44px_-30px_rgba(61,78,92,0.4)] backdrop-blur-xl">
+      <p className="text-[10.5px] font-semibold tracking-[0.14em] text-ink-400 uppercase">{label}</p>
+      <p
+        className={
+          tone === "sage"
+            ? "tnum mt-1 font-display text-[1.9rem] leading-tight text-sage-500"
+            : tone === "gold"
+              ? "tnum mt-1 font-display text-[1.9rem] leading-tight text-gold-600"
+              : "tnum mt-1 font-display text-[1.9rem] leading-tight text-ink-900"
+        }
+      >
+        {value}
+      </p>
+      <p className="mt-0.5 text-[12px] text-stone-500">{caption}</p>
+    </div>
+  );
+}
+
+/** A reviewed request as a table row. */
+function HistoryRow({ request: r }: { request: Request }) {
+  const leader = r.group?.members.find((m) => m.studentId === r.group?.leaderStudentId);
+  const groupNo = r.group ? `Group ${r.group.number}` : "Group";
+  return (
+    <tr className="transition-colors hover:bg-white/70">
+      <td className="px-5 py-3">
+        <p className="text-[13.5px] font-medium text-ink-900">{groupNo} {r.group?.projectTitle ? `· ${r.group.projectTitle}` : ""}</p>
+        <p className="text-[11.5px] text-stone-500">PBL Registration Form</p>
+      </td>
+      <td className="px-5 py-3 text-[12.5px] text-stone-600" title={formatDateTime(r.createdAt)}>
+        {timeAgo(r.createdAt)}
+      </td>
+      <td className="px-5 py-3 text-[12.5px] text-stone-600" title={r.decidedAt ? formatDateTime(r.decidedAt) : undefined}>
+        {r.decidedAt ? timeAgo(r.decidedAt) : "-"}
+      </td>
+      <td className="px-5 py-3">
+        {leader ? (
+          <span className="flex items-center gap-2">
+            <Avatar name={leader.fullName} src={leader.avatarUrl} size="sm" />
+            <span>
+              <span className="block text-[12.5px] font-medium text-ink-900">{leader.fullName}</span>
+              <span className="block text-[11px] text-stone-500">Team Lead</span>
+            </span>
+          </span>
+        ) : (
+          <span className="text-[12.5px] text-stone-400">-</span>
+        )}
+      </td>
+      <td className="px-5 py-3">
+        <Badge tone={STATUS[r.status].tone} dot>
+          {STATUS[r.status].label}
+        </Badge>
+      </td>
+      <td className="pr-4">
+        <ButtonLinkViewDetails request={r} />
+      </td>
+    </tr>
+  );
+}
+
+/** The row's "View details" action, opening the group itself. */
+function ButtonLinkViewDetails({ request: r }: { request: Request }) {
+  if (!r.group) return <span className="text-[12.5px] text-stone-400">-</span>;
+  return (
+    <a
+      href={`/faculty/groups/${r.group.id}`}
+      className="text-[12.5px] font-medium text-azure-600 hover:underline"
+    >
+      View details
+    </a>
   );
 }
 
