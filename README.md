@@ -137,7 +137,7 @@ the interface and Fraunces for display headings.
 
 ## Recent additions
 
-- **Weekly reports rework**: eight slots (default) instead of five; per-week cards with a badge, mentor score tile, file row and feedback; a midterm block after week 3 and an endterm block after week 7 for PPT and synopsis uploads.
+- **Weekly reports rework**: seven slots (default), the ETE evaluation after week 7 being the last; per-week cards with a badge, mentor score tile, file row and feedback; a midterm block after week 3 and an endterm block after week 7 for PPT and synopsis uploads.
 - **Assessment plan per group**: a 100-point scheme (updated synopsis 10 · weekly progress 15 · analysis PPT 15 · design & implementation 20 · end term exam 40) shown on the group page, plus a separate "Final grading" window that saves it. The two synopsis marks average to the 10-point component; the weekly figure defaults to the average of the graded reports and can be overridden. The score stays hidden from students until the supervisor publishes it, and publishing is refused until every group she mentors is graded. She can also correct an individual student's mark.
 - **Query attachments**: students can attach files to a query; supervisors see the attachments in the two-pane queries view.
 - **Project idea** is required at team creation and always shows on the supervisor's group table; a team lead can backfill an empty idea.
