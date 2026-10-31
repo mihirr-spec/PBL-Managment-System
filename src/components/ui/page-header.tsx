@@ -31,7 +31,14 @@ function Heading({
         )}
       >
         {title}
-        {emphasis ? <span className="text-azure-600"> {emphasis}</span> : null}
+        {emphasis ? (
+          title.trim().endsWith(",") ? (
+            // A greeting ("Welcome,") puts the name on its own line, kept whole.
+            <span className="block whitespace-nowrap text-azure-600">{emphasis}</span>
+          ) : (
+            <span className="text-azure-600"> {emphasis}</span>
+          )
+        ) : null}
       </h1>
       {description ? (
         <p className="mt-2.5 max-w-lg text-[14px] leading-relaxed text-stone-600">{description}</p>
