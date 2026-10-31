@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import { ArrowRightLeft, Award, ChevronDown, Crown, Eye, FileText, Info, Mail, MessageCircleQuestion, Save, Trophy } from "lucide-react";
 
 import { FileChips } from "@/components/shared/file-link";
+import { ReportProgress, TimelineItem, type TimelineState } from "@/components/shared/timeline";
 import { RichEditor } from "@/components/shared/rich-editor";
 import { GradingPlanCard } from "@/components/staff/grading-plan";
 import { QueryList } from "@/components/shared/queries";
@@ -18,7 +19,7 @@ import { ProgressBar } from "@/components/ui/progress";
 import { PageSkeleton } from "@/components/ui/skeleton";
 import { useSession } from "@/lib/auth/session";
 import * as repo from "@/lib/data/repository";
-import type { Group, StudentGrade, WeeklyReport } from "@/lib/types";
+import type { Group, GroupMilestone, StudentGrade, WeeklyReport } from "@/lib/types";
 import { useLoad } from "@/lib/use-load";
 import { RichText, plainText } from "@/components/shared/rich-text";
 import { cn, formatDateTime, timeAgo } from "@/lib/utils";
@@ -166,12 +167,12 @@ export function GroupDetail({ groupId, isAdmin = false }: { groupId: string; isA
           }`}
           action={isAdmin ? null : <ReportCountPicker groupId={group.id} value={group.reportCount} onChanged={reload} />}
         />
-        <div className="space-y-3 p-4 sm:p-5">
-          {Array.from({ length: group.reportCount }, (_, i) => i + 1).map((week) => {
-            const r = reports.find((x) => x.week === week);
-            return <WeekRow key={week} week={week} report={r} canGrade={!isAdmin} onGraded={reload} />;
-          })}
-        </div>
+        <ReportTimeline
+          weeks={group.reportCount}
+          reports={reports}
+          milestones={milestones}
+          row={(week, r) => <WeekRow key={week} week={week} report={r} canGrade={!isAdmin} onGraded={reload} />}
+        />
       </Card>
 
       {/* ----------------------------- queries ---------------------------- */}
@@ -393,6 +394,65 @@ function EditableGrade({
 }
 
 /** How many weekly reports the group owes: 5 or 6. */
+/**
+ * The supervisor's view of the weekly reports: the same timeline and progress
+ * bar the students see, with the midterm after week 3 and the endterm last.
+ */
+function ReportTimeline({
+  weeks,
+  reports,
+  milestones,
+  row,
+}: {
+  weeks: number;
+  reports: WeeklyReport[];
+  milestones: GroupMilestone[];
+  row: (week: number, report: WeeklyReport | undefined) => React.ReactNode;
+}) {
+  const files = (a: string, b: string) => milestones.filter((m) => m.slot === a || m.slot === b).flatMap((m) => m.files);
+  const mid = files("mid_ppt", "mid_synopsis");
+  const ete = files("ete_ppt", "ete_synopsis");
+  const submitted = reports.filter((r) => r.week <= weeks).length;
+  const total = weeks + 2;
+
+  const stops: Array<{ key: string; state: TimelineState; milestone?: boolean; node: React.ReactNode }> = [];
+  for (let week = 1; week <= weeks; week++) {
+    const r = reports.find((x) => x.week === week);
+    stops.push({ key: `w${week}`, state: !r ? "pending" : r.grade != null ? "evaluated" : "submitted", node: row(week, r) });
+    if (week === 3) {
+      stops.push({ key: "mid", milestone: true, state: mid.length ? "submitted" : "pending", node: <PhaseFiles title="Midterm (MTE)" files={mid} /> });
+    }
+  }
+  stops.push({ key: "ete", milestone: true, state: ete.length ? "submitted" : "pending", node: <PhaseFiles title="Endterm (ETE)" files={ete} /> });
+
+  return (
+    <div className="space-y-3 p-4 sm:p-5">
+      <ReportProgress done={submitted + (mid.length ? 1 : 0) + (ete.length ? 1 : 0)} total={total} />
+      {stops.map((s, i) => (
+        <TimelineItem key={s.key} state={s.state} milestone={s.milestone} last={i === stops.length - 1}>
+          {s.node}
+        </TimelineItem>
+      ))}
+    </div>
+  );
+}
+
+/** A midterm or endterm stop: the PPT, project report and synopsis the team uploaded. */
+function PhaseFiles({ title, files }: { title: string; files: Array<{ path: string; name: string }> }) {
+  return (
+    <div className="rounded-[14px] bg-white/80 px-4 py-3.5 ring-1 ring-sand-200">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-[14px] font-semibold text-ink-900">{title} submission</p>
+        <span className={cn("text-[12.5px] font-semibold", files.length ? "text-azure-600" : "text-gold-600")}>
+          {files.length ? `${files.length} file${files.length > 1 ? "s" : ""}` : "Not uploaded yet"}
+        </span>
+      </div>
+      <p className="mt-0.5 text-[12px] text-stone-500">PPT, project report and project synopsis.</p>
+      {files.length ? <FileChips bucket="submissions" files={files} className="mt-2.5" /> : null}
+    </div>
+  );
+}
+
 function ReportCountPicker({ groupId, value, onChanged }: { groupId: string; value: number; onChanged: () => void }) {
   const [error, setError] = useState<string | null>(null);
   return (
