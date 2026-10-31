@@ -11,7 +11,6 @@ import {
   MessagesSquare,
   Trophy,
   UserPlus,
-  UserRound,
   UsersRound,
   type LucideIcon,
 } from "lucide-react";
@@ -68,12 +67,6 @@ export const NAV_BY_ROLE: Record<Role, NavSection[]> = {
         { label: "Notifications", href: "/student/notifications", icon: Bell, badge: "notifications" },
         { label: "PBL Handout", href: "/student/handout", icon: BookOpen },
         { label: "Faculty Directory", href: "/student/faculty", icon: BookUser },
-      ],
-    },
-    {
-      heading: "Account",
-      items: [
-        { label: "My Profile", href: "/student/profile", icon: UserRound },
       ],
     },
   ],
