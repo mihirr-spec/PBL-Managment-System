@@ -23,8 +23,7 @@ import { cn } from "@/lib/utils";
 
 /**
  * One sign-in tab per kind of account. The domain is filled in, so people type
- * only the part before the @. Each tab has its test login
- * (supabase/migrations/20261028000002_test_accounts.sql).
+ * only the part before the @.
  */
 const TABS = [
   {
@@ -33,7 +32,6 @@ const TABS = [
     roles: ["student"],
     domain: "muj.manipal.edu",
     placeholder: "name.regno",
-    demo: { label: "Test student", email: "teststudent1@muj.manipal.edu", password: "pace@2026" },
   },
   {
     key: "teacher",
@@ -41,7 +39,6 @@ const TABS = [
     roles: ["faculty", "supervisor"],
     domain: "jaipur.manipal.edu",
     placeholder: "name",
-    demo: { label: "Test team supervisor", email: "testteacher1@jaipur.manipal.edu", password: "pace@2026" },
   },
   {
     key: "admin",
@@ -49,7 +46,6 @@ const TABS = [
     roles: ["admin"],
     domain: "jaipur.manipal.edu",
     placeholder: "name",
-    demo: { label: "Test administrator", email: "testadministrator1@jaipur.manipal.edu", password: "pace@2026" },
   },
 ] as const satisfies ReadonlyArray<{
   key: string;
@@ -57,7 +53,6 @@ const TABS = [
   roles: readonly Role[];
   domain: string;
   placeholder: string;
-  demo: { label: string; email: string; password: string };
 }>;
 
 type TabKey = (typeof TABS)[number]["key"];
@@ -144,12 +139,6 @@ export function LoginForm({ verified = false, initialTab }: { verified?: boolean
     }
   }
 
-  /** One click: fill the test login and sign straight in. */
-  function tryDemo() {
-    setEmail(tab.demo.email.split("@")[0]);
-    setPassword(tab.demo.password);
-    void signInWith(tab.demo.email, tab.demo.password);
-  }
 
   function chooseTab(key: TabKey) {
     setTabKey(key);
@@ -346,17 +335,6 @@ export function LoginForm({ verified = false, initialTab }: { verified?: boolean
           <Link href={`/signup?as=${SIGNUP_KIND[tab.key]}`} className="text-azure-600 hover:underline">
             Create your account
           </Link>
-        </p>
-        <button
-          type="button"
-          disabled={submitting}
-          onClick={tryDemo}
-          className="mt-3 rounded-full border border-[#dbe3ee] bg-white/70 px-3.5 py-1.5 text-[12.5px] text-stone-500 transition-colors hover:border-azure-100 hover:text-azure-600 disabled:pointer-events-none disabled:opacity-60"
-        >
-          Try as {tab.label}
-        </button>
-        <p className="mt-1.5 text-[12px] text-stone-400">
-          {tab.demo.email.split("@")[0]} · {tab.demo.password}
         </p>
       </div>
     </>
