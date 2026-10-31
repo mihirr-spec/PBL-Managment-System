@@ -19,6 +19,7 @@ import { useSession } from "@/lib/auth/session";
 import * as repo from "@/lib/data/repository";
 import type { Group, StudentGrade, WeeklyReport } from "@/lib/types";
 import { useLoad } from "@/lib/use-load";
+import { RichText, plainText } from "@/components/shared/rich-text";
 import { cn, formatDateTime, timeAgo } from "@/lib/utils";
 
 async function loadGroupDetail(groupId: string) {
@@ -65,9 +66,11 @@ export function GroupDetail({ groupId, isAdmin = false }: { groupId: string; isA
         <Card className="lg:col-span-2">
           <CardHeader title="Project description" description="Written by the team lead." />
           <CardBody className="space-y-4">
-            <p className="text-[14px] leading-relaxed whitespace-pre-line text-stone-600">
-              {group.projectIdea || "The team has not described its project yet."}
-            </p>
+            {group.projectIdea ? (
+              <RichText text={group.projectIdea} className="text-[14px]" />
+            ) : (
+              <p className="text-[14px] text-stone-600">The team has not described its project yet.</p>
+            )}
             <div className="max-w-sm">
               <div className="mb-1 flex justify-between text-[12px] text-stone-500">
                 <span>Progress</span>
@@ -475,7 +478,7 @@ function WeekRow({
                 : "No submission yet"}
             </p>
             {report?.summary ? (
-              <p className="mt-1 truncate text-[12.5px] text-stone-600">{report.summary}</p>
+              <p className="mt-1 truncate text-[12.5px] text-stone-600">{plainText(report.summary)}</p>
             ) : null}
           </div>
         </div>

@@ -15,6 +15,8 @@ import {
   replyTicket,
 } from "@/lib/data/repository";
 import type { Ticket } from "@/lib/types";
+import { RichEditor } from "@/components/shared/rich-editor";
+import { RichText } from "@/components/shared/rich-text";
 import { formatDateTime, timeAgo } from "@/lib/utils";
 
 /** Status wording depends on the kind of query. */
@@ -99,7 +101,7 @@ function QueryRow({
         <Badge tone={status.tone} dot>{status.label}</Badge>
       </div>
       {q.body ? (
-        <p className="mt-2 text-[13.5px] leading-relaxed whitespace-pre-line text-stone-600">{q.body}</p>
+        <RichText text={q.body} className="mt-2 text-[13.5px]" />
       ) : null}
 
       {q.attachments.length > 0 ? (
@@ -143,7 +145,7 @@ function Reply({ icon, who, when, text }: { icon: ReactNode; who: string; when?:
     <div className="mt-3 flex gap-2 rounded-[12px] bg-azure-50/70 px-3 py-2.5 text-[13px] text-ink-800">
       <span className="mt-0.5 shrink-0 text-azure-600">{icon}</span>
       <div>
-        <p className="whitespace-pre-line">{text}</p>
+        <RichText text={text} className="text-[13px] text-ink-800" />
         <p className="mt-1 text-[11.5px] text-stone-500">
           {who}
           {when ? ` · ${timeAgo(when)}` : ""}
@@ -182,7 +184,7 @@ function ReplyForm({ query, onChanged }: { query: Ticket; onChanged?: () => void
       }}
       className="mt-3 space-y-2"
     >
-      <Textarea rows={2} value={reply} onChange={(e) => setReply(e.target.value)} placeholder="Write a reply…" aria-label="Reply" />
+      <RichEditor rows={3} value={reply} onChange={setReply} placeholder="Write a reply..." hint="" />
       {error ? <p role="alert" className="text-[12.5px] text-clay-500">{error}</p> : null}
       <div className="flex flex-wrap gap-2">
         <Button type="submit" size="sm" loading={busy} disabled={!reply.trim()}>

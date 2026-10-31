@@ -10,7 +10,6 @@ import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, EmptyState } from "@/components/ui/card";
-import { Textarea } from "@/components/ui/field";
 import { PageHeader } from "@/components/ui/page-header";
 import { PageSkeleton } from "@/components/ui/skeleton";
 import { SearchBox, PillTabs, FilterMenu } from "@/components/ui/toolbar";
@@ -18,6 +17,7 @@ import { useSession } from "@/lib/auth/session";
 import { listTickets, replyTicket } from "@/lib/data/repository";
 import type { Ticket } from "@/lib/types";
 import { useLoad } from "@/lib/use-load";
+import { RichEditor } from "@/components/shared/rich-editor";
 import { formatDateTime, timeAgo, cn } from "@/lib/utils";
 
 const KINDS = [
@@ -244,8 +244,8 @@ function DetailPane({ query: q, me, onChanged }: { query: Ticket; me?: string; o
         {q.reply ? (
           <div className="mt-4">
             <p className="text-[11px] font-semibold tracking-[0.14em] text-ink-400 uppercase">Your response</p>
-            <div className="mt-2 rounded-[14px] bg-azure-50/70 p-4 text-[13.5px] leading-relaxed whitespace-pre-line text-ink-800 ring-1 ring-azure-100">
-              {q.reply}
+            <div className="mt-2 rounded-[14px] bg-azure-50/70 p-4 text-[13.5px] leading-relaxed text-ink-800 ring-1 ring-azure-100">
+              <RichText text={q.reply} className="text-[13.5px] text-ink-800" />
               {q.repliedAt ? <p className="mt-1.5 text-[11.5px] text-stone-500">Replied {timeAgo(q.repliedAt)}</p> : null}
             </div>
           </div>
@@ -271,14 +271,7 @@ function DetailPane({ query: q, me, onChanged }: { query: Ticket; me?: string; o
               <Search className="hidden" />
               Your response
             </p>
-            <Textarea
-              rows={3}
-              className="mt-2"
-              value={reply}
-              onChange={(e) => setReply(e.target.value)}
-              placeholder="Type your reply here..."
-              aria-label="Your response"
-            />
+            <RichEditor rows={4} className="mt-2" value={reply} onChange={setReply} placeholder="Type your reply here..." hint="" />
             {error ? <p role="alert" className="mt-1.5 text-[12.5px] text-clay-500">{error}</p> : null}
             <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2">
               <span className="flex items-center gap-1.5 text-[11.5px] text-stone-400">

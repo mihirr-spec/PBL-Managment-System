@@ -14,6 +14,7 @@ import * as repo from "@/lib/data/repository";
 import { usePortal } from "@/lib/data/portal-store";
 import type { Ticket } from "@/lib/types";
 import { useLoad } from "@/lib/use-load";
+import { RichText, plainText } from "@/components/shared/rich-text";
 import { cn, formatDateTime, timeAgo } from "@/lib/utils";
 
 /** The latest thing that happened on a query: a reply, an approval or the outcome. */
@@ -167,7 +168,7 @@ function QueryItem({
           </div>
         </div>
 
-        <p className="mt-1.5 line-clamp-2 text-[13px] leading-relaxed text-stone-600">{q.body}</p>
+        <p className="mt-1.5 line-clamp-2 text-[13px] leading-relaxed text-stone-600">{plainText(q.body)}</p>
         <div className="mt-2 flex flex-wrap items-center gap-3">
           {q.attachments.length > 0 ? (
             <span className="flex items-center gap-1.5 text-[12px] text-stone-500">
@@ -184,17 +185,18 @@ function QueryItem({
 
       {open ? (
         <div className="mt-3 space-y-3 rounded-[14px] bg-ivory-200/50 p-3.5 ring-1 ring-sand-200/70">
-          <p className="text-[13px] leading-relaxed whitespace-pre-line text-ink-800">{q.body}</p>
+          <RichText text={q.body} className="text-[13px] text-ink-800" />
           {isChange ? <ChangeProgress query={q} /> : null}
           {q.attachments.length > 0 ? (
             <FileChips bucket="submissions" files={q.attachments.map((a) => ({ path: a.filePath, name: a.fileName }))} />
           ) : null}
           {q.reply ? (
-            <p className="text-[13px] leading-relaxed text-ink-800">
-              <span className="font-semibold text-azure-600">Supervisor&apos;s response: </span>
-              {q.reply}
-              {q.repliedAt ? <span className="text-[11.5px] text-stone-500"> · {timeAgo(q.repliedAt)}</span> : null}
-            </p>
+            <div className="rounded-[12px] bg-azure-50/70 px-3.5 py-3 ring-1 ring-azure-100">
+              <p className="text-[12px] font-semibold text-azure-600">
+                Supervisor&apos;s response{q.repliedAt ? <span className="font-normal text-stone-500"> · {timeAgo(q.repliedAt)}</span> : null}
+              </p>
+              <RichText text={q.reply} className="mt-1 text-[13px] text-ink-800" />
+            </div>
           ) : null}
           {q.adminReply ? (
             <p className="text-[13px] leading-relaxed text-ink-800">

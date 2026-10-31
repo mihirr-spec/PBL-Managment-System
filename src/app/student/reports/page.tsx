@@ -10,13 +10,15 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/card";
 import { FileDrop } from "@/components/ui/file-drop";
-import { Label, Textarea } from "@/components/ui/field";
+import { Label } from "@/components/ui/field";
 import { PageHeader } from "@/components/ui/page-header";
 import { PageSkeleton } from "@/components/ui/skeleton";
 import * as repo from "@/lib/data/repository";
 import { usePortal } from "@/lib/data/portal-store";
 import type { GroupMilestone, MilestoneSlot, WeeklyReport } from "@/lib/types";
 import { useLoad } from "@/lib/use-load";
+import { RichEditor } from "@/components/shared/rich-editor";
+import { RichText } from "@/components/shared/rich-text";
 import { cn } from "@/lib/utils";
 
 /** "02 Oct 2026, 10:24 PM" */
@@ -260,9 +262,7 @@ function ReportBody({
       </div>
 
       {report.summary ? (
-        <p className="rounded-xl bg-white/70 px-4 py-3 text-[13.5px] leading-relaxed whitespace-pre-line text-stone-600 ring-1 ring-sand-200/70">
-          {report.summary}
-        </p>
+        <RichText text={report.summary} className="rounded-xl bg-white/70 px-4 py-3 text-[13.5px] ring-1 ring-sand-200/70" />
       ) : null}
 
       <div className="flex gap-3 rounded-xl bg-azure-50/60 px-4 py-3.5 ring-1 ring-azure-100">
@@ -334,12 +334,13 @@ function SubmitForm({ week, onSubmitted }: { week: number; onSubmitted: (week: n
         </div>
         <div>
           <Label htmlFor={`r-summary-${week}`}>What did the team do this week? (optional)</Label>
-          <Textarea
+          <RichEditor
             id={`r-summary-${week}`}
-            rows={3}
+            rows={4}
             value={summary}
-            onChange={(e) => setSummary(e.target.value)}
+            onChange={setSummary}
             placeholder="Progress, blockers and next week's plan"
+            hint=""
           />
         </div>
       </div>

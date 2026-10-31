@@ -12,6 +12,8 @@ import { Field, Input, Textarea } from "@/components/ui/field";
 import { FileDrop } from "@/components/ui/file-drop";
 import * as repo from "@/lib/data/repository";
 import type { Faculty, Group, GroupInvitation, SentInvitation, Student } from "@/lib/types";
+import { RichEditor } from "@/components/shared/rich-editor";
+import { RichText } from "@/components/shared/rich-text";
 import { useLoad } from "@/lib/use-load";
 
 /** A team is the lead plus one or two teammates. */
@@ -166,21 +168,26 @@ export function GetStarted({
                 disabled={groupId != null}
               />
             </Field>
-            <Field
-              label="Project description"
-              htmlFor="gs-idea"
-              help={`What you will build, who it is for and how. Your supervisor reads this before approving your team. ${(group?.projectIdea || idea).length}/1500`}
-            >
-              <Textarea
-                id="gs-idea"
-                rows={5}
-                maxLength={1500}
-                value={group?.projectIdea || idea}
-                onChange={(e) => setIdea(e.target.value)}
-                disabled={Boolean(group?.projectIdea)}
-                placeholder="e.g. A campus wayfinder app for MUJ. Students search for a room or office and get walking directions, live canteen queues and the day's class schedule. Built with React Native and Supabase."
-              />
-            </Field>
+            <div>
+              <label htmlFor="gs-idea" className="mb-1.5 block text-[13px] font-medium text-ink-800">
+                Project description
+              </label>
+              <p className="mb-2 text-[12px] text-stone-500">
+                What you will build, who it is for and how. Your supervisor reads this before approving your team.
+              </p>
+              {group?.projectIdea ? (
+                <RichText text={group.projectIdea} className="rounded-[14px] bg-white/70 px-4 py-3 text-[13.5px] ring-1 ring-sand-200" />
+              ) : (
+                <RichEditor
+                  id="gs-idea"
+                  rows={6}
+                  maxLength={1500}
+                  value={idea}
+                  onChange={setIdea}
+                  placeholder={"e.g. A campus wayfinder app for MUJ. Students search for a room or office and get walking directions.\n- **Users:** students and visitors\n- **Built with:** React Native and Supabase"}
+                />
+              )}
+            </div>
             {group && !group.projectIdea && idea.trim() ? (
               <Button
                 type="button"

@@ -202,3 +202,17 @@ export function RichText({ text, className }: { text: string; className?: string
     </div>
   );
 }
+
+/** The text without formatting marks, for one- or two-line previews. */
+export function plainText(text: string): string {
+  return text
+    .replace(/\*\*(.+?)\*\*/g, "$1")
+    .replace(/==(.+?)==/g, "$1")
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/^\s*#{1,3}\s+/gm, "")
+    .replace(/^\s*[-*•·▪]\s+/gm, "")
+    .replace(/^\s*\|?\s*:?-{2,}.*$/gm, "")
+    .replace(/\|/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ChevronRight, Crown } from "lucide-react";
 
 import { Card, CardHeader, EmptyState } from "@/components/ui/card";
+import { plainText } from "@/components/shared/rich-text";
 import type { Group } from "@/lib/types";
 
 /**
@@ -68,8 +69,8 @@ export function GroupTable({
                     </td>
                     <td className="max-w-[20rem] px-5 py-3.5">
                       <p className="truncate text-[13.5px] font-medium text-ink-900">{g.projectTitle}</p>
-                      <p className="mt-0.5 line-clamp-2 text-[12px] leading-snug text-stone-500" title={g.projectIdea || undefined}>
-                        {g.projectIdea || "No description yet."}
+                      <p className="mt-0.5 line-clamp-2 text-[12px] leading-snug text-stone-500" title={plainText(g.projectIdea) || undefined}>
+                        {plainText(g.projectIdea) || "No description yet."}
                       </p>
                       <p className="mt-1 text-[11px] text-stone-400">
                         {g.domain || "No domain"} · {g.progress}% done

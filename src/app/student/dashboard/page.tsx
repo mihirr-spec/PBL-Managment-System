@@ -16,6 +16,7 @@ import { PageSkeleton } from "@/components/ui/skeleton";
 import * as repo from "@/lib/data/repository";
 import { usePortal } from "@/lib/data/portal-store";
 import { useLoad } from "@/lib/use-load";
+import { plainText } from "@/components/shared/rich-text";
 import { timeAgo } from "@/lib/utils";
 
 function greeting(fullName: string) {
@@ -91,7 +92,7 @@ export default function DashboardPage() {
                 <p className="mt-1 font-display text-[1.35rem] leading-snug tracking-tight text-ink-900">
                   {group.projectTitle}
                 </p>
-                <p className="mt-1.5 line-clamp-2 text-[13.5px] text-stone-600">{group.projectIdea}</p>
+                <p className="mt-1.5 line-clamp-2 text-[13.5px] text-stone-600">{plainText(group.projectIdea)}</p>
               </div>
               <div>
                 <div className="mb-1 flex justify-between text-[12px] text-stone-500">

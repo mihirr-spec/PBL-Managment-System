@@ -19,6 +19,8 @@ import * as repo from "@/lib/data/repository";
 import { usePortal } from "@/lib/data/portal-store";
 import type { Faculty, Group, MentorRequest, RequestStatus, SentInvitation } from "@/lib/types";
 import { useLoad } from "@/lib/use-load";
+import { RichEditor } from "@/components/shared/rich-editor";
+import { RichText } from "@/components/shared/rich-text";
 import { timeAgo } from "@/lib/utils";
 
 const REQUEST_STATUS: Record<RequestStatus, { tone: "gold" | "sage" | "clay" | "neutral"; label: string }> = {
@@ -125,15 +127,7 @@ function ProjectDescription({ group, isLeader, onChanged }: { group: Group; isLe
       </div>
       {editing ? (
         <div className="mt-2 space-y-2">
-          <Textarea
-            rows={5}
-            maxLength={1500}
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            aria-label="Project description"
-            placeholder="What you will build, who it is for and how."
-          />
-          <p className="text-[11.5px] text-stone-400">{text.length}/1500 · Your supervisor sees this.</p>
+          <RichEditor rows={6} maxLength={1500} value={text} onChange={setText} placeholder="What you will build, who it is for and how." />
           {error ? <p role="alert" className="text-[12.5px] text-clay-500">{error}</p> : null}
           <div className="flex gap-2">
             <Button size="sm" loading={busy} onClick={() => void save()}>
@@ -145,12 +139,15 @@ function ProjectDescription({ group, isLeader, onChanged }: { group: Group; isLe
           </div>
         </div>
       ) : (
-        <p className="mt-1.5 text-[13.5px] leading-relaxed whitespace-pre-line text-stone-600">
-          {group.projectIdea ||
-            (isLeader
+        group.projectIdea ? (
+          <RichText text={group.projectIdea} className="mt-1.5 text-[13.5px]" />
+        ) : (
+          <p className="mt-1.5 text-[13.5px] leading-relaxed text-stone-600">
+            {isLeader
               ? "No description yet. Add one so your supervisor knows what you plan."
-              : "Your team lead has not described the project yet.")}
-        </p>
+              : "Your team lead has not described the project yet."}
+          </p>
+        )
       )}
     </CardBody>
   );

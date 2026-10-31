@@ -8,13 +8,14 @@ import { Avatar } from "@/components/ui/avatar";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { Card, CardHeader, EmptyState } from "@/components/ui/card";
 import { FileDrop } from "@/components/ui/file-drop";
-import { Field, Input, Textarea } from "@/components/ui/field";
+import { Field, Input } from "@/components/ui/field";
 import { PageHeader } from "@/components/ui/page-header";
 import { PageSkeleton } from "@/components/ui/skeleton";
 import * as repo from "@/lib/data/repository";
 import { usePortal } from "@/lib/data/portal-store";
 import type { TicketCategory } from "@/lib/types";
 import { useLoad } from "@/lib/use-load";
+import { RichEditor } from "@/components/shared/rich-editor";
 import { cn } from "@/lib/utils";
 
 /**
@@ -222,7 +223,7 @@ export default function RaiseQueryPage() {
                 : "Include dates and context so your supervisor can answer in one go."
             }
           >
-            <Textarea id="q-body" rows={5} required={isChange} value={body} onChange={(e) => setBody(e.target.value)} />
+            <RichEditor id="q-body" rows={6} value={body} onChange={setBody} hint="" />
           </Field>
 
           <div>

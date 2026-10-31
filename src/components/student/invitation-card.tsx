@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardBody } from "@/components/ui/card";
 import * as repo from "@/lib/data/repository";
 import type { GroupInvitation } from "@/lib/types";
+import { RichText } from "@/components/shared/rich-text";
 import { timeAgo } from "@/lib/utils";
 
 /**
@@ -62,7 +63,7 @@ export function InvitationCard({
           </p>
           <p className="mt-0.5 font-display text-[1.15rem] tracking-tight text-ink-900">{inv.group.projectTitle}</p>
           {inv.group.projectIdea ? (
-            <p className="mt-1 text-[13px] leading-relaxed text-stone-600">{inv.group.projectIdea}</p>
+            <RichText text={inv.group.projectIdea} className="mt-1 text-[13px]" />
           ) : null}
         </div>
 
