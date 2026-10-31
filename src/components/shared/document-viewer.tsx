@@ -15,11 +15,13 @@ const MAX_PAGES = 60;
 const IMAGE = /\.(png|jpe?g|gif|webp|svg)$/i;
 const TEXT = /\.(txt|csv|md|json)$/i;
 const PDF = /\.pdf$/i;
+const DOCX = /\.docx$/i;
 
 type Loaded =
   | { kind: "pdf"; data: ArrayBuffer; url: string }
   | { kind: "image"; url: string }
   | { kind: "text"; text: string; url: string }
+  | { kind: "docx"; data: Blob; url: string }
   | { kind: "other"; url: string };
 
 /** Fetches a private storage file through a short-lived signed link. */
@@ -31,7 +33,7 @@ function useDocument(bucket: Bucket, path: string, name: string) {
     let objectUrl: string | null = null;
     (async () => {
       const signed = await getFileUrl(bucket, path);
-      if (!PDF.test(name) && !IMAGE.test(name) && !TEXT.test(name)) {
+      if (!PDF.test(name) && !IMAGE.test(name) && !TEXT.test(name) && !DOCX.test(name)) {
         return { kind: "other", url: signed } as Loaded;
       }
       const response = await fetch(signed);
@@ -40,6 +42,7 @@ function useDocument(bucket: Bucket, path: string, name: string) {
       objectUrl = URL.createObjectURL(blob);
       if (PDF.test(name)) return { kind: "pdf", data: await blob.arrayBuffer(), url: objectUrl } as Loaded;
       if (IMAGE.test(name)) return { kind: "image", url: objectUrl } as Loaded;
+      if (DOCX.test(name)) return { kind: "docx", data: blob, url: objectUrl } as Loaded;
       return { kind: "text", text: await blob.text(), url: objectUrl } as Loaded;
     })().then(
       (doc) => live && setState({ doc, error: null }),
@@ -124,6 +127,42 @@ function PdfPages({ data, onError }: { data: ArrayBuffer; onError: () => void })
   );
 }
 
+/** Draws a Word (.docx) file in place, keeping its fonts, tables and page layout. */
+function DocxPages({ data, onError }: { data: Blob; onError: () => void }) {
+  const host = useRef<HTMLDivElement>(null);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    const container = host.current;
+    if (!container) return;
+    let cancelled = false;
+    (async () => {
+      const { renderAsync } = await import("docx-preview");
+      container.innerHTML = "";
+      await renderAsync(data, container, undefined, {
+        className: "docx",
+        inWrapper: true,
+        ignoreLastRenderedPageBreak: true,
+        breakPages: true,
+      });
+      if (!cancelled) setReady(true);
+    })().catch(() => {
+      if (!cancelled) onError();
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [data, onError]);
+
+  return (
+    <div>
+      {ready ? null : <Status icon={<Loader2 className="size-5 animate-spin" />} text="Opening document…" />}
+      {/* docx-preview draws into this; React leaves its children alone */}
+      <div ref={host} className="[&_.docx-wrapper]:bg-transparent [&_.docx-wrapper]:py-4" />
+    </div>
+  );
+}
+
 function Status({ icon, text, children }: { icon: React.ReactNode; text: string; children?: React.ReactNode }) {
   return (
     <div className="flex min-h-48 flex-col items-center justify-center gap-3 px-6 py-10 text-center text-[13.5px] text-stone-600">
@@ -181,13 +220,15 @@ export function DocumentPreview({
     body = (
       <Status
         icon={<FileWarning className="size-6" />}
-        text="This file couldn't be displayed - it may be damaged or not a real PDF. Try downloading it instead."
+        text="This file couldn't be displayed - it may be damaged. Try downloading it instead."
       >
         <DownloadLink url={doc.url} name={name} />
       </Status>
     );
   } else if (doc.kind === "pdf") {
     body = <PdfPages data={doc.data} onError={markBroken} />;
+  } else if (doc.kind === "docx") {
+    body = <DocxPages data={doc.data} onError={markBroken} />;
   } else if (doc.kind === "image") {
     // eslint-disable-next-line @next/next/no-img-element -- private file shown from a local object URL
     body = <img src={doc.url} alt={name} className="mx-auto my-4 max-w-[calc(100%-2rem)] rounded-md bg-white shadow-sm" />;
