@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent, type ReactNode } from "react";
-import { ChevronDown, FileText, MessageCircleQuestion, Presentation, ScrollText, Trophy, Upload, type LucideIcon } from "lucide-react";
+import { ChevronDown, MessageCircleQuestion, Presentation, ScrollText, Trophy, Upload, type LucideIcon } from "lucide-react";
 
 import { FileLink } from "@/components/shared/file-link";
 import { Badge } from "@/components/ui/badge";
@@ -211,11 +211,8 @@ function ReportBody({ report, mentorName }: { report: WeeklyReport; mentorName: 
             <div className="space-y-1.5">
               {report.files.map((f) => (
                 <div key={f.path} className="flex items-center justify-between gap-3 rounded-[12px] bg-white/70 px-3 py-2.5 ring-1 ring-sand-200">
-                  <div className="flex min-w-0 items-center gap-2.5">
-                    <FileIcon />
-                    <span className="truncate text-[13px] font-medium text-ink-900">{f.name}</span>
-                  </div>
-                  <FileLink bucket="submissions" path={f.path} name={f.name} />
+                  <span className="min-w-0 text-[13px] font-medium break-words text-ink-900">{f.name}</span>
+                  <FileLink bucket="submissions" path={f.path} name={f.name} variant="icon" />
                 </div>
               ))}
             </div>
@@ -307,15 +304,6 @@ function SubmitForm({ week, onSubmitted }: { week: number; onSubmitted: (week: n
   );
 }
 
-/** A small red PDF glyph, matching the mockup's file card. */
-function FileIcon() {
-  return (
-    <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-clay-100 text-clay-500 ring-1 ring-clay-500/15">
-      <FileText className="size-4" />
-    </span>
-  );
-}
-
 interface MilestoneItem {
   slot: MilestoneSlot;
   label: string;
@@ -382,11 +370,8 @@ function MilestonePhase({
                 <div className="mt-2.5 space-y-1.5">
                   {attached.map((f) => (
                     <div key={f.path} className="flex items-center justify-between gap-3">
-                      <div className="flex min-w-0 items-center gap-2">
-                        <FileIcon />
-                        <span className="truncate text-[12.5px] font-medium text-ink-900">{f.name}</span>
-                      </div>
-                      <FileLink bucket="submissions" path={f.path} name={f.name} />
+                      <span className="min-w-0 text-[12.5px] font-medium break-words text-ink-900">{f.name}</span>
+                      <FileLink bucket="submissions" path={f.path} name={f.name} variant="icon" />
                     </div>
                   ))}
                 </div>
