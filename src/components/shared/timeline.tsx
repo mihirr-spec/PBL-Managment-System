@@ -35,7 +35,7 @@ export function TimelineItem({
         <span
           aria-hidden
           className={cn(
-            "absolute top-3.5 left-0.5 flex size-7 items-center justify-center rounded-lg ring-4 ring-[#f3f7fc]",
+            "absolute top-3.5 left-0.5 flex size-7 items-center justify-center rounded-lg ring-4 ring-white",
             done ? "bg-violet-100 text-violet-600" : "bg-white text-stone-400 ring-1 ring-sand-200",
           )}
         >
@@ -45,7 +45,7 @@ export function TimelineItem({
         <span
           aria-hidden
           className={cn(
-            "absolute top-5 left-2 flex size-4 items-center justify-center rounded-full ring-4 ring-[#f3f7fc]",
+            "absolute top-5 left-2 flex size-4 items-center justify-center rounded-full ring-4 ring-white",
             state === "evaluated"
               ? "bg-azure-600"
               : state === "submitted"
