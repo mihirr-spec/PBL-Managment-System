@@ -52,3 +52,6 @@ __pycache__/
 
 # copied from pdfjs-dist on install
 /public/pdf.worker.min.mjs
+
+# Local archive of the PBL documents
+PBL Documents.zip
