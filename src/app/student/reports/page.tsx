@@ -4,6 +4,7 @@ import { useState, type FormEvent, type ReactNode } from "react";
 import { ChevronDown, ClipboardList, ScrollText, Upload } from "lucide-react";
 
 import { FileChips, FileRow } from "@/components/shared/file-link";
+import { ReportProgress, TimelineItem } from "@/components/shared/timeline";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -72,13 +73,21 @@ export default function ReportsPage() {
 
   const slotOf = (s: MilestoneSlot) => (milestones.data ?? []).find((m) => m.slot === s);
 
-  /** One week's row, plus a milestone block after week 3 (midterm) and 7 (endterm). */
-  function weekBlock(week: number): ReactNode {
-    return (
-      <div key={week} className="space-y-3">
+  const midFiles = [...(slotOf("mid_ppt")?.files ?? []), ...(slotOf("mid_synopsis")?.files ?? [])];
+  const eteFiles = [...(slotOf("ete_ppt")?.files ?? []), ...(slotOf("ete_synopsis")?.files ?? [])];
+  const progressDone = submitted + (midFiles.length > 0 ? 1 : 0) + (eteFiles.length > 0 ? 1 : 0);
+
+  // The timeline: each week, with the midterm after week 3 and the endterm after the last week.
+  const stops: ReactNode[] = [];
+  const total = weeks.length + 2;
+  const push = (node: (last: boolean) => ReactNode) => stops.push(node(stops.length === total - 1));
+  for (const week of weeks) {
+    const report = byWeek.get(week);
+    push((last) => (
+      <TimelineItem key={`w${week}`} last={last} state={!report ? "pending" : report.grade != null ? "evaluated" : "submitted"}>
         <WeekRow
           week={week}
-          report={byWeek.get(week)}
+          report={report}
           defaultOpen={week === openFirst}
           mentorName={mentor?.fullName ?? "Your supervisor"}
           mentorAvatar={mentor?.avatarUrl}
@@ -88,27 +97,27 @@ export default function ReportsPage() {
             void refresh();
           }}
         />
-        {week === 3 ? (
-          <MilestonePhase
-            title="Midterm (MTE)"
-            note="After week 3"
-            slot="mid_ppt"
-            files={[...(slotOf("mid_ppt")?.files ?? []), ...(slotOf("mid_synopsis")?.files ?? [])]}
-            reload={() => void milestones.reload()}
-          />
-        ) : null}
-        {week === 7 ? (
-          <MilestonePhase
-            title="Endterm (ETE)"
-            note="After week 7"
-            slot="ete_ppt"
-            files={[...(slotOf("ete_ppt")?.files ?? []), ...(slotOf("ete_synopsis")?.files ?? [])]}
-            reload={() => void milestones.reload()}
-          />
-        ) : null}
-      </div>
-    );
+      </TimelineItem>
+    ));
+    if (week === 3) {
+      push((last) => (
+        <TimelineItem key="mid" milestone last={last} state={midFiles.length > 0 ? "submitted" : "pending"}>
+          <MilestonePhase title="Midterm (MTE)" note="After week 3" slot="mid_ppt" files={midFiles} reload={() => void milestones.reload()} />
+        </TimelineItem>
+      ));
+    }
   }
+  push((last) => (
+    <TimelineItem key="ete" milestone last={last} state={eteFiles.length > 0 ? "submitted" : "pending"}>
+      <MilestonePhase
+        title="Endterm (ETE)"
+        note={`After week ${weeks.length}`}
+        slot="ete_ppt"
+        files={eteFiles}
+        reload={() => void milestones.reload()}
+      />
+    </TimelineItem>
+  ));
 
   return (
     <div className="space-y-6">
@@ -124,13 +133,15 @@ export default function ReportsPage() {
         </dl>
       </div>
 
+      <ReportProgress done={progressDone} total={total} />
+
       {submittedWeek != null ? (
         <p role="status" className="text-[13px] text-sage-500">
           Week {submittedWeek} report submitted - your supervisor has been notified.
         </p>
       ) : null}
 
-      <div className="space-y-3">{weeks.map((week) => weekBlock(week))}</div>
+      <div className="space-y-3">{stops}</div>
     </div>
   );
 }
