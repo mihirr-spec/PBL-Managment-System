@@ -1095,6 +1095,13 @@ export async function weeklyAverage(groupId: string): Promise<number | null> {
   return Math.round(avg * 1.5 * 10) / 10;
 }
 
+/** Short-lived link that downloads a private file under its own name. */
+export async function getDownloadUrl(bucket: FileBucket, path: string, name: string): Promise<string> {
+  const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path, 60 * 10, { download: name });
+  fail(error);
+  return data!.signedUrl;
+}
+
 /** Short-lived link to a private file (report or announcement attachment). */
 export async function getFileUrl(bucket: FileBucket, path: string): Promise<string> {
   const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path, 60 * 10);

@@ -1,10 +1,11 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import { Download } from "lucide-react";
 
 import { DocumentViewer } from "@/components/shared/document-viewer";
 import { FileTypeIcon, fileTypeLabel } from "@/components/shared/file-type-icon";
-import type { FileBucket } from "@/lib/data/repository";
+import { getDownloadUrl, type FileBucket } from "@/lib/data/repository";
 import { cn } from "@/lib/utils";
 
 /**
@@ -116,6 +117,68 @@ export function FileChips({
       {files.map((f) => (
         <FileLink key={f.path} bucket={bucket} path={f.path} name={f.name} meta={meta} />
       ))}
+    </div>
+  );
+}
+
+/**
+ * A full-width file row: click the name to open it in the viewer, or the
+ * download button on the right to save it.
+ */
+export function FileRow({
+  bucket,
+  path,
+  name,
+  meta,
+  className,
+}: {
+  bucket: FileBucket;
+  path: string;
+  name: string;
+  meta?: string;
+  className?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const close = useCallback(() => setOpen(false), []);
+
+  async function download() {
+    setSaving(true);
+    try {
+      window.location.assign(await getDownloadUrl(bucket, path, name));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className={cn("flex items-center gap-3 rounded-xl border border-sand-200 bg-white px-4 py-3", className)}>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        title={`Open ${name}`}
+        className="flex min-w-0 flex-1 items-center gap-3 text-left"
+      >
+        <FileTypeIcon name={name} className="size-9" />
+        <span className="min-w-0">
+          <span className="block text-[13.5px] font-semibold break-words text-ink-900 hover:text-azure-600">{name}</span>
+          <span className="block text-[12px] text-stone-500">
+            {fileTypeLabel(name)}
+            {meta ? ` · ${meta}` : ""}
+          </span>
+        </span>
+      </button>
+      <button
+        type="button"
+        onClick={() => void download()}
+        disabled={saving}
+        aria-label={`Download ${name}`}
+        title="Download"
+        className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-sand-200 text-azure-600 transition-colors hover:bg-azure-50 disabled:opacity-60"
+      >
+        <Download className="size-4" />
+      </button>
+      {open ? <DocumentViewer bucket={bucket} path={path} name={name} onClose={close} /> : null}
     </div>
   );
 }

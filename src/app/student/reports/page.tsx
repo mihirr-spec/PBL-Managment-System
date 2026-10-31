@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, type FormEvent, type ReactNode } from "react";
-import { ChevronDown, MessageCircleQuestion, Presentation, ScrollText, Trophy, Upload, type LucideIcon } from "lucide-react";
+import { ChevronDown, ClipboardList, MessageSquareText, Presentation, ScrollText, Upload, type LucideIcon } from "lucide-react";
 
-import { FileChips } from "@/components/shared/file-link";
+import { FileChips, FileRow } from "@/components/shared/file-link";
+import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -16,9 +17,21 @@ import * as repo from "@/lib/data/repository";
 import { usePortal } from "@/lib/data/portal-store";
 import type { GroupMilestone, MilestoneSlot, WeeklyReport } from "@/lib/types";
 import { useLoad } from "@/lib/use-load";
-import { timeAgo, cn } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 
-/** One weekly report slot, the way the mockup shows it: a card per week. */
+/** "02 Oct 2026, 10:24 PM" */
+function stamp(iso: string): string {
+  const d = new Date(iso);
+  const date = d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+  const time = d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true });
+  return `${date}, ${time}`;
+}
+
+/**
+ * Weekly reports: a summary of submitted and evaluated reports, then one
+ * collapsible row per week. A submitted week shows its score, file and the
+ * supervisor's feedback; an open week shows the submission form.
+ */
 export default function ReportsPage() {
   const { loading, student, group, mentor, refresh } = usePortal();
   const reports = useLoad(() => repo.listReports(group!.id), group ? group.id : null);
@@ -46,20 +59,28 @@ export default function ReportsPage() {
     );
   }
 
-  const byWeek = new Map((reports.data ?? []).map((r) => [r.week, r]));
+  if (reports.error) return <p role="alert" className="text-[13px] text-clay-500">{reports.error}</p>;
+  if (!reports.data) return <PageSkeleton />;
+
+  const byWeek = new Map(reports.data.map((r) => [r.week, r]));
   const weeks = Array.from({ length: group.reportCount }, (_, i) => i + 1);
   const submitted = weeks.filter((w) => byWeek.has(w)).length;
+  const evaluated = weeks.filter((w) => byWeek.get(w)?.grade != null).length;
+  // Open the latest submitted week, or the first week if nothing is in yet.
+  const openFirst = [...weeks].reverse().find((w) => byWeek.has(w)) ?? 1;
 
   const slotOf = (s: MilestoneSlot) => (milestones.data ?? []).find((m) => m.slot === s);
 
-  /** One week's card, plus a milestone block after week 3 (midterm) and 7 (endterm). */
+  /** One week's row, plus a milestone block after week 3 (midterm) and 7 (endterm). */
   function weekBlock(week: number): ReactNode {
     return (
-      <div key={week} className="space-y-4">
-        <WeekCard
+      <div key={week} className="space-y-3">
+        <WeekRow
           week={week}
           report={byWeek.get(week)}
-          mentorName={mentor?.fullName ? mentor.fullName : "your supervisor"}
+          defaultOpen={week === openFirst}
+          mentorName={mentor?.fullName ?? "Your supervisor"}
+          mentorAvatar={mentor?.avatarUrl}
           onSubmitted={(w) => {
             setSubmittedWeek(w);
             void reports.reload();
@@ -96,13 +117,17 @@ export default function ReportsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        eyebrow="Weekly Reports"
-        title="Weekly"
-        emphasis="reports."
-        description={`${submitted} of ${group.reportCount} submitted. One report per week for the whole team - you can replace one until your supervisor grades it. PPT and synopsis submissions come in after week 3 (midterm) and week 7 (endterm).`}
-        scene="reports"
-      />
+      <div className="flex flex-wrap items-center justify-between gap-5">
+        <div>
+          <h1 className="font-display text-[2.4rem] leading-tight tracking-tight text-ink-900">Weekly Reports</h1>
+          <p className="mt-1 text-[14.5px] text-stone-600">Submit your weekly progress reports and track supervisor evaluations.</p>
+        </div>
+        <dl className="grid grid-cols-3 divide-x divide-sand-200 rounded-2xl bg-white/70 py-4 ring-1 ring-sand-200/70 backdrop-blur-sm">
+          <Stat value={<>{submitted}<span className="text-[1.1rem] text-stone-500"> / {group.reportCount}</span></>} label="Submitted" />
+          <Stat value={evaluated} label="Evaluated" />
+          <Stat value={submitted - evaluated} label="Pending Evaluation" />
+        </dl>
+      </div>
 
       {submittedWeek != null ? (
         <p role="status" className="text-[13px] text-sage-500">
@@ -110,129 +135,161 @@ export default function ReportsPage() {
         </p>
       ) : null}
 
-      <div className="space-y-4">
-        {weeks.map((week) => weekBlock(week))}
-      </div>
+      <div className="space-y-3">{weeks.map((week) => weekBlock(week))}</div>
     </div>
   );
 }
 
-type Slot = WeeklyReport | undefined;
+/** One number in the header's summary panel. */
+function Stat({ value, label }: { value: ReactNode; label: string }) {
+  return (
+    <div className="px-6 text-center sm:px-10">
+      <dd className="tnum font-display text-[1.9rem] leading-none text-ink-900">{value}</dd>
+      <dt className="mt-1.5 text-[12.5px] text-stone-500">{label}</dt>
+    </div>
+  );
+}
 
-/** A single week's card: header row, then the score / report / feedback body. */
-function WeekCard({
+/** A collapsible week: the header line, then the report (or the submission form). */
+function WeekRow({
   week,
   report,
+  defaultOpen,
   mentorName,
+  mentorAvatar,
   onSubmitted,
 }: {
   week: number;
-  report: Slot;
+  report: WeeklyReport | undefined;
+  defaultOpen: boolean;
   mentorName: string;
+  mentorAvatar?: string;
   onSubmitted: (week: number) => void;
 }) {
+  const [open, setOpen] = useState(defaultOpen);
   const graded = report?.grade != null;
-  const pending = !report;
-  const [open, setOpen] = useState(!pending);
+  const status = !report ? "Pending Submission" : graded ? "Evaluated" : "Pending Evaluation";
 
   return (
-    <Card>
+    <Card className="overflow-hidden">
       <button
         type="button"
-        onClick={() => pending && setOpen((v) => !v)}
-        className={cn(
-          "flex w-full items-center justify-between gap-4 px-5 py-4 text-left",
-          pending && "cursor-pointer",
-          !pending && "cursor-default",
-        )}
-        aria-expanded={!pending || open}
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="flex w-full items-center gap-4 px-6 py-3.5 text-left transition-colors hover:bg-white/60"
       >
-        <div className="flex flex-wrap items-center gap-3">
-          <span className="font-display text-[17px] text-ink-900">Week {week}</span>
-          <Badge tone={graded ? "sage" : pending ? "gold" : "sky"} dot>
-            {graded ? "Graded" : pending ? "Pending" : "Submitted"}
-          </Badge>
-          {report ? (
-            <span className="text-[12px] text-stone-500">
-              {graded ? `Evaluated ${timeAgo(report.gradedAt ?? report.submittedAt)}` : `Sent ${timeAgo(report.submittedAt)}`}
-            </span>
-          ) : null}
-        </div>
-
-        {pending ? (
-          <span className="flex items-center gap-3">
-            <span className="inline-flex items-center gap-1.5 rounded-lg bg-azure-50 px-3 py-1.5 text-[13px] font-medium text-azure-600 ring-1 ring-azure-100">
-              <Upload className="size-3.5" />
-              Submit Week {week} Report
-            </span>
-            <ChevronDown className={cn("size-4 text-stone-400 transition-transform", open && "rotate-180")} />
-          </span>
-        ) : null}
+        <span className="w-24 shrink-0 font-display text-[1.35rem] text-ink-900">Week {week}</span>
+        <span className="min-w-0 flex-1 truncate text-[13.5px] text-stone-500">
+          {report ? `Submitted on ${stamp(report.submittedAt)}` : "Not submitted yet"}
+        </span>
+        <span
+          className={cn(
+            "inline-flex shrink-0 items-center gap-2 rounded-full px-3 py-1 text-[12.5px] font-medium",
+            graded ? "bg-azure-50 text-azure-600" : "bg-ivory-200/80 text-stone-600",
+          )}
+        >
+          <span className={cn("size-1.5 rounded-full", graded ? "bg-azure-600" : "bg-stone-500")} />
+          {status}
+        </span>
+        <ChevronDown className={cn("size-4 shrink-0 text-stone-500 transition-transform", open && "rotate-180")} />
       </button>
 
-      {pending ? (
-        open ? <SubmitForm week={week} onSubmitted={onSubmitted} /> : null
-      ) : (
-        report ? <ReportBody report={report} mentorName={mentorName} /> : null
-      )}
+      {open ? (
+        report ? (
+          <ReportBody report={report} mentorName={mentorName} mentorAvatar={mentorAvatar} />
+        ) : (
+          <SubmitForm week={week} onSubmitted={onSubmitted} />
+        )
+      ) : null}
     </Card>
   );
 }
 
-/** The filled-in body: mentor score tile, the submitted file, and feedback. */
-function ReportBody({ report, mentorName }: { report: WeeklyReport; mentorName: string }) {
-  const grade = report.grade;
-  const graded = grade != null;
+/** A submitted week: score and verdict, the files, and the supervisor's feedback. */
+function ReportBody({
+  report,
+  mentorName,
+  mentorAvatar,
+}: {
+  report: WeeklyReport;
+  mentorName: string;
+  mentorAvatar?: string;
+}) {
+  const graded = report.grade != null;
   return (
-    <div className="border-t border-sand-200/70 px-5 py-4">
-      <div className="grid gap-4 lg:grid-cols-2">
-        {graded ? (
-          <div className="rounded-[14px] bg-sage-100 p-4 text-sage-500 ring-1 ring-sage-500/15">
-            <div className="flex items-center justify-between">
-              <p>
-                <span className="tnum font-display text-[2.3rem] leading-none">{grade}</span>
-                <span className="text-[15px] text-sage-500/80"> / 10</span>
+    <div className="space-y-3 border-t border-sand-200/70 px-4 pt-3 pb-4">
+      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
+        <div className="flex items-center rounded-xl border border-sand-200 bg-white px-5 py-3">
+          <div className="flex flex-1 items-center gap-4">
+            <span className="flex size-11 items-center justify-center rounded-xl border border-sand-200 text-stone-500">
+              <ClipboardList className="size-5" />
+            </span>
+            <div>
+              <p className="text-[12.5px] text-stone-500">Score</p>
+              <p className="tnum font-display text-[1.5rem] leading-tight text-ink-900">
+                {graded ? report.grade : "-"}
+                <span className="text-[1rem] text-stone-600"> / 10</span>
               </p>
-              <span className="flex size-10 items-center justify-center rounded-full bg-sage-500/15">
-                <Trophy className="size-5" />
-              </span>
             </div>
-            <p className="mt-1 text-[10.5px] font-semibold tracking-wide text-sage-500/70 uppercase">Mentor score</p>
-            <p className="mt-2 text-[13px] font-medium">{scoreCaption(grade)}</p>
           </div>
-        ) : null}
-
-        <div className="space-y-3">
-          <p className="text-[11px] font-semibold tracking-[0.12em] text-ink-400 uppercase">Submitted report</p>
-          {report.summary ? (
-            <p className="text-[13.5px] leading-relaxed whitespace-pre-line text-stone-600">{report.summary}</p>
-          ) : null}
-          {report.files.length > 0 ? (
-            <FileChips bucket="submissions" files={report.files} meta={`Sent ${timeAgo(report.submittedAt)}`} />
-          ) : null}
-          {graded ? (
-            <div className="rounded-[12px] bg-azure-50/70 px-3.5 py-3 ring-1 ring-azure-100">
-              <p className="flex items-center gap-1.5 text-[11px] font-semibold tracking-wide text-azure-600 uppercase">
-                <MessageCircleQuestion className="size-3.5" />
-                {mentorName}&apos;s feedback
-              </p>
-              <p className="mt-1.5 text-[13px] leading-relaxed whitespace-pre-line text-ink-800">
-                {report.feedback || "No note was left with the grade."}
+          <span className="mx-4 h-10 w-px bg-sand-200" aria-hidden />
+          <div className="flex flex-1 items-center gap-4">
+            <span className="flex size-11 items-center justify-center rounded-xl border border-sand-200 text-stone-500">
+              <MessageSquareText className="size-5" />
+            </span>
+            <div>
+              <p className="text-[12.5px] text-stone-500">Feedback</p>
+              <p className="font-display text-[1.25rem] leading-tight text-azure-600">
+                {graded ? verdict(report.grade!) : "Awaiting"}
               </p>
             </div>
-          ) : null}
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          {report.files.length > 0 ? (
+            report.files.map((f) => (
+              <FileRow key={f.path} bucket="submissions" path={f.path} name={f.name} meta={`Sent ${stamp(report.submittedAt)}`} />
+            ))
+          ) : (
+            <p className="flex h-full items-center rounded-xl border border-dashed border-sand-200 px-4 py-3 text-[13px] text-stone-500">
+              No file was attached to this report.
+            </p>
+          )}
+        </div>
+      </div>
+
+      {report.summary ? (
+        <p className="rounded-xl bg-white/70 px-4 py-3 text-[13.5px] leading-relaxed whitespace-pre-line text-stone-600 ring-1 ring-sand-200/70">
+          {report.summary}
+        </p>
+      ) : null}
+
+      <div className="flex gap-3 rounded-xl bg-azure-50/60 px-4 py-3.5 ring-1 ring-azure-100">
+        <Avatar name={mentorName} src={mentorAvatar} size="md" />
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <p className="text-[13.5px] font-semibold text-azure-600">Supervisor Feedback</p>
+            {report.gradedAt ? <p className="text-[12.5px] text-stone-500">{stamp(report.gradedAt)}</p> : null}
+          </div>
+          <p className="mt-1 text-[13.5px] leading-relaxed whitespace-pre-line text-ink-800">
+            {graded
+              ? report.feedback || "No note was left with the grade."
+              : "Your supervisor has not evaluated this report yet. You will be notified when they do."}
+          </p>
+          {graded ? <p className="mt-1.5 text-[13px] font-semibold text-ink-900">{mentorName}</p> : null}
         </div>
       </div>
     </div>
   );
 }
 
-/** A one-line verdict for the score tile. */
-function scoreCaption(grade: number): string {
-  if (grade >= 9) return "Excellent performance";
-  if (grade >= 7) return "Strong progress";
-  if (grade >= 5) return "Good work, keep it up";
-  return "Needs attention - check the feedback";
+/** A one-word verdict for the score. */
+function verdict(grade: number): string {
+  if (grade >= 9) return "Excellent";
+  if (grade >= 7) return "Very good";
+  if (grade >= 5) return "Good";
+  return "Needs work";
 }
 
 /** The inline form for a week that hasn't been submitted yet. */
