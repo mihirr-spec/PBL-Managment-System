@@ -1,13 +1,17 @@
+"use client";
+
 import Link from "next/link";
-import { ChevronRight, Crown } from "lucide-react";
+import { Fragment, useState } from "react";
+import { ChevronDown, ChevronRight, Crown } from "lucide-react";
 
 import { Card, CardHeader, EmptyState } from "@/components/ui/card";
-import { plainText } from "@/components/shared/rich-text";
+import { RichText, plainText } from "@/components/shared/rich-text";
 import type { Group } from "@/lib/types";
 
 /**
  * Front-level list of groups: number, leader, project and basics. Each row
- * opens the full team view at `${hrefBase}/<group id>`.
+ * opens the full team view at `${hrefBase}/<group id>`; "Read full
+ * description" shows the team's project description, formatted, in place.
  */
 export function GroupTable({
   title,
@@ -28,6 +32,15 @@ export function GroupTable({
   /** group id → open queries */
   openTickets?: Record<string, number>;
 }) {
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const toggle = (id: string) =>
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+
   return (
     <Card>
       <CardHeader title={title} description={description} />
@@ -50,8 +63,10 @@ export function GroupTable({
                 const leader = g.members.find((m) => m.studentId === g.leaderStudentId);
                 const reports = pendingReports[g.id] ?? 0;
                 const tickets = openTickets[g.id] ?? 0;
+                const open = expanded.has(g.id);
                 return (
-                  <tr key={g.id} className="group relative transition-colors hover:bg-white/70">
+                  <Fragment key={g.id}>
+                  <tr className="group relative transition-colors hover:bg-white/70">
                     <td className="px-5 py-3.5">
                       <Link href={`${hrefBase}/${g.id}`} className="after:absolute after:inset-0">
                         <span className="tnum font-display text-[17px] text-ink-900">Group {g.number}</span>
@@ -69,9 +84,20 @@ export function GroupTable({
                     </td>
                     <td className="max-w-[20rem] px-5 py-3.5">
                       <p className="truncate text-[13.5px] font-medium text-ink-900">{g.projectTitle}</p>
-                      <p className="mt-0.5 line-clamp-2 text-[12px] leading-snug text-stone-500" title={plainText(g.projectIdea) || undefined}>
+                      <p className="mt-0.5 line-clamp-2 text-[12px] leading-snug text-stone-500">
                         {plainText(g.projectIdea) || "No description yet."}
                       </p>
+                      {g.projectIdea ? (
+                        <button
+                          type="button"
+                          onClick={() => toggle(g.id)}
+                          aria-expanded={open}
+                          className="relative z-10 mt-1 inline-flex items-center gap-1 text-[12px] font-medium text-azure-600 hover:underline"
+                        >
+                          {open ? "Hide description" : "Read full description"}
+                          <ChevronDown className={`size-3.5 transition-transform ${open ? "rotate-180" : ""}`} />
+                        </button>
+                      ) : null}
                       <p className="mt-1 text-[11px] text-stone-400">
                         {g.domain || "No domain"} · {g.progress}% done
                       </p>
@@ -97,6 +123,19 @@ export function GroupTable({
                       <ChevronRight className="size-4 text-sand-300 group-hover:text-stone-500" />
                     </td>
                   </tr>
+                  {open ? (
+                    <tr className="bg-azure-50/30">
+                      <td colSpan={5} className="px-5 pt-1 pb-4">
+                        <div className="rounded-[14px] bg-white px-5 py-4 ring-1 ring-sand-200">
+                          <p className="text-[11px] font-semibold tracking-[0.12em] text-ink-400 uppercase">
+                            Project description · {g.projectTitle}
+                          </p>
+                          <RichText text={g.projectIdea} className="mt-2 text-[13.5px]" />
+                        </div>
+                      </td>
+                    </tr>
+                  ) : null}
+                  </Fragment>
                 );
               })}
             </tbody>
