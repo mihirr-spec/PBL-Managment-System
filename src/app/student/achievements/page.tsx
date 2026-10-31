@@ -1,7 +1,31 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { ArrowLeft, Plus, Trophy, Upload, UserPlus, X } from "lucide-react";
+import {
+  ArrowLeft,
+  Award,
+  BookOpen,
+  Code2,
+  FileText,
+  Flag,
+  GraduationCap,
+  Info,
+  Lightbulb,
+  Medal,
+  PencilLine,
+  Plus,
+  Presentation,
+  Rocket,
+  Sparkles,
+  Star,
+  Target,
+  Trophy,
+  Upload,
+  UserPlus,
+  Users,
+  X,
+  type LucideIcon,
+} from "lucide-react";
 
 import { AchievementDetail, AchievementRow } from "@/components/achievements/achievement-card";
 import { Button, ButtonLink } from "@/components/ui/button";
@@ -10,7 +34,31 @@ import { Field, Input, Textarea } from "@/components/ui/field";
 import { FileDrop } from "@/components/ui/file-drop";
 import { PageHeader } from "@/components/ui/page-header";
 import { PageSkeleton } from "@/components/ui/skeleton";
-import { ACHIEVEMENT_CATEGORIES, dummyFor, findTemplate, MAX_BONUS_MARKS, type AchievementTemplate } from "@/lib/achievements";
+import {
+  ACHIEVEMENT_CATEGORIES,
+  dummyFor,
+  findTemplate,
+  MAX_BONUS_MARKS,
+  TEMPLATE_GUIDE,
+  type AchievementTemplate,
+} from "@/lib/achievements";
+
+/** An icon per achievement template, for the template cards. */
+const TEMPLATE_ICON: Record<string, LucideIcon> = {
+  hackathon_win: Trophy,
+  coding_contest: Code2,
+  paper_presented: Presentation,
+  journal_publication: BookOpen,
+  patent: Lightbulb,
+  startup: Rocket,
+  sports_medal: Medal,
+  sports_selection: Flag,
+  excellence_award: Award,
+  national_recognition: Star,
+  scholarship: GraduationCap,
+  club_award: Users,
+  competition_win: Target,
+};
 import * as repo from "@/lib/data/repository";
 import { usePortal } from "@/lib/data/portal-store";
 import type { Achievement, GroupMember, Student } from "@/lib/types";
@@ -212,8 +260,8 @@ function AchievementForm({
     if (!titleTouched && template) setTitle(template.title(next));
   }
 
-  /** Fills the template's fields with plausible prototype data, a proof
-   *  placeholder, and the generated title - for demonstrating the portal. */
+  /** Fills the template's fields with sample data and the generated title;
+   *  the student still attaches their own proof. */
   function fillDummy(t: AchievementTemplate) {
     const dummy = dummyFor(t);
     if (!dummy) return;
@@ -223,17 +271,7 @@ function AchievementForm({
     setAnswers({ ...dummy.answers });
     setDescription(dummy.description);
     setAchievedOn(dummy.date);
-    const name = `dummy-proof-${t.key}.txt`;
-    setFiles([
-      new File(
-        [
-          `Placeholder proof document for the demo achievement "${t.label}".\n\n` +
-            `In the real portal this would be a certificate, results page or screenshot.\n`,
-        ],
-        name,
-        { type: "text/plain" },
-      ),
-    ]);
+    setFiles([]);
   }
 
   async function submit(event: FormEvent) {
@@ -312,47 +350,90 @@ function AchievementForm({
     );
   }
 
-  // Step 2: template within the category.
+  // Step 2: template within the category - a card per template with its proof list.
   if (!template) {
+    const manual = (t: AchievementTemplate) => {
+      setTemplate(t);
+      setTitle("");
+      setTitleTouched(false);
+    };
     return (
       <Card>
-        <CardHeader
-          title={category.label}
-          description="Pick the one that fits best."
-          action={
-            <Button size="sm" variant="ghost" onClick={() => setCategoryKey(null)}>
-              <ArrowLeft className="size-3.5" /> Back
-            </Button>
-          }
-        />
-        <CardBody className="grid gap-3">
-          {category.templates.map((t) => {
-            const hasDummy = !!dummyFor(t);
-            return (
-              <div key={t.key} className="rounded-[14px] bg-white/65 p-4 ring-1 ring-white transition-colors hover:ring-azure-100">
-                <button
-                  type="button"
-                  onClick={() => { setTemplate(t); setTitle(""); setTitleTouched(false); }}
-                  className="block w-full text-left"
-                >
-                  <p className="font-medium text-ink-900">{t.label}</p>
-                  <p className="mt-0.5 text-[12.5px] text-stone-500">{t.hint}</p>
-                </button>
-                {hasDummy ? (
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="secondary"
-                    className="mt-2.5"
-                    onClick={() => fillDummy(t)}
-                  >
-                    Fill in dummy details
-                  </Button>
-                ) : null}
-              </div>
-            );
-          })}
-        </CardBody>
+        <div className="px-6 pt-5 pb-6 sm:px-8">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-[13.5px] text-stone-500">
+              <button type="button" onClick={onCancel} className="text-azure-600 hover:underline">Achievements</button>
+              <span className="mx-2">/</span>
+              {category.label}
+            </p>
+            <button
+              type="button"
+              onClick={() => setCategoryKey(null)}
+              className="inline-flex items-center gap-1.5 text-[13.5px] font-medium text-ink-800 hover:text-azure-600"
+            >
+              <ArrowLeft className="size-4" /> Back
+            </button>
+          </div>
+          <h2 className="mt-4 font-display text-[2rem] leading-tight tracking-tight text-ink-900">{category.label}</h2>
+          <p className="mt-1.5 max-w-3xl text-[14px] text-stone-600">
+            Select the type of achievement you want to submit. Each submission needs proof and is reviewed by your supervisor.
+          </p>
+
+          <div className="mt-6 grid gap-4 md:grid-cols-2">
+            {category.templates.map((t) => {
+              const guide = TEMPLATE_GUIDE[t.key];
+              const Icon = TEMPLATE_ICON[t.key] ?? Trophy;
+              const hasSample = !!dummyFor(t);
+              return (
+                <div key={t.key} className="flex flex-col rounded-2xl bg-white p-5 ring-1 ring-sand-200">
+                  <div className="flex items-start gap-4">
+                    <span className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-azure-50 text-azure-600">
+                      <Icon className="size-7" />
+                    </span>
+                    <div className="min-w-0">
+                      {guide ? (
+                        <p className="text-[11.5px] font-semibold tracking-[0.12em] text-stone-500 uppercase">{guide.tag}</p>
+                      ) : null}
+                      <p className="font-display text-[1.2rem] leading-snug text-ink-900">{t.label}</p>
+                    </div>
+                  </div>
+                  <p className="mt-3 text-[13.5px] text-stone-600">{t.hint}</p>
+                  {guide ? (
+                    <div className="mt-4 flex gap-3 border-t border-sand-200/70 pt-4">
+                      <FileText className="mt-0.5 size-5 shrink-0 text-stone-500" />
+                      <div>
+                        <p className="text-[13.5px] font-medium text-ink-900">Typical proof required</p>
+                        <ul className="mt-1 list-disc space-y-0.5 pl-4 text-[13px] text-stone-600">
+                          {guide.proof.map((item) => (
+                            <li key={item}>{item}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  ) : null}
+                  <div className="mt-auto grid gap-2 pt-5 sm:grid-cols-2">
+                    {hasSample ? (
+                      <Button type="button" variant="secondary" onClick={() => fillDummy(t)}>
+                        <Sparkles className="size-4" />
+                        Use sample details
+                      </Button>
+                    ) : null}
+                    <Button type="button" onClick={() => manual(t)} className={hasSample ? "" : "sm:col-span-2"}>
+                      <PencilLine className="size-4" />
+                      Fill in manually
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <p className="mt-5 flex items-start gap-3 rounded-xl bg-azure-50/60 px-4 py-3 text-[13px] text-stone-600 ring-1 ring-azure-100">
+            <Info className="mt-0.5 size-4 shrink-0 text-azure-600" />
+            Your supervisor reviews the submission and its proof before approving it. Sample details show the expected format;
+            replace them with your own and attach your own proof.
+          </p>
+        </div>
       </Card>
     );
   }

@@ -626,3 +626,20 @@ export function linkedInPost(
   body = main + tags;
   return body.replace(/\n{3,}/g, "\n\n").trim();
 }
+
+/** What students usually attach as proof, and a short tag, for each template. */
+export const TEMPLATE_GUIDE: Record<string, { tag: string; proof: string[] }> = {
+  hackathon_win: { tag: "Hackathon", proof: ["Winner or participation certificate", "Results page or official announcement", "Photo from the event (optional)"] },
+  coding_contest: { tag: "Coding contest", proof: ["Rank list or scoreboard screenshot", "Contest profile link", "Certificate (if issued)"] },
+  paper_presented: { tag: "Conference", proof: ["Acceptance letter", "Conference program or proceedings link", "Presentation certificate (if available)", "Paper / abstract (PDF)"] },
+  journal_publication: { tag: "Journal", proof: ["Publication link (DOI)", "First page of the paper (PDF)", "Journal acceptance / publication email", "Full paper (PDF)"] },
+  patent: { tag: "Patent", proof: ["Patent publication or grant document", "Application number and filing receipt", "Patent office journal page"] },
+  startup: { tag: "Startup", proof: ["Incubation or funding letter", "Company registration or DPIIT certificate", "Pitch or demo-day announcement"] },
+  sports_medal: { tag: "Sports", proof: ["Medal or merit certificate", "Official results sheet", "Photo with the medal (optional)"] },
+  sports_selection: { tag: "Selection", proof: ["Selection letter or team list", "Federation / university announcement", "Participation certificate"] },
+  excellence_award: { tag: "Award", proof: ["Award certificate or letter", "Official announcement or news link"] },
+  national_recognition: { tag: "Recognition", proof: ["Record certificate or recognition letter", "Official announcement or news link"] },
+  scholarship: { tag: "Scholarship", proof: ["Offer or award letter", "Official list of selected students", "Stipend or fellowship details (optional)"] },
+  club_award: { tag: "Club", proof: ["Award certificate", "Chapter or club announcement", "Event photo (optional)"] },
+  competition_win: { tag: "Competition", proof: ["Winner certificate", "Results announcement", "Entry or submission (optional)"] },
+};
