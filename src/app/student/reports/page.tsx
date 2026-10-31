@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent, type ReactNode } from "react";
-import { ChevronDown, ClipboardList, MessageSquareText, Presentation, ScrollText, Upload, type LucideIcon } from "lucide-react";
+import { ChevronDown, ClipboardList, ScrollText, Upload } from "lucide-react";
 
 import { FileChips, FileRow } from "@/components/shared/file-link";
 import { Avatar } from "@/components/ui/avatar";
@@ -14,7 +14,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { PageSkeleton } from "@/components/ui/skeleton";
 import * as repo from "@/lib/data/repository";
 import { usePortal } from "@/lib/data/portal-store";
-import type { GroupMilestone, MilestoneSlot, WeeklyReport } from "@/lib/types";
+import type { MilestoneSlot, StoredFile, WeeklyReport } from "@/lib/types";
 import { useLoad } from "@/lib/use-load";
 import { RichEditor } from "@/components/shared/rich-editor";
 import { RichText } from "@/components/shared/rich-text";
@@ -90,25 +90,19 @@ export default function ReportsPage() {
         />
         {week === 3 ? (
           <MilestonePhase
-            title="Midterm"
+            title="Midterm (MTE)"
             note="After week 3"
-            items={[
-              { slot: "mid_ppt", label: "Analysis process PPT", icon: Presentation },
-              { slot: "mid_synopsis", label: "Synopsis", icon: ScrollText },
-            ]}
-            get={slotOf}
+            slot="mid_ppt"
+            files={[...(slotOf("mid_ppt")?.files ?? []), ...(slotOf("mid_synopsis")?.files ?? [])]}
             reload={() => void milestones.reload()}
           />
         ) : null}
         {week === 7 ? (
           <MilestonePhase
-            title="Endterm"
+            title="Endterm (ETE)"
             note="After week 7"
-            items={[
-              { slot: "ete_ppt", label: "Updated PPT", icon: Presentation },
-              { slot: "ete_synopsis", label: "Updated synopsis", icon: ScrollText },
-            ]}
-            get={slotOf}
+            slot="ete_ppt"
+            files={[...(slotOf("ete_ppt")?.files ?? []), ...(slotOf("ete_synopsis")?.files ?? [])]}
             reload={() => void milestones.reload()}
           />
         ) : null}
@@ -215,7 +209,10 @@ function WeekRow({
   );
 }
 
-/** A submitted week: score and verdict, the files, and the supervisor's feedback. */
+/**
+ * A submitted week, two lines: the score beside the supervisor's feedback,
+ * then what the team worked on beside the report file.
+ */
 function ReportBody({
   report,
   mentorName,
@@ -228,34 +225,50 @@ function ReportBody({
   const graded = report.grade != null;
   return (
     <div className="space-y-3 border-t border-sand-200/70 px-4 pt-3 pb-4">
-      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
-        <div className="flex items-center rounded-xl border border-sand-200 bg-white px-5 py-3">
-          <div className="flex flex-1 items-center gap-4">
-            <span className="flex size-11 items-center justify-center rounded-xl border border-sand-200 text-stone-500">
-              <ClipboardList className="size-5" />
-            </span>
-            <div>
-              <p className="text-[12.5px] text-stone-500">Score</p>
-              <p className="tnum font-display text-[1.5rem] leading-tight text-ink-900">
-                {graded ? report.grade : "-"}
-                <span className="text-[1rem] text-stone-600"> / 10</span>
-              </p>
-            </div>
-          </div>
-          <span className="mx-4 h-10 w-px bg-sand-200" aria-hidden />
-          <div className="flex flex-1 items-center gap-4">
-            <span className="flex size-11 items-center justify-center rounded-xl border border-sand-200 text-stone-500">
-              <MessageSquareText className="size-5" />
-            </span>
-            <div>
-              <p className="text-[12.5px] text-stone-500">Feedback</p>
-              <p className="font-display text-[1.25rem] leading-tight text-azure-600">
-                {graded ? verdict(report.grade!) : "Awaiting"}
-              </p>
-            </div>
+      <div className="grid gap-3 lg:grid-cols-[16rem_minmax(0,1fr)]">
+        <div className="flex items-center gap-4 rounded-xl border border-sand-200 bg-white px-5 py-3">
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-sand-200 text-stone-500">
+            <ClipboardList className="size-5" />
+          </span>
+          <div>
+            <p className="text-[12.5px] text-stone-500">Score</p>
+            <p className="tnum font-display text-[1.6rem] leading-tight text-ink-900">
+              {graded ? report.grade : "-"}
+              <span className="text-[1rem] text-stone-600"> / 10</span>
+            </p>
           </div>
         </div>
+        <div className="flex gap-3 rounded-xl bg-azure-50/60 px-4 py-3 ring-1 ring-azure-100">
+          <Avatar name={mentorName} src={mentorAvatar} size="md" />
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <p className="text-[12.5px] text-stone-500">
+                Feedback{graded ? <span className="font-semibold text-ink-900"> · {mentorName}</span> : null}
+              </p>
+              {report.gradedAt ? <p className="text-[12px] text-stone-500">{stamp(report.gradedAt)}</p> : null}
+            </div>
+            {graded ? (
+              report.feedback ? (
+                <RichText text={report.feedback} className="mt-0.5 text-[13.5px] text-ink-800" />
+              ) : (
+                <p className="mt-0.5 text-[13.5px] text-stone-500">No note was left with the grade.</p>
+              )
+            ) : (
+              <p className="mt-0.5 text-[13.5px] text-stone-500">Not evaluated yet. You will be notified when it is.</p>
+            )}
+          </div>
+        </div>
+      </div>
 
+      <div className="grid gap-3 lg:grid-cols-2">
+        <div className="rounded-xl border border-sand-200 bg-white px-4 py-3">
+          <p className="text-[12.5px] text-stone-500">Worked on</p>
+          {report.summary ? (
+            <RichText text={report.summary} className="mt-0.5 text-[13.5px] text-ink-800" />
+          ) : (
+            <p className="mt-0.5 text-[13.5px] text-stone-500">The team did not add a summary.</p>
+          )}
+        </div>
         <div className="space-y-2">
           {report.files.length > 0 ? (
             report.files.map((f) => (
@@ -263,41 +276,13 @@ function ReportBody({
             ))
           ) : (
             <p className="flex h-full items-center rounded-xl border border-dashed border-sand-200 px-4 py-3 text-[13px] text-stone-500">
-              No file was attached to this report.
+              No report file was attached.
             </p>
           )}
         </div>
       </div>
-
-      {report.summary ? (
-        <RichText text={report.summary} className="rounded-xl bg-white/70 px-4 py-3 text-[13.5px] ring-1 ring-sand-200/70" />
-      ) : null}
-
-      <div className="flex gap-3 rounded-xl bg-azure-50/60 px-4 py-3.5 ring-1 ring-azure-100">
-        <Avatar name={mentorName} src={mentorAvatar} size="md" />
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <p className="text-[13.5px] font-semibold text-azure-600">Supervisor Feedback</p>
-            {report.gradedAt ? <p className="text-[12.5px] text-stone-500">{stamp(report.gradedAt)}</p> : null}
-          </div>
-          <p className="mt-1 text-[13.5px] leading-relaxed whitespace-pre-line text-ink-800">
-            {graded
-              ? report.feedback || "No note was left with the grade."
-              : "Your supervisor has not evaluated this report yet. You will be notified when they do."}
-          </p>
-          {graded ? <p className="mt-1.5 text-[13px] font-semibold text-ink-900">{mentorName}</p> : null}
-        </div>
-      </div>
     </div>
   );
-}
-
-/** A one-word verdict for the score. */
-function verdict(grade: number): string {
-  if (grade >= 9) return "Excellent";
-  if (grade >= 7) return "Very good";
-  if (grade >= 5) return "Good";
-  return "Needs work";
 }
 
 /** The inline form for a week that hasn't been submitted yet. */
@@ -341,7 +326,7 @@ function SubmitForm({ week, onSubmitted }: { week: number; onSubmitted: (week: n
           />
         </div>
         <div>
-          <Label htmlFor={`r-summary-${week}`}>What did the team do this week? (optional)</Label>
+          <Label htmlFor={`r-summary-${week}`}>Worked on (optional)</Label>
           <RichEditor
             id={`r-summary-${week}`}
             rows={4}
@@ -363,33 +348,30 @@ function SubmitForm({ week, onSubmitted }: { week: number; onSubmitted: (week: n
   );
 }
 
-interface MilestoneItem {
-  slot: MilestoneSlot;
-  label: string;
-  icon: LucideIcon;
-}
-
-/** A midterm or endterm block: one upload slot for each deliverable. */
+/**
+ * A midterm or endterm block: one upload for the whole set - the PPT, the
+ * project report and the project synopsis - picked together or added later.
+ */
 function MilestonePhase({
   title,
   note,
-  items,
-  get,
+  slot,
+  files,
   reload,
 }: {
   title: string;
   note: string;
-  items: MilestoneItem[];
-  get: (slot: MilestoneSlot) => GroupMilestone | undefined;
+  slot: MilestoneSlot;
+  files: StoredFile[];
   reload: () => void;
 }) {
   const { group } = usePortal();
-  const [busy, setBusy] = useState<MilestoneSlot | null>(null);
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function upload(slot: MilestoneSlot, picked: File[]) {
+  async function upload(picked: File[]) {
     if (!group || picked.length === 0) return;
-    setBusy(slot);
+    setBusy(true);
     setError(null);
     try {
       await repo.submitMilestone(group.id, slot, picked);
@@ -397,60 +379,52 @@ function MilestonePhase({
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not upload the files.");
     } finally {
-      setBusy(null);
+      setBusy(false);
     }
   }
 
   return (
     <Card>
-      <div className="flex items-center justify-between gap-3 px-5 py-3.5">
+      <div className="flex items-center justify-between gap-3 px-6 py-3.5">
         <div className="flex items-center gap-3">
-          <span className="flex size-8 items-center justify-center rounded-lg bg-gold-50 text-gold-600">
+          <span className="flex size-9 items-center justify-center rounded-lg bg-gold-50 text-gold-600">
             <ScrollText className="size-4" />
           </span>
           <div>
-            <p className="text-[14px] font-semibold text-ink-900">{title} submissions</p>
-            <p className="text-[12px] text-stone-500">{note}</p>
+            <p className="text-[14.5px] font-semibold text-ink-900">{title} submission</p>
+            <p className="text-[12.5px] text-stone-500">{note}</p>
           </div>
         </div>
-        <StatusText tone="amber">{note.replace("After ", "Due after ")}</StatusText>
+        <StatusText tone={files.length > 0 ? "blue" : "amber"}>
+          {files.length > 0 ? "Uploaded" : note.replace("After ", "Due after ")}
+        </StatusText>
       </div>
-      <div className="grid gap-3 border-t border-sand-200/70 px-5 py-4 sm:grid-cols-2">
-        {items.map(({ slot, label, icon: Icon }) => {
-          const m = get(slot);
-          const attached = m?.files ?? [];
-          return (
-            <div key={slot} className="rounded-[12px] bg-white/70 p-3 ring-1 ring-sand-200">
-              <p className="flex items-center gap-1.5 text-[12px] font-medium tracking-wide text-stone-500">
-                <Icon className="size-3.5 text-azure-600" />
-                {label}
-              </p>
-              {attached.length > 0 ? (
-                <FileChips bucket="submissions" files={attached} className="mt-2.5 sm:grid-cols-1" />
-              ) : null}
-              <label className="mt-2.5 block cursor-pointer">
-                <input
-                  type="file"
-                  className="sr-only"
-                  accept=".pdf,.ppt,.pptx,.doc,.docx,.zip,image/png,image/jpeg"
-                  multiple
-                  disabled={busy != null}
-                  onChange={(e) => {
-                    const picked = Array.from(e.target.files ?? []);
-                    if (picked.length > 0) void upload(slot, picked);
-                    e.target.value = "";
-                  }}
-                />
-                <span className="inline-flex items-center gap-1.5 rounded-lg bg-azure-50 px-2.5 py-1.5 text-[12px] font-medium text-azure-600 ring-1 ring-azure-100 transition-colors hover:bg-azure-50/70 disabled:opacity-50">
-                  <Upload className="size-3.5" />
-                  {busy === slot ? "Uploading..." : attached.length > 0 ? "Add more files" : "Upload files"}
-                </span>
-              </label>
-            </div>
-          );
-        })}
+      <div className="space-y-3 border-t border-sand-200/70 px-6 py-4">
+        <p className="rounded-xl bg-gold-50/60 px-4 py-2.5 text-[13px] text-ink-800 ring-1 ring-gold-500/15">
+          Upload all three here: the <strong>PPT</strong>, the <strong>Project Report</strong> and the{" "}
+          <strong>Project Synopsis</strong>. The team lead uploads them, together or one at a time.
+        </p>
+        {files.length > 0 ? <FileChips bucket="submissions" files={files} /> : null}
+        <label className="inline-block cursor-pointer">
+          <input
+            type="file"
+            className="sr-only"
+            accept=".pdf,.ppt,.pptx,.doc,.docx,.zip,image/png,image/jpeg"
+            multiple
+            disabled={busy}
+            onChange={(e) => {
+              const picked = Array.from(e.target.files ?? []);
+              if (picked.length > 0) void upload(picked);
+              e.target.value = "";
+            }}
+          />
+          <span className="inline-flex items-center gap-1.5 rounded-lg bg-azure-50 px-3 py-2 text-[13px] font-medium text-azure-600 ring-1 ring-azure-100 transition-colors hover:bg-azure-100">
+            <Upload className="size-4" />
+            {busy ? "Uploading..." : files.length > 0 ? "Add more files" : "Upload PPT, report and synopsis"}
+          </span>
+        </label>
+        {error ? <p role="alert" className="text-[13px] text-clay-500">{error}</p> : null}
       </div>
-      {error ? <p role="alert" className="px-5 pb-3 text-[13px] text-clay-500">{error}</p> : null}
     </Card>
   );
 }

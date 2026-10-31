@@ -16,10 +16,17 @@ function synopsisScore(s1: number | null, s2: number | null): number | null {
   return Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 10) / 10;
 }
 
-/** One uploaded file shown compactly next to a plan row. */
-export function FileTag({ m }: { m?: GroupMilestone }) {
-  if (!m || !m.filePath || !m.fileName) return <span className="text-stone-400">not uploaded</span>;
-  return <FileLink bucket="submissions" path={m.filePath} name={m.fileName} />;
+/** Every file of a phase (midterm or endterm), shown compactly next to a plan row. */
+export function FileTag({ ms }: { ms: Array<GroupMilestone | undefined> }) {
+  const files = ms.flatMap((m) => m?.files ?? []);
+  if (files.length === 0) return <span className="text-stone-400">not uploaded</span>;
+  return (
+    <span className="inline-flex flex-wrap gap-1 align-middle">
+      {files.map((f) => (
+        <FileLink key={f.path} bucket="submissions" path={f.path} name={f.name} variant="pill" />
+      ))}
+    </span>
+  );
 }
 
 /**
@@ -42,10 +49,9 @@ export function GradingPlanCard({
   canGrade: boolean;
 }) {
   const bySlot = (s: GroupMilestone["slot"]) => milestones.find((m) => m.slot === s);
-  const midPpt = bySlot("mid_ppt");
-  const midSyn = bySlot("mid_synopsis");
-  const etePpt = bySlot("ete_ppt");
-  const eteSyn = bySlot("ete_synopsis");
+  // Each phase is one upload of the PPT, project report and synopsis (older uploads may sit in the synopsis slot).
+  const mid = [bySlot("mid_ppt"), bySlot("mid_synopsis")];
+  const ete = [bySlot("ete_ppt"), bySlot("ete_synopsis")];
 
   const synopsis = synopsisScore(grade?.synopsis1 ?? null, grade?.synopsis2 ?? null);
   const weekly = grade?.weekly15 ?? weeklyAverage;
@@ -56,7 +62,7 @@ export function GradingPlanCard({
       max: 10,
       note: (
         <span className="text-[11px] text-stone-400">
-          1: <FileTag m={midSyn} /> · 2: <FileTag m={eteSyn} />
+          Midterm: <FileTag ms={mid} /> · Endterm: <FileTag ms={ete} />
         </span>
       ),
     },
@@ -67,7 +73,7 @@ export function GradingPlanCard({
       max: 15,
       note: (
         <span className="text-[11px] text-stone-400">
-          Midterm: <FileTag m={midPpt} /> · Updated: <FileTag m={etePpt} />
+          Midterm: <FileTag ms={mid} /> · Endterm: <FileTag ms={ete} />
         </span>
       ),
     },
