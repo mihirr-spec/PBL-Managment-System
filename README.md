@@ -34,17 +34,11 @@ Open http://localhost:3000. `.env.local` needs:
 
 ### Accounts
 
-Test logins (supabase/migrations/20261028000002_test_accounts.sql). Each sign-in tab also has a one-click test button, and the email box fills in the domain, so you type only the part before the @.
+The test logins from `supabase/migrations/20261028000002_test_accounts.sql` have been removed from the
+live database, so only real university accounts remain. Running that migration on a fresh database
+brings them back (password `pace@2026`).
 
-| Portal | Email | Password |
-| --- | --- | --- |
-| Student (team lead of Team Test) | `teststudent1@muj.manipal.edu` | `pace@2026` |
-| Student | `teststudent2@muj.manipal.edu` | `pace@2026` |
-| Student | `teststudent3@muj.manipal.edu` | `pace@2026` |
-| Team supervisor (mentor of Team Test) | `testteacher1@jaipur.manipal.edu` | `pace@2026` |
-| Administrator | `testadministrator1@jaipur.manipal.edu` | `pace@2026` |
-
-Everyone else signs up at `/signup` with their university email and confirms it
+Everyone signs up at `/signup` with their university email and confirms it
 from the emailed link:
 
 | Address | Becomes |
@@ -136,9 +130,21 @@ the interface and Fraunces for display headings.
 
 ## Still to do
 
-- **Assessment plan per group**: the marking scheme (updated synopsis 10 · weekly progress 15 · analysis PPT 15 · design & implementation 20 · end term exam 40, total 100) and a separate final-grading window, with the two synopsis marks averaged to 10.
-- **Milestones on the report timeline**: eight weekly reports with a midterm presentation/evaluation after week 3 (PPT + synopsis submissions) and an endterm submission after week 7.
 - Teacher accounts: the 821 faculty in the directory must sign up before they can review.
 - University single sign-on and "Forgot password" still show a *later release* message.
 - Posting as an official LinkedIn Page instead of a member profile (needs LinkedIn's Community Management API approval).
 - Analytics: project health score, at-risk detection, progress prediction.
+
+## Recent additions
+
+- **Weekly reports rework**: eight slots (default) instead of five; per-week cards with a badge, mentor score tile, file row and feedback; a midterm block after week 3 and an endterm block after week 7 for PPT and synopsis uploads.
+- **Assessment plan per group**: a 100-point scheme (updated synopsis 10 · weekly progress 15 · analysis PPT 15 · design & implementation 20 · end term exam 40) shown on the group page, plus a separate "Final grading" window that saves it. The two synopsis marks average to the 10-point component; the weekly figure defaults to the average of the graded reports and can be overridden. The score stays hidden from students until the supervisor publishes it, and publishing is refused until every group she mentors is graded. She can also correct an individual student's mark.
+- **Query attachments**: students can attach files to a query; supervisors see the attachments in the two-pane queries view.
+- **Project idea** is required at team creation and always shows on the supervisor's group table; a team lead can backfill an empty idea.
+- **Notifications pages** on the teacher and admin portals; the bell links to them instead of a dead-end dropdown.
+- **Mentor requests** page: stat tiles, pending section and a searchable history table; messages render with line breaks, bullets and dates highlighted.
+- **Lead succession**: deleting a team lead promotes a random remaining teammate.
+- **Change of supervisor with two approvals**: the team lead names the supervisor they want; the current and the new supervisor each approve or decline. Under seven groups the move happens at once and the administrator is told; at seven, the administrator makes the final call. Either supervisor declining closes it with the reason.
+- **Several files per upload**: mentor forms, weekly reports and milestone slots take several files picked at once.
+- **PBL handout** opens on every portal from a shared nav item.
+- **Dummy achievement details**: each achievement template in the student form has "Fill in dummy details" for fast prototyping.
