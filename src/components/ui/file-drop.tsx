@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, type DragEvent } from "react";
-import { FileText, Paperclip, X } from "lucide-react";
+import { Paperclip, X } from "lucide-react";
+
+import { FileTypeIcon } from "@/components/shared/file-type-icon";
 
 import { cn } from "@/lib/utils";
 
@@ -103,20 +105,22 @@ export function FileDrop({
       {rejected ? <p className="mt-1.5 text-[12px] text-clay-500">{rejected}</p> : null}
 
       {files.length > 0 ? (
-        <ul className="mt-2 space-y-1.5">
+        <ul className="mt-2 grid gap-2 sm:grid-cols-2">
           {files.map((f, i) => (
             <li
               key={`${f.name}-${i}`}
-              className="flex items-center gap-2 rounded-lg bg-white/80 px-3 py-1.5 text-[13px] text-ink-800 ring-1 ring-sand-200"
+              className="flex items-center gap-3 rounded-lg border border-sand-200 bg-white px-3 py-2.5"
             >
-              <FileText className="size-4 shrink-0 text-azure-600" aria-hidden />
-              <span className="min-w-0 flex-1 truncate">{f.name}</span>
-              <span className="tnum shrink-0 text-[12px] text-stone-400">{size(f.size)}</span>
+              <FileTypeIcon name={f.name} />
+              <span className="min-w-0 flex-1">
+                <span className="block text-[13px] font-medium break-words text-ink-900">{f.name}</span>
+                <span className="tnum block text-[11.5px] text-stone-500">{size(f.size)}</span>
+              </span>
               <button
                 type="button"
                 onClick={() => onChange(files.filter((_, j) => j !== i))}
                 aria-label={`Remove ${f.name}`}
-                className="shrink-0 rounded p-0.5 text-stone-400 hover:text-clay-500"
+                className="shrink-0 self-start rounded p-0.5 text-stone-400 hover:text-clay-500"
               >
                 <X className="size-3.5" />
               </button>

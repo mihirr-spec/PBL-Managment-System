@@ -614,6 +614,12 @@ export async function updateStudent(
   return toStudent(data);
 }
 
+/** Sets (or with null, clears) the signed-in staff member's profile photo. */
+export async function setMyAvatar(url: string | null): Promise<void> {
+  const { error } = await supabase.rpc("set_my_avatar", { p_url: url });
+  fail(error);
+}
+
 /** Uploads a profile photo to the public `avatars` bucket and returns its URL. */
 export async function uploadAvatar(userId: string, file: File): Promise<string> {
   const extension = file.name.split(".").pop()?.toLowerCase() || "jpg";

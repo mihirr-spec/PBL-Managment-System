@@ -34,7 +34,7 @@ const SCENES = {
   directory: { backdrop: "campus", icon: BookUser },
   requests: { backdrop: "dome", icon: UserPlus },
   announcements: { backdrop: "sky", icon: Megaphone },
-  profile: { backdrop: "campus", icon: UserRound },
+  profile: { backdrop: "sky", icon: UserRound },
   settings: { backdrop: "sky", icon: Settings },
   team: { backdrop: "campus", icon: UsersRound },
   achievements: { backdrop: "campus", icon: Trophy },

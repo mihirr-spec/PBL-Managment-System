@@ -1,32 +1,38 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { FileText, Paperclip } from "lucide-react";
 
 import { DocumentViewer } from "@/components/shared/document-viewer";
+import { FileTypeIcon, fileTypeLabel } from "@/components/shared/file-type-icon";
 import type { FileBucket } from "@/lib/data/repository";
 import { cn } from "@/lib/utils";
 
 /**
- * A private storage file; clicking opens it in the in-portal viewer. The
- * "icon" variant is just a document icon (the name shows on hover), for rows
- * that already print the file name.
+ * A private storage file; clicking opens it in the in-portal viewer.
+ * - "chip" (default): a bordered attachment box with the file-type icon, the
+ *   full name and a second line (type, plus `meta` such as when it was sent).
+ * - "pill": a compact one-line link.
+ * - "icon": just the file-type icon, for rows that already print the name.
  */
 export function FileLink({
   bucket,
   path,
   name,
-  variant = "pill",
+  meta,
+  variant = "chip",
   className,
 }: {
   bucket: FileBucket;
   path: string;
   name: string;
-  variant?: "pill" | "icon";
+  /** Extra detail on the chip's second line, after the file type. */
+  meta?: string;
+  variant?: "chip" | "pill" | "icon";
   className?: string;
 }) {
   const [open, setOpen] = useState(false);
   const close = useCallback(() => setOpen(false), []);
+  const viewer = open ? <DocumentViewer bucket={bucket} path={path} name={name} onClose={close} /> : null;
 
   if (variant === "icon") {
     return (
@@ -37,13 +43,33 @@ export function FileLink({
           title={`Open ${name}`}
           aria-label={`Open ${name}`}
           className={cn(
-            "flex size-9 shrink-0 items-center justify-center rounded-lg bg-clay-100 text-clay-500 ring-1 ring-clay-500/15 transition-colors hover:bg-clay-500 hover:text-white focus-visible:ring-2 focus-visible:ring-azure-500 focus-visible:outline-none",
+            "flex size-10 shrink-0 items-center justify-center rounded-lg transition-colors hover:bg-azure-50 focus-visible:ring-2 focus-visible:ring-azure-500 focus-visible:outline-none",
             className,
           )}
         >
-          <FileText className="size-4" />
+          <FileTypeIcon name={name} />
         </button>
-        {open ? <DocumentViewer bucket={bucket} path={path} name={name} onClose={close} /> : null}
+        {viewer}
+      </>
+    );
+  }
+
+  if (variant === "pill") {
+    return (
+      <>
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          title={`Open ${name}`}
+          className={cn(
+            "inline-flex max-w-full items-center gap-2 rounded-lg border border-white/80 bg-white/75 px-2.5 py-1 text-[12.5px] text-ink-800 transition-colors hover:border-azure-100 hover:bg-azure-50",
+            className,
+          )}
+        >
+          <FileTypeIcon name={name} className="size-5" />
+          <span className="truncate font-medium">{name}</span>
+        </button>
+        {viewer}
       </>
     );
   }
@@ -53,15 +79,43 @@ export function FileLink({
       <button
         type="button"
         onClick={() => setOpen(true)}
+        title={`Open ${name}`}
         className={cn(
-          "inline-flex max-w-full items-center gap-2 rounded-lg border border-white/80 bg-white/75 px-3 py-1.5 text-[12.5px] text-ink-800 transition-colors hover:border-azure-100 hover:bg-azure-50",
+          "flex w-full max-w-sm items-center gap-3 rounded-lg border border-sand-200 bg-white px-3 py-2.5 text-left transition-colors hover:border-azure-100 hover:bg-azure-50/60 focus-visible:ring-2 focus-visible:ring-azure-500 focus-visible:outline-none",
           className,
         )}
       >
-        <Paperclip className="size-3.5 shrink-0 text-azure-600" />
-        <span className="truncate font-medium">{name}</span>
+        <FileTypeIcon name={name} />
+        <span className="min-w-0">
+          <span className="block text-[13px] font-medium break-words text-ink-900">{name}</span>
+          <span className="block text-[11.5px] text-stone-500">
+            {fileTypeLabel(name)}
+            {meta ? ` · ${meta}` : ""}
+          </span>
+        </span>
       </button>
-      {open ? <DocumentViewer bucket={bucket} path={path} name={name} onClose={close} /> : null}
+      {viewer}
     </>
+  );
+}
+
+/** A wrapping row of attachment chips. */
+export function FileChips({
+  bucket,
+  files,
+  meta,
+  className,
+}: {
+  bucket: FileBucket;
+  files: Array<{ path: string; name: string }>;
+  meta?: string;
+  className?: string;
+}) {
+  return (
+    <div className={cn("grid gap-2 sm:grid-cols-2", className)}>
+      {files.map((f) => (
+        <FileLink key={f.path} bucket={bucket} path={f.path} name={f.name} meta={meta} />
+      ))}
+    </div>
   );
 }

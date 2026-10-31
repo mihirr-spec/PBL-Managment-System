@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   Megaphone,
   MessageCircleQuestion,
+  MessagesSquare,
   Settings,
   Trophy,
   UserPlus,
@@ -23,7 +24,7 @@ export interface NavItem {
   href: string;
   icon: LucideIcon;
   /** Key into the badge-count map supplied by the sidebar. */
-  badge?: "notifications" | "invitations";
+  badge?: "notifications" | "invitations" | "queries";
   /** Also highlight for nested routes under this path (e.g. a group's page). */
   matchPrefix?: string;
 }
@@ -58,7 +59,8 @@ export const NAV_BY_ROLE: Record<Role, NavSection[]> = {
         { label: "Weekly Reports", href: "/student/reports", icon: FileText },
         { label: "Grades & Feedback", href: "/student/grades", icon: Award },
         { label: "Achievements", href: "/student/achievements", icon: Trophy },
-        { label: "Queries", href: "/student/queries", icon: MessageCircleQuestion },
+        { label: "Queries", href: "/student/queries/new", icon: MessageCircleQuestion },
+        { label: "Your Queries", href: "/student/queries", icon: MessagesSquare, badge: "queries" },
       ],
     },
     {

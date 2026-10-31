@@ -3,7 +3,7 @@
 import { useState, type FormEvent, type ReactNode } from "react";
 import { ChevronDown, MessageCircleQuestion, Presentation, ScrollText, Trophy, Upload, type LucideIcon } from "lucide-react";
 
-import { FileLink } from "@/components/shared/file-link";
+import { FileChips } from "@/components/shared/file-link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -208,14 +208,7 @@ function ReportBody({ report, mentorName }: { report: WeeklyReport; mentorName: 
             <p className="text-[13.5px] leading-relaxed whitespace-pre-line text-stone-600">{report.summary}</p>
           ) : null}
           {report.files.length > 0 ? (
-            <div className="space-y-1.5">
-              {report.files.map((f) => (
-                <div key={f.path} className="flex items-center justify-between gap-3 rounded-[12px] bg-white/70 px-3 py-2.5 ring-1 ring-sand-200">
-                  <span className="min-w-0 text-[13px] font-medium break-words text-ink-900">{f.name}</span>
-                  <FileLink bucket="submissions" path={f.path} name={f.name} variant="icon" />
-                </div>
-              ))}
-            </div>
+            <FileChips bucket="submissions" files={report.files} meta={`Sent ${timeAgo(report.submittedAt)}`} />
           ) : null}
           {graded ? (
             <div className="rounded-[12px] bg-azure-50/70 px-3.5 py-3 ring-1 ring-azure-100">
@@ -367,14 +360,7 @@ function MilestonePhase({
                 {label}
               </p>
               {attached.length > 0 ? (
-                <div className="mt-2.5 space-y-1.5">
-                  {attached.map((f) => (
-                    <div key={f.path} className="flex items-center justify-between gap-3">
-                      <span className="min-w-0 text-[12.5px] font-medium break-words text-ink-900">{f.name}</span>
-                      <FileLink bucket="submissions" path={f.path} name={f.name} variant="icon" />
-                    </div>
-                  ))}
-                </div>
+                <FileChips bucket="submissions" files={attached} className="mt-2.5 sm:grid-cols-1" />
               ) : null}
               <label className="mt-2.5 block cursor-pointer">
                 <input

@@ -1,44 +1,65 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
-import { ArrowRightLeft, Clock, Mail, MessageCircleQuestion, Paperclip, Send, UsersRound, MoreHorizontal } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Clock, MessageCircleQuestion, Paperclip, Plus } from "lucide-react";
 
-import { FileLink } from "@/components/shared/file-link";
+import { FileChips } from "@/components/shared/file-link";
 import { ChangeProgress, statusOf } from "@/components/shared/queries";
-import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Button, ButtonLink } from "@/components/ui/button";
+import { ButtonLink } from "@/components/ui/button";
 import { Card, CardHeader, EmptyState } from "@/components/ui/card";
-import { FileDrop } from "@/components/ui/file-drop";
-import { Field, Input, Textarea } from "@/components/ui/field";
 import { PageHeader } from "@/components/ui/page-header";
 import { PageSkeleton } from "@/components/ui/skeleton";
 import * as repo from "@/lib/data/repository";
 import { usePortal } from "@/lib/data/portal-store";
-import type { Ticket, TicketCategory } from "@/lib/types";
+import type { Ticket } from "@/lib/types";
 import { useLoad } from "@/lib/use-load";
-import { formatDateTime, timeAgo, cn } from "@/lib/utils";
+import { cn, formatDateTime, timeAgo } from "@/lib/utils";
 
-export default function QueriesPage() {
-  const { loading, student, group, mentor } = usePortal();
+/** The latest thing that happened on a query: a reply, an approval or the outcome. */
+function lastActivity(q: Ticket): string {
+  return [q.createdAt, q.repliedAt, q.adminRepliedAt, q.currentApprovedAt, q.targetApprovedAt, q.forwardedAt]
+    .filter((t): t is string => Boolean(t))
+    .sort()
+    .pop()!;
+}
+
+/**
+ * Your Queries: every query the group has raised, newest activity first, with
+ * its conversation. Opening the page clears the query badge in the sidebar;
+ * queries with activity since then are tagged New.
+ */
+export default function YourQueriesPage() {
+  const { loading, student, group, notifications, markNotificationRead } = usePortal();
   const queries = useLoad(() => repo.listTickets(group!.id), group ? group.id : null);
-  const [category, setCategory] = useState<TicketCategory>("general");
-  const [subject, setSubject] = useState("");
-  const [body, setBody] = useState("");
-  const [files, setFiles] = useState<File[]>([]);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [sent, setSent] = useState<string | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
-  const [targetId, setTargetId] = useState("");
-  const teachers = useLoad(() => repo.listPortalTeachers(), category === "supervisor_change" ? "portal-teachers" : null);
+  // Snapshot of when the oldest unread query notification arrived, taken once
+  // the portal has loaded and before those notifications are marked read.
+  // undefined = not taken yet; null = nothing was unread.
+  const [newSince, setNewSince] = useState<string | null | undefined>(undefined);
+  const cleared = useRef(false);
+
+  if (!loading && newSince === undefined) {
+    const unread = notifications.filter((n) => n.kind === "ticket" && !n.read);
+    const oldest = unread.map((n) => n.createdAt).sort()[0];
+    // Allow a minute: the notification is written just after the change it reports.
+    setNewSince(oldest ? new Date(new Date(oldest).getTime() - 60_000).toISOString() : null);
+  }
+
+  useEffect(() => {
+    if (newSince === undefined || cleared.current) return;
+    cleared.current = true;
+    notifications
+      .filter((n) => n.kind === "ticket" && !n.read)
+      .forEach((n) => void markNotificationRead(n.id));
+  }, [newSince, notifications, markNotificationRead]);
 
   if (loading || !student) return <PageSkeleton />;
 
   if (!group) {
     return (
       <div>
-        <PageHeader eyebrow="Queries" title="Raise a" emphasis="query." scene="queries" />
+        <PageHeader eyebrow="Queries" title="Your" emphasis="queries." scene="queries" />
         <Card>
           <EmptyState title="Join a group first" description="Queries go to your group's supervisor." scene="queries" />
           <div className="pb-6 text-center">
@@ -49,290 +70,125 @@ export default function QueriesPage() {
     );
   }
 
-  const isChange = category === "supervisor_change";
-  const changeInProgress = queries.data?.some(
-    (q) => q.category === "supervisor_change" && (q.status === "open" || q.status === "forwarded"),
-  );
-  const shown = (queries.data ?? []).filter((q) => q.studentId === student.id);
-  const isLeader = group.leaderStudentId === student.id;
-  const choices = (teachers.data ?? []).filter((t) => t.id !== group.mentorId);
-  const target = choices.find((t) => t.id === targetId);
+  if (queries.error) return <p role="alert" className="text-[13px] text-clay-500">{queries.error}</p>;
+  if (!queries.data) return <PageSkeleton />;
 
-  async function submit(event: FormEvent) {
-    event.preventDefault();
-    setBusy(true);
-    setError(null);
-    setSent(null);
-    try {
-      if (isChange) {
-        if (!targetId) throw new Error("Choose the supervisor you want to move to.");
-        await repo.raiseSupervisorChange({ groupId: group!.id, targetId, reason: body.trim(), files });
-      } else {
-        await repo.raiseTicket({
-          groupId: group!.id,
-          studentId: student!.id,
-          subject: subject.trim(),
-          body: body.trim(),
-          category,
-          files,
-        });
-      }
-      setSubject("");
-      setBody("");
-      setFiles([]);
-      setTargetId("");
-      setCategory("general");
-      setSent(
-        isChange
-          ? `Sent to ${mentor?.fullName ?? "your supervisor"} and ${target?.fullName ?? "the supervisor you chose"}. The move happens once both approve.`
-          : "Query sent - your supervisor has been notified.",
-      );
-      void queries.reload();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not send the query.");
-    } finally {
-      setBusy(false);
-    }
-  }
+  const list = [...queries.data].sort((a, b) => lastActivity(b).localeCompare(lastActivity(a)));
+  const isNew = (q: Ticket) => newSince != null && lastActivity(q) >= newSince && lastActivity(q) !== q.createdAt;
+  const newCount = list.filter(isNew).length;
 
   return (
     <div className="space-y-6">
       <PageHeader
         eyebrow="Queries"
-        title="Student"
+        title="Your"
         emphasis="queries."
-        description="Raise a question, report a blocker, or request a change to your assigned supervisor."
+        description="Every query your group has raised, with the replies and decisions on it. New activity shows a badge in the sidebar."
         scene="queries"
         action={
-          <div className="hidden flex-wrap items-center gap-4 sm:flex">
-            <span className="flex items-center gap-2 text-[12.5px] text-stone-600">
-              <Avatar name={mentor?.fullName ?? "Supervisor"} src={mentor?.avatarUrl} size="sm" />
-              <span>
-                <span className="block font-semibold text-ink-900">{mentor?.fullName ?? "No supervisor yet"}</span>
-                <span className="block text-[11.5px] text-stone-500">Assigned Supervisor</span>
-              </span>
-            </span>
-            <span className="h-9 w-px bg-sand-200" aria-hidden />
-            <span className="flex items-center gap-2 text-[12.5px] text-stone-600">
-              <UsersRound className="size-4 text-stone-400" />
-              <span>
-                <span className="block font-semibold text-ink-900">Group {group.number}</span>
-                <span className="block text-[11.5px] text-stone-500">Your Group</span>
-              </span>
-            </span>
-            <span className="h-9 w-px bg-sand-200" aria-hidden />
-            <span className="flex items-center gap-2 text-[12.5px] text-stone-600">
-              <Mail className="size-4 text-stone-400" />
-              <span>
-                <span className="block font-semibold text-ink-900">You will be notified</span>
-                <span className="block text-[11.5px] text-stone-500">on response via portal and email</span>
-              </span>
-            </span>
-          </div>
+          <ButtonLink href="/student/queries/new" size="sm">
+            <Plus className="size-3.5" />
+            Raise a query
+          </ButtonLink>
         }
       />
 
-      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
-        {/* ------------------------- the student's queries ------------------------- */}
-        <div className="space-y-4">
-          <Card>
-            <CardHeader
-              title="Your queries"
-              description="View and track all the queries you have raised."
-            />
-            {shown.length === 0 ? (
-              <EmptyState
-                icon={<MessageCircleQuestion className="size-5" />}
-                title="No queries yet"
-                description="Questions you raise will appear here with their responses."
-                scene="queries"
-              />
-            ) : (
-              <ul className="divide-y divide-sand-200/70">
-                {shown.map((q) => (
-                  <QueryItem key={q.id} query={q} open={openId === q.id} onToggle={() => setOpenId(openId === q.id ? null : q.id)} />
-                ))}
-              </ul>
-            )}
-          </Card>
-        </div>
-
-        {/* ------------------------ raise a new query ------------------------ */}
-        <Card>
-          <CardHeader
-            title="Raise a New Query"
-            description="Select the type of query and provide the required details."
+      <Card>
+        <CardHeader
+          title={`Past queries (${list.length})`}
+          description={
+            newCount > 0
+              ? `${newCount} ${newCount === 1 ? "query has" : "queries have"} new activity since you last looked.`
+              : "Open a query to read the conversation."
+          }
+        />
+        {list.length === 0 ? (
+          <EmptyState
+            icon={<MessageCircleQuestion className="size-5" />}
+            title="No queries yet"
+            description="Questions your group raises will appear here with their responses."
+            scene="queries"
           />
-          <form onSubmit={submit} className="space-y-4 px-5 py-4">
-            <div role="radiogroup" aria-label="Kind of query" className="grid gap-3 sm:grid-cols-2">
-              <KindOption
-                active={!isChange}
-                onPick={() => setCategory("general")}
-                icon={<MessageCircleQuestion className="size-4" />}
-                title="General Query"
-                note="Questions, clarifications, or any academic/project related issues."
+        ) : (
+          <ul className="divide-y divide-sand-200/70">
+            {list.map((q) => (
+              <QueryItem
+                key={q.id}
+                query={q}
+                mine={q.studentId === student.id}
+                fresh={isNew(q)}
+                open={openId === q.id}
+                onToggle={() => setOpenId(openId === q.id ? null : q.id)}
               />
-              <KindOption
-                active={isChange}
-                disabled={!mentor || !isLeader || changeInProgress}
-                onPick={() => setCategory("supervisor_change")}
-                icon={<ArrowRightLeft className="size-4" />}
-                title="Change of Supervisor"
-                note={
-                  !mentor
-                    ? "Available once your group has a supervisor."
-                    : !isLeader
-                      ? "Only your team lead can ask to change supervisor."
-                      : changeInProgress
-                        ? "A change request is already in progress."
-                        : "Ask to move to a supervisor you choose. Your current and new supervisor both have to approve."
-                }
-              />
-            </div>
-
-            {isChange ? (
-              <Field
-                label="Move to"
-                htmlFor="q-target"
-                help={
-                  target && target.groupCount >= target.maxGroups
-                    ? `${target.fullName} already has ${target.groupCount} of ${target.maxGroups} groups, so the PBL office also has to approve.`
-                    : "Supervisors with a portal account. Both they and your current supervisor are asked."
-                }
-              >
-                <select
-                  id="q-target"
-                  required
-                  value={targetId}
-                  onChange={(e) => setTargetId(e.target.value)}
-                  className="h-10 w-full rounded-lg border border-sand-200 bg-white px-3 text-[13.5px] text-ink-900 focus:border-azure-500 focus:ring-3 focus:ring-azure-100 focus:outline-none"
-                >
-                  <option value="">
-                    {teachers.error ? "Could not load supervisors" : teachers.data ? "Choose a supervisor..." : "Loading supervisors..."}
-                  </option>
-                  {choices.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.fullName} - {t.groupCount}/{t.maxGroups} groups{t.groupCount >= t.maxGroups ? " (full)" : ""}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-            ) : (
-              <Field
-                label="Subject"
-                htmlFor="q-subject"
-                help="Examples: Regarding ETE Evaluation · Clarification on Milestone 2 · Issue with Submission Portal"
-              >
-                <Input
-                  id="q-subject"
-                  required
-                  maxLength={150}
-                  value={subject}
-                  onChange={(e) => setSubject(e.target.value)}
-                  placeholder="Write a short and specific subject for your query"
-                />
-              </Field>
-            )}
-
-            <Field
-              label="Query Details"
-              htmlFor="q-body"
-              help={
-                isChange
-                  ? "Explain the reason for the change. This becomes the recorded reason, seen by both supervisors and the PBL office."
-                  : "Describe your query in detail. Please include all relevant information (dates, context, subject, etc.) so that your supervisor can understand and respond effectively."
-              }
-            >
-              <Textarea
-                id="q-body"
-                rows={4}
-                required={isChange}
-                value={body}
-                onChange={(e) => setBody(e.target.value)}
-              />
-            </Field>
-
-            <div>
-              <p className="text-[13px] font-medium text-ink-800">
-                Attach Supporting Documents <span className="font-normal text-stone-500">(Optional)</span>
-              </p>
-              <FileDrop
-                id="q-files"
-                files={files}
-                onChange={setFiles}
-                multiple
-                accept=".pdf,.doc,.docx,.ppt,.pptx,.zip,image/png,image/jpeg"
-                specs="PDF, DOC, PPT, ZIP · up to 25 MB per file"
-                disabled={busy}
-              />
-            </div>
-
-            {error ? <p role="alert" className="text-[13px] text-clay-500">{error}</p> : null}
-            {sent ? <p role="status" className="text-[13px] text-sage-500">{sent}</p> : null}
-            <div className="flex justify-end">
-              <Button type="submit" loading={busy}>
-                <Send className="size-3.5" />
-                {isChange ? "Send change request" : "Submit Query"}
-              </Button>
-            </div>
-          </form>
-        </Card>
-      </div>
+            ))}
+          </ul>
+        )}
+      </Card>
     </div>
   );
 }
 
 /** One raised query: the header row, a preview, and its conversation when expanded. */
-function QueryItem({ query: q, open, onToggle }: { query: Ticket; open: boolean; onToggle: () => void }) {
+function QueryItem({
+  query: q,
+  mine,
+  fresh,
+  open,
+  onToggle,
+}: {
+  query: Ticket;
+  mine: boolean;
+  fresh: boolean;
+  open: boolean;
+  onToggle: () => void;
+}) {
   const isChange = q.category === "supervisor_change";
+  const status = statusOf(q);
   return (
-    <li className="px-5 py-4">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-[14.5px] font-semibold text-ink-900">{q.subject}</p>
-          <p className="mt-0.5 text-[12px] text-stone-500">
-            {isChange ? "Change of Supervisor" : "General Query"} · Submitted on {formatDateTime(q.createdAt)}
-          </p>
+    <li className={cn("px-5 py-4", fresh ? "bg-azure-50/40" : "")}>
+      <button type="button" onClick={onToggle} aria-expanded={open} className="block w-full text-left">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="flex flex-wrap items-center gap-2 text-[14.5px] font-semibold text-ink-900">
+              {q.subject}
+              {fresh ? (
+                <span className="rounded-full bg-azure-600 px-2 py-0.5 text-[10.5px] font-semibold tracking-wide text-white uppercase">
+                  New
+                </span>
+              ) : null}
+            </p>
+            <p className="mt-0.5 text-[12px] text-stone-500">
+              {isChange ? "Change of supervisor" : "General query"} · {mine ? "Raised by you" : `Raised by ${q.studentName ?? "a teammate"}`} ·{" "}
+              {formatDateTime(q.createdAt)}
+            </p>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <Badge tone={status.tone} dot>{status.label}</Badge>
+          </div>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
-          <span className="text-[12px] text-stone-400" title={formatDateTime(q.createdAt)}>
-            {timeAgo(q.createdAt)}
-          </span>
-          <button
-            type="button"
-            onClick={onToggle}
-            aria-expanded={open}
-            aria-label={open ? "Hide conversation" : "View conversation"}
-            className="rounded p-1 text-stone-400 hover:bg-white/70 hover:text-ink-800"
-          >
-            <MoreHorizontal className="size-4" />
-          </button>
-        </div>
-      </div>
 
-      <p className="mt-1.5 line-clamp-2 text-[13px] leading-relaxed text-stone-600">{q.body}</p>
-      <div className="mt-2 flex flex-wrap items-center gap-3">
-        {q.attachments.length > 0 ? (
-          <span className="flex items-center gap-1.5 text-[12px] text-stone-500">
-            <Paperclip className="size-3.5" />
-            {q.attachments.length} attachment{q.attachments.length > 1 ? "s" : ""}
+        <p className="mt-1.5 line-clamp-2 text-[13px] leading-relaxed text-stone-600">{q.body}</p>
+        <div className="mt-2 flex flex-wrap items-center gap-3">
+          {q.attachments.length > 0 ? (
+            <span className="flex items-center gap-1.5 text-[12px] text-stone-500">
+              <Paperclip className="size-3.5" />
+              {q.attachments.length} attachment{q.attachments.length > 1 ? "s" : ""}
+            </span>
+          ) : null}
+          <span className="text-[12px] text-stone-400">Last activity {timeAgo(lastActivity(q))}</span>
+          <span className="ml-auto text-[13px] font-medium text-azure-600">
+            {open ? "Hide conversation" : "View conversation"}
           </span>
-        ) : null}
-        <button
-          type="button"
-          onClick={onToggle}
-          className="ml-auto text-[13px] font-medium text-azure-600 hover:underline"
-        >
-          {open ? "Hide conversation" : "View conversation"}
-        </button>
-      </div>
+        </div>
+      </button>
 
       {open ? (
         <div className="mt-3 space-y-3 rounded-[14px] bg-ivory-200/50 p-3.5 ring-1 ring-sand-200/70">
+          <p className="text-[13px] leading-relaxed whitespace-pre-line text-ink-800">{q.body}</p>
           {isChange ? <ChangeProgress query={q} /> : null}
-          {q.attachments.map((a) => (
-            <FileKeyRow key={a.filePath} file={a} />
-          ))}
+          {q.attachments.length > 0 ? (
+            <FileChips bucket="submissions" files={q.attachments.map((a) => ({ path: a.filePath, name: a.fileName }))} />
+          ) : null}
           {q.reply ? (
             <p className="text-[13px] leading-relaxed text-ink-800">
               <span className="font-semibold text-azure-600">Supervisor&apos;s response: </span>
@@ -357,65 +213,8 @@ function QueryItem({ query: q, open, onToggle }: { query: Ticket; open: boolean;
                 : "Waiting for a response from your supervisor."}
             </p>
           ) : null}
-          <div className="flex justify-end">
-            <Badge tone={statusOf(q).tone} dot>
-              {statusOf(q).label}
-            </Badge>
-          </div>
         </div>
       ) : null}
     </li>
-  );
-}
-
-/** An attached file, opening in the in-portal viewer. */
-function FileKeyRow({ file }: { file: { filePath: string; fileName: string } }) {
-  return (
-    <div className="flex items-center justify-between gap-3 rounded-[10px] bg-white/80 px-3 py-2 ring-1 ring-sand-200/70">
-      <span className="flex min-w-0 items-center gap-2">
-        <Paperclip className="size-3.5 shrink-0 text-azure-600" />
-        <span className="truncate text-[12.5px] font-medium text-ink-900">{file.fileName}</span>
-      </span>
-      <FileLink bucket="submissions" path={file.filePath} name={file.fileName} />
-    </div>
-  );
-}
-
-function KindOption({
-  active,
-  disabled = false,
-  onPick,
-  icon,
-  title,
-  note,
-}: {
-  active: boolean;
-  disabled?: boolean;
-  onPick: () => void;
-  icon: React.ReactNode;
-  title: string;
-  note: string;
-}) {
-  return (
-    <button
-      type="button"
-      role="radio"
-      aria-checked={active}
-      disabled={disabled}
-      onClick={onPick}
-      className={cn(
-        "relative flex gap-3 rounded-[14px] border px-3.5 py-3 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-55",
-        active ? "border-azure-500 bg-azure-50/70 ring-2 ring-azure-100" : "border-sand-200 bg-white/70 hover:border-azure-100",
-      )}
-    >
-      <span className="absolute top-3 right-3 flex size-4 items-center justify-center rounded-full border-2 border-transparent bg-white">
-        {active ? <span className="size-4 rounded-full bg-azure-600" /> : null}
-      </span>
-      <span className={cn("mt-0.5 shrink-0", active ? "text-azure-600" : "text-stone-500")}>{icon}</span>
-      <span>
-        <span className="block pr-6 text-[13.5px] font-semibold text-ink-900">{title}</span>
-        <span className="block pr-6 text-[12px] text-stone-500">{note}</span>
-      </span>
-    </button>
   );
 }

@@ -80,7 +80,7 @@ export function MentorCard({
           ) : null}
         </ul>
 
-        <Link href="/student/queries" className="inline-block text-[13px] font-medium text-azure-600 hover:underline">
+        <Link href="/student/queries/new" className="inline-block text-[13px] font-medium text-azure-600 hover:underline">
           Raise a query with your supervisor →
         </Link>
       </CardBody>

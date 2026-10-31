@@ -188,7 +188,7 @@ export default function DashboardPage() {
                 ? `${openTickets} open ${openTickets === 1 ? "query" : "queries"} with your supervisor.`
                 : "Need help or have a problem? Raise a query - your supervisor sees it straight away."}
             </p>
-            <ButtonLink href={groupHref("/student/queries")} size="sm" variant="secondary">
+            <ButtonLink href={groupHref("/student/queries/new")} size="sm" variant="secondary">
               <MessageCircleQuestion className="size-3.5" />
               Raise a query
             </ButtonLink>

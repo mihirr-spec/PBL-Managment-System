@@ -4,7 +4,7 @@ import { useState } from "react";
 import { CheckCircle2, Inbox, ListChecks, Paperclip, Search, Clock } from "lucide-react";
 
 import { ChangeDecision, ChangeProgress, statusOf } from "@/components/shared/queries";
-import { FileLink } from "@/components/shared/file-link";
+import { FileChips } from "@/components/shared/file-link";
 import { RichText } from "@/components/shared/rich-text";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -231,13 +231,11 @@ function DetailPane({ query: q, me, onChanged }: { query: Ticket; me?: string; o
         {q.attachments.length > 0 ? (
           <div className="mt-4">
             <p className="text-[11px] font-semibold tracking-[0.14em] text-ink-400 uppercase">Attachments</p>
-            <ul className="mt-2 flex flex-wrap gap-2">
-              {q.attachments.map((a) => (
-                <li key={a.filePath}>
-                  <FileLink bucket="submissions" path={a.filePath} name={a.fileName} />
-                </li>
-              ))}
-            </ul>
+            <FileChips
+              bucket="submissions"
+              files={q.attachments.map((a) => ({ path: a.filePath, name: a.fileName }))}
+              className="mt-2"
+            />
           </div>
         ) : null}
 

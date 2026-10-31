@@ -3,7 +3,7 @@
 import { useState, type FormEvent, type ReactNode } from "react";
 import { ArrowRight, ArrowRightLeft, Building2, Check, CheckCircle2, Clock, CornerDownRight, X } from "lucide-react";
 
-import { FileLink } from "@/components/shared/file-link";
+import { FileChips } from "@/components/shared/file-link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/field";
@@ -103,13 +103,11 @@ function QueryRow({
       ) : null}
 
       {q.attachments.length > 0 ? (
-        <ul className="mt-2.5 flex flex-wrap gap-2">
-          {q.attachments.map((a) => (
-            <li key={a.filePath}>
-              <FileLink bucket="submissions" path={a.filePath} name={a.fileName} />
-            </li>
-          ))}
-        </ul>
+        <FileChips
+          bucket="submissions"
+          files={q.attachments.map((a) => ({ path: a.filePath, name: a.fileName }))}
+          className="mt-2.5"
+        />
       ) : null}
       {isChange ? <ChangeProgress query={q} /> : null}
       {q.reply ? (

@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { ArrowRightLeft, Award, ChevronDown, Crown, Eye, FileText, Info, Mail, MessageCircleQuestion, Save, Trophy } from "lucide-react";
 
-import { FileLink } from "@/components/shared/file-link";
+import { FileChips } from "@/components/shared/file-link";
 import { GradingPlanCard } from "@/components/staff/grading-plan";
 import { QueryList } from "@/components/shared/queries";
 import { ChangeSupervisorForm, SupervisorHistory } from "@/components/staff/supervisor-change";
@@ -531,22 +531,12 @@ function WeekRow({
               <div>
                 <p className="text-[11px] font-semibold tracking-[0.12em] text-ink-400 uppercase">Submitted report</p>
                 {report!.files.length > 0 ? (
-                  <div className="mt-2 space-y-1.5">
-                    {report!.files.map((f) => (
-                      <div
-                        key={f.path}
-                        className="flex items-center justify-between gap-3 rounded-[12px] bg-white/70 px-3 py-2.5 ring-1 ring-sand-200"
-                      >
-                        <div className="min-w-0">
-                          <p className="text-[13px] font-medium break-words text-ink-900">{f.name}</p>
-                          <p className="text-[11.5px] text-stone-500">
-                            {f.name.split(".").pop()?.toUpperCase() ?? "File"} · Submitted {timeAgo(report!.submittedAt)}
-                          </p>
-                        </div>
-                        <FileLink bucket="submissions" path={f.path} name={f.name} variant="icon" />
-                      </div>
-                    ))}
-                  </div>
+                  <FileChips
+                    bucket="submissions"
+                    files={report!.files}
+                    meta={`Sent ${timeAgo(report!.submittedAt)}`}
+                    className="mt-2"
+                  />
                 ) : (
                   <p className="mt-2 text-[12.5px] text-stone-500">No file was attached to this submission.</p>
                 )}

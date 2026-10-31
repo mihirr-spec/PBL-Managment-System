@@ -41,6 +41,8 @@ interface SessionContextValue {
     roles?: Role[],
   ) => Promise<{ ok: true; user: User } | { ok: false; error: string }>;
   signOut: () => void;
+  /** Reloads the signed-in user's profile (after changing their photo, say). */
+  refreshUser: () => Promise<void>;
 }
 
 const SessionContext = createContext<SessionContextValue | null>(null);
@@ -95,9 +97,16 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     });
   }, [router]);
 
+  const refreshUser = useCallback(async () => {
+    const { data } = await supabase.auth.getUser();
+    if (!data.user) return;
+    const next = await loadUser(data.user.id, data.user.last_sign_in_at).catch(() => null);
+    if (next) setUser(next);
+  }, []);
+
   const value = useMemo(
-    () => ({ user, loading, signIn, signOut }),
-    [user, loading, signIn, signOut],
+    () => ({ user, loading, signIn, signOut, refreshUser }),
+    [user, loading, signIn, signOut, refreshUser],
   );
 
   return (

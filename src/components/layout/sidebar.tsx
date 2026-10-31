@@ -21,12 +21,17 @@ export function Sidebar({
 }) {
   const pathname = usePathname();
   const { user, signOut } = useSession();
-  const { student, unreadCount, invitations } = usePortal();
+  const { student, unreadCount, invitations, notifications } = usePortal();
 
   if (!user) return null;
 
   const sections = NAV_BY_ROLE[user.role];
-  const counts = { notifications: unreadCount, invitations: invitations.length };
+  const counts = {
+    notifications: unreadCount,
+    invitations: invitations.length,
+    // Unread replies and decisions on the group's queries.
+    queries: notifications.filter((n) => n.kind === "ticket" && !n.read).length,
+  };
 
   return (
     <>
@@ -122,7 +127,7 @@ export function Sidebar({
           <div className="flex items-center gap-3 rounded-lg px-2 py-2">
             <Avatar
               name={student?.fullName ?? user.displayName}
-              src={student ? (student.avatarUrl ?? STUDENT_AVATAR) : undefined}
+              src={student ? (student.avatarUrl ?? STUDENT_AVATAR) : user.avatarUrl}
               size="md"
             />
             <div className="min-w-0 flex-1">
