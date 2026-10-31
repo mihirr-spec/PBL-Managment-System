@@ -322,8 +322,8 @@ function RequestCard({ request, onDecided }: { request: Request; onDecided: () =
           ) : null}
           {group?.projectIdea ? (
             <div>
-              <p className="text-[11px] font-semibold tracking-[0.12em] text-ink-400 uppercase">Project idea</p>
-              <p className="mt-1 text-[13.5px] leading-relaxed text-stone-600">{group.projectIdea}</p>
+              <p className="text-[11px] font-semibold tracking-[0.12em] text-ink-400 uppercase">Project description</p>
+              <p className="mt-1 text-[13.5px] leading-relaxed whitespace-pre-line text-stone-600">{group.projectIdea}</p>
             </div>
           ) : null}
           {group ? (

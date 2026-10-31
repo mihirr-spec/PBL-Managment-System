@@ -69,7 +69,7 @@ export function GroupTable({
                     <td className="max-w-[20rem] px-5 py-3.5">
                       <p className="truncate text-[13.5px] font-medium text-ink-900">{g.projectTitle}</p>
                       <p className="mt-0.5 line-clamp-2 text-[12px] leading-snug text-stone-500" title={g.projectIdea || undefined}>
-                        {g.projectIdea || "No idea described yet."}
+                        {g.projectIdea || "No description yet."}
                       </p>
                       <p className="mt-1 text-[11px] text-stone-400">
                         {g.domain || "No domain"} · {g.progress}% done

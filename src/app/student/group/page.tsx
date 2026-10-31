@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { Crown, Hourglass, RotateCcw, Send, UserPlus, X } from "lucide-react";
+import { Crown, Hourglass, Pencil, RotateCcw, Send, UserPlus, X } from "lucide-react";
 
 import { MentorCard } from "@/components/profile/mentor-card";
 import { MentorPicker } from "@/components/student/mentor-picker";
@@ -81,6 +81,81 @@ export default function GroupPage() {
   );
 }
 
+/* ---------------------------------------------------- project description */
+
+/** What the project is about. The team and the supervisor see it; the team lead can edit it. */
+function ProjectDescription({ group, isLeader, onChanged }: { group: Group; isLeader: boolean; onChanged: () => void }) {
+  const [editing, setEditing] = useState(false);
+  const [text, setText] = useState(group.projectIdea);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function save() {
+    if (text.trim().length < 30) return setError("Write a few sentences - at least 30 characters.");
+    setBusy(true);
+    setError(null);
+    try {
+      await repo.setGroupIdea(text.trim());
+      setEditing(false);
+      onChanged();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not save the description.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <CardBody className="border-t border-sand-200/60">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-[11px] font-semibold tracking-[0.12em] text-ink-400 uppercase">Project description</p>
+        {isLeader && !editing ? (
+          <button
+            type="button"
+            onClick={() => {
+              setText(group.projectIdea);
+              setEditing(true);
+            }}
+            className="flex items-center gap-1 text-[12.5px] font-medium text-azure-600 hover:underline"
+          >
+            <Pencil className="size-3.5" />
+            {group.projectIdea ? "Edit" : "Add"}
+          </button>
+        ) : null}
+      </div>
+      {editing ? (
+        <div className="mt-2 space-y-2">
+          <Textarea
+            rows={5}
+            maxLength={1500}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            aria-label="Project description"
+            placeholder="What you will build, who it is for and how."
+          />
+          <p className="text-[11.5px] text-stone-400">{text.length}/1500 · Your supervisor sees this.</p>
+          {error ? <p role="alert" className="text-[12.5px] text-clay-500">{error}</p> : null}
+          <div className="flex gap-2">
+            <Button size="sm" loading={busy} onClick={() => void save()}>
+              Save
+            </Button>
+            <Button size="sm" variant="ghost" disabled={busy} onClick={() => setEditing(false)}>
+              Cancel
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <p className="mt-1.5 text-[13.5px] leading-relaxed whitespace-pre-line text-stone-600">
+          {group.projectIdea ||
+            (isLeader
+              ? "No description yet. Add one so your supervisor knows what you plan."
+              : "Your team lead has not described the project yet.")}
+        </p>
+      )}
+    </CardBody>
+  );
+}
+
 /* ------------------------------------------------------------- group view */
 
 function GroupView({
@@ -101,7 +176,7 @@ function GroupView({
     <div className="space-y-6">
       <div className="grid gap-5 lg:grid-cols-3">
         <Card className="lg:col-span-2">
-          <CardHeader title="Members" description={group.projectIdea ? undefined : "Add a project idea so your supervisor knows what you plan."} />
+          <CardHeader title="Members" description={group.projectIdea ? undefined : "Add a project description so your supervisor knows what you plan."} />
           <ul className="divide-y divide-sand-200/70">
             {group.members.map((m) => (
               <li key={m.studentId} className="flex items-center gap-3 px-5 py-3">
@@ -118,12 +193,7 @@ function GroupView({
             ))}
           </ul>
           <InvitationsPanel isLeader={isLeader} memberCount={group.members.length} />
-          {group.projectIdea ? (
-            <CardBody className="border-t border-sand-200/60">
-              <p className="text-[11px] font-semibold tracking-[0.12em] text-ink-400 uppercase">Project idea</p>
-              <p className="mt-1.5 text-[13.5px] leading-relaxed text-stone-600">{group.projectIdea}</p>
-            </CardBody>
-          ) : null}
+          <ProjectDescription group={group} isLeader={isLeader} onChanged={onChanged} />
         </Card>
         {mentorCard}
       </div>

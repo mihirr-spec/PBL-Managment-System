@@ -63,10 +63,10 @@ export function GroupDetail({ groupId, isAdmin = false }: { groupId: string; isA
 
       <div className="grid gap-5 lg:grid-cols-3">
         <Card className="lg:col-span-2">
-          <CardHeader title="Project idea" />
+          <CardHeader title="Project description" description="Written by the team lead." />
           <CardBody className="space-y-4">
             <p className="text-[14px] leading-relaxed whitespace-pre-line text-stone-600">
-              {group.projectIdea || "The group has not described its idea yet."}
+              {group.projectIdea || "The team has not described its project yet."}
             </p>
             <div className="max-w-sm">
               <div className="mb-1 flex justify-between text-[12px] text-stone-500">

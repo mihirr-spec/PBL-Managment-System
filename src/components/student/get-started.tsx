@@ -70,7 +70,9 @@ export function GetStarted({
     setTeamError(null);
     const teammate = { fullName: mate.fullName.trim(), registrationNumber: mate.registrationNumber.trim() };
     if (!title.trim() && !group) return setTeamError("Give your project title first.");
-    if (!group && !idea.trim()) return setTeamError("Describe your project idea first - your supervisor reads it before approving.");
+    if (!group && idea.trim().length < 30) {
+      return setTeamError("Describe your project in a few sentences first - your supervisor reads it before approving.");
+    }
     if (!teammate.fullName || !teammate.registrationNumber) {
       return setTeamError("Give your teammate's name and registration number.");
     }
@@ -164,13 +166,19 @@ export function GetStarted({
                 disabled={groupId != null}
               />
             </Field>
-            <Field label="Project idea" htmlFor="gs-idea" help="A few sentences: what you will build and why. Your supervisor reads this before approving your team.">
+            <Field
+              label="Project description"
+              htmlFor="gs-idea"
+              help={`What you will build, who it is for and how. Your supervisor reads this before approving your team. ${(group?.projectIdea || idea).length}/1500`}
+            >
               <Textarea
                 id="gs-idea"
-                rows={2}
-                value={group?.projectIdea ?? idea}
+                rows={5}
+                maxLength={1500}
+                value={group?.projectIdea || idea}
                 onChange={(e) => setIdea(e.target.value)}
-                placeholder="e.g. A campus wayfinder app that shows queues and class schedules"
+                disabled={Boolean(group?.projectIdea)}
+                placeholder="e.g. A campus wayfinder app for MUJ. Students search for a room or office and get walking directions, live canteen queues and the day's class schedule. Built with React Native and Supabase."
               />
             </Field>
             {group && !group.projectIdea && idea.trim() ? (
@@ -184,11 +192,11 @@ export function GetStarted({
                     await repo.setGroupIdea(idea.trim());
                     await onGroupCreated();
                   } catch (e) {
-                    setTeamError(e instanceof Error ? e.message : "Could not save the idea.");
+                    setTeamError(e instanceof Error ? e.message : "Could not save the description.");
                   }
                 }}
               >
-                Save idea
+                Save description
               </Button>
             ) : null}
 
