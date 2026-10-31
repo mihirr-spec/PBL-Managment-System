@@ -552,18 +552,48 @@ export async function signOutEverywhere(): Promise<void> {
   await supabase.auth.signOut();
 }
 
-export async function changePassword(
+/**
+ * Emails a one-time code for setting a new password (Supabase's recovery
+ * email, sent through the project's SMTP). Works for every role, signed in or not.
+ */
+export async function sendPasswordCode(email: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase());
+  if (error?.code === "over_email_send_rate_limit" || error?.status === 429) {
+    return { ok: false, error: "Too many emails were sent just now. Wait a minute and try again." };
+  }
+  return error ? { ok: false, error: error.message } : { ok: true };
+}
+
+/**
+ * Checks the emailed code and stores the new password. The old password
+ * stops working at once. A correct code also signs the person in.
+ */
+export async function resetPasswordWithCode(
   email: string,
-  currentPassword: string,
+  code: string,
   newPassword: string,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  if (newPassword.length < 8) {
-    return { ok: false, error: "New password must be at least 8 characters." };
+  if (newPassword.length < 8) return { ok: false, error: "The new password must be at least 8 characters." };
+  const verified = await supabase.auth.verifyOtp({
+    email: email.trim().toLowerCase(),
+    token: code.replace(/\s/g, ""),
+    type: "recovery",
+  });
+  if (verified.error || !verified.data.user) {
+    return {
+      ok: false,
+      error: /expired/i.test(verified.error?.message ?? "")
+        ? "This code has expired. Send a new one and try again."
+        : "That code is not right. Check the latest email and try again.",
+    };
   }
-  const check = await supabase.auth.signInWithPassword({ email, password: currentPassword });
-  if (check.error) return { ok: false, error: "Your current password is incorrect." };
   const { error } = await supabase.auth.updateUser({ password: newPassword });
-  if (error) return { ok: false, error: error.message };
+  if (error) {
+    return {
+      ok: false,
+      error: error.code === "same_password" ? "Choose a password different from your old one." : error.message,
+    };
+  }
   return { ok: true };
 }
 

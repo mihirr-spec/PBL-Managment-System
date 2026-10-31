@@ -15,6 +15,7 @@ import {
   Mail,
 } from "lucide-react";
 
+import { PasswordReset } from "@/components/auth/password-reset";
 import { VerifyCode } from "@/components/auth/verify-code";
 import { HOME_BY_ROLE, useSession } from "@/lib/auth/session";
 import { resendConfirmation } from "@/lib/data/repository";
@@ -88,6 +89,8 @@ export function LoginForm({ verified = false, initialTab }: { verified?: boolean
   const [remember, setRemember] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  // While setting a new password the code signs the person in; stay here until it is saved.
+  const [resetting, setResetting] = useState(false);
   const [unverified, setUnverified] = useState(false);
   /** Address waiting for its verification code, if any. */
   const [verifying, setVerifying] = useState<string | null>(null);
@@ -99,8 +102,8 @@ export function LoginForm({ verified = false, initialTab }: { verified?: boolean
   useEffect(() => {
     // Not while a submit is in flight: a wrong-tab sign-in is briefly signed
     // in before it is rejected and signed out again.
-    if (!loading && user && !submitting) router.replace(HOME_BY_ROLE[user.role]);
-  }, [loading, user, submitting, router]);
+    if (!loading && user && !submitting && !resetting) router.replace(HOME_BY_ROLE[user.role]);
+  }, [loading, user, submitting, resetting, router]);
 
   /** The full address: what was typed plus the tab's domain, unless they typed one. */
   const fullEmail = (typed: string) => (typed.includes("@") ? typed.trim() : `${typed.trim()}@${tab.domain}`);
@@ -149,6 +152,19 @@ export function LoginForm({ verified = false, initialTab }: { verified?: boolean
   }
 
   if (verifying) return <VerifyCode email={verifying} onBack={() => setVerifying(null)} />;
+
+  if (resetting) {
+    return (
+      <div className="mt-6">
+        <PasswordReset
+          initialEmail={email.trim() ? fullEmail(email) : ""}
+          onDone={() => setResetting(false)}
+          onBack={() => setResetting(false)}
+          backLabel="Back to sign in"
+        />
+      </div>
+    );
+  }
 
   return (
     <>
@@ -253,11 +269,10 @@ export function LoginForm({ verified = false, initialTab }: { verified?: boolean
           </label>
           <button
             type="button"
-            onClick={() =>
-              setError(
-                "Password resets are handled by the academic office in this release.",
-              )
-            }
+            onClick={() => {
+              setError(null);
+              setResetting(true);
+            }}
             className="text-[14px] text-azure-600 hover:underline"
           >
             Forgot password?

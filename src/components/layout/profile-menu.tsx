@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { LogOut, Settings, UserRound } from "lucide-react";
+import { KeyRound, LogOut, UserRound } from "lucide-react";
 
+import { ChangePasswordDialog } from "@/components/auth/change-password-dialog";
 import { AvatarEditor } from "@/components/profile/avatar-editor";
 import { Avatar, STUDENT_AVATAR } from "@/components/ui/avatar";
 import { useSession } from "@/lib/auth/session";
@@ -26,6 +27,7 @@ export function ProfileMenu() {
   const { user, signOut, refreshUser } = useSession();
   const { student } = usePortal();
   const [open, setOpen] = useState(false);
+  const [changing, setChanging] = useState(false);
   const root = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -102,11 +104,20 @@ export function ProfileMenu() {
                 <MenuLink href="/student/profile" icon={<UserRound className="size-4" />} onPick={() => setOpen(false)}>
                   My profile
                 </MenuLink>
-                <MenuLink href="/student/settings" icon={<Settings className="size-4" />} onPick={() => setOpen(false)}>
-                  Settings
-                </MenuLink>
               </>
             ) : null}
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setOpen(false);
+                setChanging(true);
+              }}
+              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-[13.5px] text-ink-800 transition-colors hover:bg-azure-50"
+            >
+              <KeyRound className="size-4 text-stone-500" />
+              Change password
+            </button>
             <button
               type="button"
               role="menuitem"
@@ -119,6 +130,7 @@ export function ProfileMenu() {
           </div>
         </div>
       ) : null}
+      {changing ? <ChangePasswordDialog onClose={() => setChanging(false)} /> : null}
     </div>
   );
 }

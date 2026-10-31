@@ -5,7 +5,7 @@ import { ShieldCheck } from "lucide-react";
 import { MentorCard } from "@/components/profile/mentor-card";
 import { PersonalInfoSection } from "@/components/profile/personal-info-section";
 import { ProfilePhotoCard } from "@/components/profile/profile-photo-card";
-import { ButtonLink } from "@/components/ui/button";
+import { ChangePasswordButton } from "@/components/auth/change-password-dialog";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { ReadOnlyField } from "@/components/ui/field";
 import { PageHeader } from "@/components/ui/page-header";
@@ -26,9 +26,7 @@ export default function ProfilePage() {
         scene="profile"
         description="Personal details are yours to maintain. Academic information is issued by the university and shown here for reference."
         action={
-          <ButtonLink href="/student/settings" variant="secondary" size="sm" className="bg-white/70 backdrop-blur-md">
-            Account settings
-          </ButtonLink>
+          <ChangePasswordButton />
         }
       />
 

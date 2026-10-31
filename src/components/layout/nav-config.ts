@@ -9,7 +9,6 @@ import {
   Megaphone,
   MessageCircleQuestion,
   MessagesSquare,
-  Settings,
   Trophy,
   UserPlus,
   UserRound,
@@ -75,7 +74,6 @@ export const NAV_BY_ROLE: Record<Role, NavSection[]> = {
       heading: "Account",
       items: [
         { label: "My Profile", href: "/student/profile", icon: UserRound },
-        { label: "Settings", href: "/student/settings", icon: Settings },
       ],
     },
   ],
