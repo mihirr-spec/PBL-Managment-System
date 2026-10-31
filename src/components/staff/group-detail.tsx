@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import { ArrowRightLeft, Award, ChevronDown, Crown, Eye, FileText, Info, Mail, MessageCircleQuestion, Save, Trophy } from "lucide-react";
 
 import { FileChips } from "@/components/shared/file-link";
+import { RichEditor } from "@/components/shared/rich-editor";
 import { GradingPlanCard } from "@/components/staff/grading-plan";
 import { QueryList } from "@/components/shared/queries";
 import { ChangeSupervisorForm, SupervisorHistory } from "@/components/staff/supervisor-change";
@@ -532,7 +533,16 @@ function WeekRow({
               ) : null}
 
               <div>
-                <p className="text-[11px] font-semibold tracking-[0.12em] text-ink-400 uppercase">Submitted report</p>
+                <p className="text-[11px] font-semibold tracking-[0.12em] text-ink-400 uppercase">Worked on</p>
+                {report!.summary ? (
+                  <RichText text={report!.summary} className="mt-1.5 text-[13.5px] text-ink-800" />
+                ) : (
+                  <p className="mt-1.5 text-[12.5px] text-stone-500">The team did not add a summary.</p>
+                )}
+              </div>
+
+              <div>
+                <p className="text-[11px] font-semibold tracking-[0.12em] text-ink-400 uppercase">Report file</p>
                 {report!.files.length > 0 ? (
                   <FileChips
                     bucket="submissions"
@@ -563,18 +573,18 @@ function WeekRow({
                       onChange={(e) => setGrade(e.target.value)}
                     />
                   </Field>
-                  <Field label="Feedback for student" htmlFor={`f-${week}`}>
-                    <Textarea
+                  <Field label="Feedback for the team" htmlFor={`f-${week}`}>
+                    <RichEditor
                       id={`f-${week}`}
                       rows={3}
                       maxLength={500}
                       value={feedback}
-                      onChange={(e) => setFeedback(e.target.value)}
+                      onChange={setFeedback}
                       placeholder="What went well, what to improve"
+                      hint=""
                     />
                   </Field>
                 </div>
-                <p className="mt-1 text-right text-[11px] text-stone-400">{feedback.length}/500</p>
                 {error ? <p role="alert" className="mt-1 text-[12.5px] text-clay-500">{error}</p> : null}
                 <div className="mt-2 flex items-center gap-2">
                   <Button type="submit" size="sm" loading={busy}>
