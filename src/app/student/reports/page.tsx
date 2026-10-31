@@ -5,7 +5,6 @@ import { ChevronDown, ClipboardList, MessageSquareText, Presentation, ScrollText
 
 import { FileChips, FileRow } from "@/components/shared/file-link";
 import { Avatar } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/card";
@@ -152,6 +151,23 @@ function Stat({ value, label }: { value: ReactNode; label: string }) {
   );
 }
 
+/** A small grey "Status" label with the value under it in the status colour. */
+function StatusText({ tone, children }: { tone: "blue" | "grey" | "amber"; children: ReactNode }) {
+  return (
+    <span className="shrink-0 text-right leading-tight">
+      <span className="block text-[11.5px] text-stone-500">Status</span>
+      <span
+        className={cn(
+          "block text-[13px] font-semibold",
+          tone === "blue" ? "text-azure-600" : tone === "amber" ? "text-gold-600" : "text-stone-600",
+        )}
+      >
+        {children}
+      </span>
+    </span>
+  );
+}
+
 /** A collapsible week: the header line, then the report (or the submission form). */
 function WeekRow({
   week,
@@ -184,15 +200,7 @@ function WeekRow({
         <span className="min-w-0 flex-1 truncate text-[13.5px] text-stone-500">
           {report ? `Submitted on ${stamp(report.submittedAt)}` : "Not submitted yet"}
         </span>
-        <span
-          className={cn(
-            "inline-flex shrink-0 items-center gap-2 rounded-full px-3 py-1 text-[12.5px] font-medium",
-            graded ? "bg-azure-50 text-azure-600" : "bg-ivory-200/80 text-stone-600",
-          )}
-        >
-          <span className={cn("size-1.5 rounded-full", graded ? "bg-azure-600" : "bg-stone-500")} />
-          {status}
-        </span>
+        <StatusText tone={graded ? "blue" : "grey"}>{status}</StatusText>
         <ChevronDown className={cn("size-4 shrink-0 text-stone-500 transition-transform", open && "rotate-180")} />
       </button>
 
@@ -405,7 +413,7 @@ function MilestonePhase({
             <p className="text-[12px] text-stone-500">{note}</p>
           </div>
         </div>
-        <Badge tone="gold" dot>{note.replace("After ", "Due after ")}</Badge>
+        <StatusText tone="amber">{note.replace("After ", "Due after ")}</StatusText>
       </div>
       <div className="grid gap-3 border-t border-sand-200/70 px-5 py-4 sm:grid-cols-2">
         {items.map(({ slot, label, icon: Icon }) => {

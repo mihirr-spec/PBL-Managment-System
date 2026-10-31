@@ -174,7 +174,7 @@ export function FileRow({
         disabled={saving}
         aria-label={`Download ${name}`}
         title="Download"
-        className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-sand-200 text-azure-600 transition-colors hover:bg-azure-50 disabled:opacity-60"
+        className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-azure-50 text-azure-600 transition-colors hover:bg-azure-100 disabled:opacity-60"
       >
         <Download className="size-4" />
       </button>
