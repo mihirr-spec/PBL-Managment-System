@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import { ArrowRightLeft, Clock, Mail, MessageCircleQuestion, Paperclip, Send, UsersRound, MoreHorizontal } from "lucide-react";
 
 import { FileLink } from "@/components/shared/file-link";
+import { ChangeProgress, statusOf } from "@/components/shared/queries";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button, ButtonLink } from "@/components/ui/button";
@@ -16,7 +17,7 @@ import * as repo from "@/lib/data/repository";
 import { usePortal } from "@/lib/data/portal-store";
 import type { Ticket, TicketCategory } from "@/lib/types";
 import { useLoad } from "@/lib/use-load";
-import { formatDateTime, timeAgo, cn, initials } from "@/lib/utils";
+import { formatDateTime, timeAgo, cn } from "@/lib/utils";
 
 export default function QueriesPage() {
   const { loading, student, group, mentor } = usePortal();
@@ -29,6 +30,8 @@ export default function QueriesPage() {
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState<string | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
+  const [targetId, setTargetId] = useState("");
+  const teachers = useLoad(() => repo.listPortalTeachers(), category === "supervisor_change" ? "portal-teachers" : null);
 
   if (loading || !student) return <PageSkeleton />;
 
@@ -51,6 +54,9 @@ export default function QueriesPage() {
     (q) => q.category === "supervisor_change" && (q.status === "open" || q.status === "forwarded"),
   );
   const shown = (queries.data ?? []).filter((q) => q.studentId === student.id);
+  const isLeader = group.leaderStudentId === student.id;
+  const choices = (teachers.data ?? []).filter((t) => t.id !== group.mentorId);
+  const target = choices.find((t) => t.id === targetId);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -58,21 +64,27 @@ export default function QueriesPage() {
     setError(null);
     setSent(null);
     try {
-      await repo.raiseTicket({
-        groupId: group!.id,
-        studentId: student!.id,
-        subject: isChange ? "Change of supervisor" : subject.trim(),
-        body: body.trim(),
-        category,
-        files: isChange ? [] : files,
-      });
+      if (isChange) {
+        if (!targetId) throw new Error("Choose the supervisor you want to move to.");
+        await repo.raiseSupervisorChange({ groupId: group!.id, targetId, reason: body.trim(), files });
+      } else {
+        await repo.raiseTicket({
+          groupId: group!.id,
+          studentId: student!.id,
+          subject: subject.trim(),
+          body: body.trim(),
+          category,
+          files,
+        });
+      }
       setSubject("");
       setBody("");
       setFiles([]);
+      setTargetId("");
       setCategory("general");
       setSent(
         isChange
-          ? `Sent to ${mentor?.fullName ?? "your supervisor"}. Once they approve it, the administrator chooses your new supervisor.`
+          ? `Sent to ${mentor?.fullName ?? "your supervisor"} and ${target?.fullName ?? "the supervisor you chose"}. The move happens once both approve.`
           : "Query sent - your supervisor has been notified.",
       );
       void queries.reload();
@@ -162,21 +174,50 @@ export default function QueriesPage() {
               />
               <KindOption
                 active={isChange}
-                disabled={!mentor || changeInProgress}
+                disabled={!mentor || !isLeader || changeInProgress}
                 onPick={() => setCategory("supervisor_change")}
                 icon={<ArrowRightLeft className="size-4" />}
                 title="Change of Supervisor"
                 note={
                   !mentor
                     ? "Available once your group has a supervisor."
-                    : changeInProgress
-                      ? "A change request is already in progress."
-                      : "Request a change of supervisor. (Requires valid reason and will be approved by administrator.)"
+                    : !isLeader
+                      ? "Only your team lead can ask to change supervisor."
+                      : changeInProgress
+                        ? "A change request is already in progress."
+                        : "Ask to move to a supervisor you choose. Your current and new supervisor both have to approve."
                 }
               />
             </div>
 
-            {isChange ? null : (
+            {isChange ? (
+              <Field
+                label="Move to"
+                htmlFor="q-target"
+                help={
+                  target && target.groupCount >= target.maxGroups
+                    ? `${target.fullName} already has ${target.groupCount} of ${target.maxGroups} groups, so the PBL office also has to approve.`
+                    : "Supervisors with a portal account. Both they and your current supervisor are asked."
+                }
+              >
+                <select
+                  id="q-target"
+                  required
+                  value={targetId}
+                  onChange={(e) => setTargetId(e.target.value)}
+                  className="h-10 w-full rounded-lg border border-sand-200 bg-white px-3 text-[13.5px] text-ink-900 focus:border-azure-500 focus:ring-3 focus:ring-azure-100 focus:outline-none"
+                >
+                  <option value="">
+                    {teachers.error ? "Could not load supervisors" : teachers.data ? "Choose a supervisor..." : "Loading supervisors..."}
+                  </option>
+                  {choices.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.fullName} - {t.groupCount}/{t.maxGroups} groups{t.groupCount >= t.maxGroups ? " (full)" : ""}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            ) : (
               <Field
                 label="Subject"
                 htmlFor="q-subject"
@@ -198,7 +239,7 @@ export default function QueriesPage() {
               htmlFor="q-body"
               help={
                 isChange
-                  ? "Explain the reason for the change. This becomes the recorded reason, seen by your supervisor and the administrator."
+                  ? "Explain the reason for the change. This becomes the recorded reason, seen by both supervisors and the PBL office."
                   : "Describe your query in detail. Please include all relevant information (dates, context, subject, etc.) so that your supervisor can understand and respond effectively."
               }
             >
@@ -211,22 +252,20 @@ export default function QueriesPage() {
               />
             </Field>
 
-            {isChange ? null : (
-              <div>
-                <p className="text-[13px] font-medium text-ink-800">
-                  Attach Supporting Documents <span className="font-normal text-stone-500">(Optional)</span>
-                </p>
-                <FileDrop
-                  id="q-files"
-                  files={files}
-                  onChange={setFiles}
-                  multiple
-                  accept=".pdf,.doc,.docx,.ppt,.pptx,.zip,image/png,image/jpeg"
-                  specs="PDF, DOC, PPT, ZIP · up to 25 MB per file"
-                  disabled={busy}
-                />
-              </div>
-            )}
+            <div>
+              <p className="text-[13px] font-medium text-ink-800">
+                Attach Supporting Documents <span className="font-normal text-stone-500">(Optional)</span>
+              </p>
+              <FileDrop
+                id="q-files"
+                files={files}
+                onChange={setFiles}
+                multiple
+                accept=".pdf,.doc,.docx,.ppt,.pptx,.zip,image/png,image/jpeg"
+                specs="PDF, DOC, PPT, ZIP · up to 25 MB per file"
+                disabled={busy}
+              />
+            </div>
 
             {error ? <p role="alert" className="text-[13px] text-clay-500">{error}</p> : null}
             {sent ? <p role="status" className="text-[13px] text-sage-500">{sent}</p> : null}
@@ -290,6 +329,7 @@ function QueryItem({ query: q, open, onToggle }: { query: Ticket; open: boolean;
 
       {open ? (
         <div className="mt-3 space-y-3 rounded-[14px] bg-ivory-200/50 p-3.5 ring-1 ring-sand-200/70">
+          {isChange ? <ChangeProgress query={q} /> : null}
           {q.attachments.map((a) => (
             <FileKeyRow key={a.filePath} file={a} />
           ))}
@@ -302,7 +342,7 @@ function QueryItem({ query: q, open, onToggle }: { query: Ticket; open: boolean;
           ) : null}
           {q.adminReply ? (
             <p className="text-[13px] leading-relaxed text-ink-800">
-              <span className="font-semibold text-sage-500">Administrator: </span>
+              <span className="font-semibold text-sage-500">{isChange ? "Outcome: " : "Administrator: "}</span>
               {q.adminReply}
               {q.adminRepliedAt ? <span className="text-[11.5px] text-stone-500"> · {timeAgo(q.adminRepliedAt)}</span> : null}
             </p>
@@ -310,12 +350,16 @@ function QueryItem({ query: q, open, onToggle }: { query: Ticket; open: boolean;
           {!q.reply && !q.adminReply ? (
             <p className="flex items-center gap-1.5 text-[12.5px] text-stone-500">
               <Clock className="size-3.5" />
-              Waiting for a response from your supervisor.
+              {isChange
+                ? q.status === "forwarded"
+                  ? "Both supervisors approved. Waiting for the PBL office."
+                  : "Waiting for both supervisors to respond."
+                : "Waiting for a response from your supervisor."}
             </p>
           ) : null}
           <div className="flex justify-end">
-            <Badge tone={q.status === "open" ? "gold" : "sage"} dot>
-              {q.status === "resolved" ? "Resolved" : "Open"}
+            <Badge tone={statusOf(q).tone} dot>
+              {statusOf(q).label}
             </Badge>
           </div>
         </div>

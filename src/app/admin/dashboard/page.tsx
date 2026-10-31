@@ -4,9 +4,9 @@ import { useState } from "react";
 import { GraduationCap, MessageCircleQuestion, Shuffle, UserX, UsersRound } from "lucide-react";
 
 import { StatTile } from "@/components/dashboard/stat-tile";
-import { QueryList } from "@/components/shared/queries";
+import { AdminChangeDecision, QueryList } from "@/components/shared/queries";
 import { GroupTable } from "@/components/staff/group-table";
-import { ChangeSupervisorForm, SupervisorHistory } from "@/components/staff/supervisor-change";
+import { SupervisorHistory } from "@/components/staff/supervisor-change";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, EmptyState } from "@/components/ui/card";
 import { DashboardHero } from "@/components/ui/page-header";
@@ -23,7 +23,7 @@ export default function AdminDashboardPage() {
       repo.listTickets(),
       repo.listSupervisorChanges(),
     ]);
-    // Change-of-supervisor requests the supervisor has approved: the PBL office decides.
+    // Change-of-supervisor requests both supervisors approved while the new one was full.
     const waiting = queries.filter((q) => q.category === "supervisor_change" && q.status === "forwarded");
     return { overview, groups, ungrouped, waiting, changes };
   }, "admin");
@@ -87,23 +87,9 @@ export default function AdminDashboardPage() {
         <Card className="ring-2 ring-azure-100">
           <CardHeader
             title={`Supervisor change requests (${waiting.length})`}
-            description="Approved by the group's current supervisor. Choose the new supervisor - the student's reason is filled in - or decline."
+            description="Both supervisors approved these moves, but the requested supervisor already has their full number of groups. Your call."
           />
-          <QueryList
-            queries={waiting}
-            action={(q) => {
-              const group = groups.find((g) => g.id === q.groupId);
-              return (
-                <ChangeSupervisorForm
-                  groupId={q.groupId}
-                  currentMentorId={group?.mentorId ?? null}
-                  queryId={q.id}
-                  defaultReason={q.body}
-                  onDone={() => void reload()}
-                />
-              );
-            }}
-          />
+          <QueryList queries={waiting} action={(q) => <AdminChangeDecision query={q} onChanged={() => void reload()} />} />
         </Card>
       ) : null}
 

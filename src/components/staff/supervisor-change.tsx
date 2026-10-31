@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { ArrowRight, ArrowRightLeft, X } from "lucide-react";
+import { ArrowRight, ArrowRightLeft } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Field, Textarea } from "@/components/ui/field";
@@ -10,30 +10,22 @@ import type { SupervisorChange } from "@/lib/types";
 import { useLoad } from "@/lib/use-load";
 import { formatDateTime, timeAgo } from "@/lib/utils";
 
-/**
- * The PBL office moves a group to another teacher. Used on a group's page
- * (direct change) and under a forwarded change-of-supervisor request, where
- * the student's reason is filled in and the request can also be declined.
- */
+/** The PBL office moves a group to another teacher directly, from the group's page. */
 export function ChangeSupervisorForm({
   groupId,
   currentMentorId,
-  queryId,
-  defaultReason = "",
   onDone,
 }: {
   groupId: string;
   currentMentorId: string | null;
-  queryId?: string;
-  defaultReason?: string;
   onDone: () => void;
 }) {
   const teachers = useLoad(() => repo.listPortalTeachers(), "portal-teachers");
   const [facultyId, setFacultyId] = useState("");
-  const [reason, setReason] = useState(defaultReason);
-  const [busy, setBusy] = useState<"change" | "decline" | null>(null);
+  const [reason, setReason] = useState("");
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const fieldId = `new-supervisor-${queryId ?? groupId}`;
+  const fieldId = `new-supervisor-${groupId}`;
 
   async function change(event: FormEvent) {
     event.preventDefault();
@@ -41,31 +33,14 @@ export function ChangeSupervisorForm({
       setError("Choose the new supervisor.");
       return;
     }
-    setBusy("change");
+    setBusy(true);
     setError(null);
     try {
-      await repo.changeSupervisor({ groupId, facultyId, reason: reason.trim(), queryId });
+      await repo.changeSupervisor({ groupId, facultyId, reason: reason.trim() });
       onDone();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not change the supervisor.");
-      setBusy(null);
-    }
-  }
-
-  async function decline() {
-    if (!queryId) return;
-    if (!reason.trim()) {
-      setError("Write why the request is declined - the group will see it.");
-      return;
-    }
-    setBusy("decline");
-    setError(null);
-    try {
-      await repo.declineSupervisorChange(queryId, reason.trim());
-      onDone();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not decline the request.");
-      setBusy(null);
+      setBusy(false);
     }
   }
 
@@ -97,16 +72,10 @@ export function ChangeSupervisorForm({
       </Field>
       {error ? <p role="alert" className="text-[12.5px] text-clay-500">{error}</p> : null}
       <div className="flex flex-wrap gap-2">
-        <Button type="submit" size="sm" loading={busy === "change"} disabled={busy !== null}>
+        <Button type="submit" size="sm" loading={busy}>
           <ArrowRightLeft className="size-3.5" />
           Change supervisor
         </Button>
-        {queryId ? (
-          <Button type="button" size="sm" variant="danger" loading={busy === "decline"} disabled={busy !== null} onClick={() => void decline()}>
-            <X className="size-3.5" />
-            Decline request
-          </Button>
-        ) : null}
       </div>
     </form>
   );

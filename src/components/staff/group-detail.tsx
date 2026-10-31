@@ -15,6 +15,7 @@ import { Field, Input, Textarea } from "@/components/ui/field";
 import { PageHeader } from "@/components/ui/page-header";
 import { ProgressBar } from "@/components/ui/progress";
 import { PageSkeleton } from "@/components/ui/skeleton";
+import { useSession } from "@/lib/auth/session";
 import * as repo from "@/lib/data/repository";
 import type { Group, StudentGrade, WeeklyReport } from "@/lib/types";
 import { useLoad } from "@/lib/use-load";
@@ -42,6 +43,7 @@ async function loadGroupDetail(groupId: string) {
  * it read-only and can move the group to another supervisor.
  */
 export function GroupDetail({ groupId, isAdmin = false }: { groupId: string; isAdmin?: boolean }) {
+  const { user } = useSession();
   const [changing, setChanging] = useState(false);
   const { data, error, reload } = useLoad(() => loadGroupDetail(groupId), groupId);
 
@@ -174,7 +176,7 @@ export function GroupDetail({ groupId, isAdmin = false }: { groupId: string; isA
         {tickets.length === 0 ? (
           <EmptyState icon={<MessageCircleQuestion className="size-5" />} title="No queries raised" scene="queries" />
         ) : (
-          <QueryList queries={tickets} canReply={!isAdmin} onChanged={reload} />
+          <QueryList queries={tickets} canReply={!isAdmin} viewerFacultyId={user?.profileId} onChanged={reload} />
         )}
       </Card>
     </div>

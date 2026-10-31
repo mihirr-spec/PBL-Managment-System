@@ -192,6 +192,12 @@ const toTicket = (r: any): Ticket => ({
   forwardedAt: r.forwarded_at ?? undefined,
   adminReply: r.admin_reply ?? undefined,
   adminRepliedAt: r.admin_replied_at ?? undefined,
+  targetFacultyId: r.target_faculty_id ?? undefined,
+  targetName: r.target?.full_name ?? undefined,
+  currentApprovedAt: r.current_approved_at ?? undefined,
+  currentNote: r.current_note ?? undefined,
+  targetApprovedAt: r.target_approved_at ?? undefined,
+  targetNote: r.target_note ?? undefined,
 });
 
 const toSupervisorChange = (r: any): SupervisorChange => ({
@@ -1096,7 +1102,9 @@ export async function gradeStudent(input: {
 export async function listTickets(groupId?: string): Promise<Ticket[]> {
   let query = supabase
     .from("tickets")
-    .select("*, groups(number), students(full_name), ticket_attachments(file_path, file_name)")
+    .select(
+      "*, groups(number), students(full_name), ticket_attachments(file_path, file_name), target:faculty!tickets_target_faculty_id_fkey(full_name)",
+    )
     .order("created_at", { ascending: false });
   if (groupId) query = query.eq("group_id", groupId);
   const { data, error } = await query;
@@ -1142,6 +1150,30 @@ export async function raiseTicket(input: {
   return ticketId;
 }
 
+/**
+ * The team lead asks to move the group to `targetId`. Both the current and the
+ * requested supervisor are asked; supporting files are attached afterwards.
+ */
+export async function raiseSupervisorChange(input: {
+  groupId: string;
+  targetId: string;
+  reason: string;
+  files?: File[];
+}): Promise<string> {
+  const { data, error } = await supabase.rpc("raise_supervisor_change", {
+    p_target: input.targetId,
+    p_reason: input.reason,
+    p_files: null,
+  });
+  if (error?.code === "23505") {
+    throw new Error("Your group already has a change-of-supervisor request in progress.");
+  }
+  fail(error);
+  const ticketId = String(data);
+  for (const file of input.files ?? []) await addTicketAttachment(ticketId, file);
+  return ticketId;
+}
+
 /** Attaches more files to an already-raised query. */
 export async function addTicketAttachment(ticketId: string, file: File): Promise<void> {
   const ticket = await supabase.from("tickets").select("group_id").eq("id", ticketId).single();
@@ -1173,13 +1205,27 @@ export async function listTicketAttachments(ticketId: string): Promise<TicketAtt
 
 /* --------------------------------------------------- supervisor changes */
 
-/** Step 1: the current supervisor approves (sends it to the PBL office) or declines. */
-export async function reviewSupervisorChange(queryId: string, approve: boolean, note: string): Promise<void> {
-  const { error } = await supabase.rpc("review_supervisor_change", {
-    p_query: queryId,
-    p_approve: approve,
-    p_note: note,
-  });
+/** The current or the requested supervisor approves a change; the note is optional. */
+export async function approveSupervisorChange(ticketId: string, note: string): Promise<void> {
+  const { error } = await supabase.rpc("approve_supervisor_change", { p_ticket: ticketId, p_note: note });
+  fail(error);
+}
+
+/** The current or the requested supervisor declines a change, with a reason. */
+export async function declineSupervisorChange(ticketId: string, note: string): Promise<void> {
+  const { error } = await supabase.rpc("decline_supervisor_change", { p_ticket: ticketId, p_note: note });
+  fail(error);
+}
+
+/** The PBL office lets an at-capacity supervisor take the group anyway. */
+export async function adminApproveSupervisorChange(ticketId: string): Promise<void> {
+  const { error } = await supabase.rpc("admin_approve_supervisor_change", { p_ticket: ticketId });
+  fail(error);
+}
+
+/** The PBL office declines a request waiting on it, with a reason. */
+export async function adminDeclineSupervisorChange(ticketId: string, note: string): Promise<void> {
+  const { error } = await supabase.rpc("admin_decline_supervisor_change", { p_ticket: ticketId, p_note: note });
   fail(error);
 }
 
@@ -1196,11 +1242,6 @@ export async function changeSupervisor(input: {
     p_reason: input.reason,
     p_query: input.queryId ?? null,
   });
-  fail(error);
-}
-
-export async function declineSupervisorChange(queryId: string, note: string): Promise<void> {
-  const { error } = await supabase.rpc("decline_supervisor_change", { p_query: queryId, p_note: note });
   fail(error);
 }
 

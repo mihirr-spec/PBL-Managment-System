@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { CheckCircle2, Inbox, ListChecks, Paperclip, Search, Clock } from "lucide-react";
 
+import { ChangeDecision, ChangeProgress, statusOf } from "@/components/shared/queries";
+import { FileLink } from "@/components/shared/file-link";
 import { RichText } from "@/components/shared/rich-text";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +14,7 @@ import { Textarea } from "@/components/ui/field";
 import { PageHeader } from "@/components/ui/page-header";
 import { PageSkeleton } from "@/components/ui/skeleton";
 import { SearchBox, PillTabs, FilterMenu } from "@/components/ui/toolbar";
+import { useSession } from "@/lib/auth/session";
 import { listTickets, replyTicket } from "@/lib/data/repository";
 import type { Ticket } from "@/lib/types";
 import { useLoad } from "@/lib/use-load";
@@ -32,11 +35,20 @@ function matches(q: Ticket, query: string) {
   return words.every((w) => haystack.includes(w));
 }
 
+/** Whether the viewer still has to act: an open question, or a change their side has not approved. */
+function needsAction(q: Ticket, me?: string) {
+  if (q.category !== "supervisor_change") return q.status === "open";
+  if (q.status !== "open") return false;
+  return q.targetFacultyId === me ? !q.targetApprovedAt : !q.currentApprovedAt;
+}
+
 /**
  * The supervisor's queries, two panes: a list to pick from on the left, the
  * chosen query with its reply box on the right.
  */
 export default function FacultyQueriesPage() {
+  const { user } = useSession();
+  const me = user?.profileId;
   const { data, error, reload } = useLoad(() => listTickets(), "queries");
   const [tab, setTab] = useState<Tab>("action");
   const [query, setQuery] = useState("");
@@ -50,7 +62,8 @@ export default function FacultyQueriesPage() {
   const filtered = data.filter((q) => (kind === "all" || q.category === kind) && matches(q, query));
   const open = filtered.filter((q) => q.status === "open" || q.status === "forwarded");
   const resolved = filtered.filter((q) => q.status === "resolved" || q.status === "declined");
-  const shown = (tab === "open" ? open : tab === "resolved" ? resolved : tab === "action" ? open : filtered).sort(
+  const action = open.filter((q) => needsAction(q, me));
+  const shown = (tab === "open" ? open : tab === "resolved" ? resolved : tab === "action" ? action : filtered).sort(
     (a, b) => (newest ? b.createdAt.localeCompare(a.createdAt) : a.createdAt.localeCompare(b.createdAt)),
   );
   const current = shown.find((q) => q.id === selected) ?? shown[0] ?? null;
@@ -61,7 +74,7 @@ export default function FacultyQueriesPage() {
         eyebrow="Queries"
         title="Student"
         emphasis="queries."
-        description="Questions raised by students in your groups, and requests to change supervisor. Replies notify the student; approved change requests go to the administrator."
+        description="Questions raised by students in your groups, and requests to move a group to or from you. A move happens once both supervisors approve."
         scene="queries"
       />
 
@@ -71,7 +84,7 @@ export default function FacultyQueriesPage() {
           value={tab}
           onChange={(v) => setTab(v as Tab)}
           items={[
-            { key: "action", label: "Action needed", count: open.length, icon: Inbox },
+            { key: "action", label: "Action needed", count: action.length, icon: Inbox },
             { key: "all", label: "All queries", count: filtered.length, icon: ListChecks },
             { key: "open", label: "Open", count: open.length },
             { key: "resolved", label: "Resolved", count: resolved.length },
@@ -130,15 +143,10 @@ export default function FacultyQueriesPage() {
                         {q.groupNumber != null ? ` - Group ${q.groupNumber}` : ""} · {timeAgo(q.createdAt)}
                       </p>
                       <div className="mt-1.5 flex items-center gap-2">
-                        <span
-                          className={cn(
-                            "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-semibold",
-                            q.status === "open" || q.status === "forwarded" ? "bg-gold-50 text-gold-600" : "bg-sage-100 text-sage-500",
-                          )}
-                        >
-                          <span className="size-1.5 rounded-full bg-current" />
-                          {q.status === "open" || q.status === "forwarded" ? "Open" : "Resolved"}
-                        </span>
+                        <Badge tone={statusOf(q).tone} dot>{statusOf(q).label}</Badge>
+                        {q.category === "supervisor_change" && q.targetFacultyId === me ? (
+                          <span className="text-[11px] font-semibold text-azure-600">Wants to join you</span>
+                        ) : null}
                       </div>
                     </div>
                   </button>
@@ -149,7 +157,7 @@ export default function FacultyQueriesPage() {
         </Card>
 
         {/* -------------------------------- detail pane ------------------------------- */}
-        {current ? <DetailPane key={current.id} query={current} onChanged={reload} /> : (
+        {current ? <DetailPane key={current.id} query={current} me={me} onChanged={reload} /> : (
           <Card>
             <EmptyState title="Pick a query" description="Select one on the left to read it and reply." scene="queries" />
           </Card>
@@ -160,11 +168,13 @@ export default function FacultyQueriesPage() {
 }
 
 /** The chosen query: the student's message, then the reply box. */
-function DetailPane({ query: q, onChanged }: { query: Ticket; onChanged: () => void }) {
+function DetailPane({ query: q, me, onChanged }: { query: Ticket; me?: string; onChanged: () => void }) {
   const [reply, setReply] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const isOpen = q.status === "open" || q.status === "forwarded";
+  const isChange = q.category === "supervisor_change";
+  const status = statusOf(q);
 
   async function send(resolve: boolean) {
     if (!reply.trim() && !resolve) return;
@@ -188,8 +198,8 @@ function DetailPane({ query: q, onChanged }: { query: Ticket; onChanged: () => v
   return (
     <Card>
       <div className="flex flex-wrap items-center justify-between gap-3 px-5 pt-4">
-        <Badge tone={isOpen ? "gold" : "sage"} dot>{isOpen ? "Open" : "Resolved"}</Badge>
-        {isOpen ? (
+        <Badge tone={status.tone} dot>{status.label}</Badge>
+        {isOpen && !isChange ? (
           <Button size="sm" variant="secondary" loading={busy} onClick={() => void send(true)}>
             <CheckCircle2 className="size-3.5" />
             Mark as resolved
@@ -218,6 +228,21 @@ function DetailPane({ query: q, onChanged }: { query: Ticket; onChanged: () => v
           </div>
         </div>
 
+        {q.attachments.length > 0 ? (
+          <div className="mt-4">
+            <p className="text-[11px] font-semibold tracking-[0.14em] text-ink-400 uppercase">Attachments</p>
+            <ul className="mt-2 flex flex-wrap gap-2">
+              {q.attachments.map((a) => (
+                <li key={a.filePath}>
+                  <FileLink bucket="submissions" path={a.filePath} name={a.fileName} />
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+
+        {isChange ? <ChangeProgress query={q} /> : null}
+
         {q.reply ? (
           <div className="mt-4">
             <p className="text-[11px] font-semibold tracking-[0.14em] text-ink-400 uppercase">Your response</p>
@@ -230,7 +255,7 @@ function DetailPane({ query: q, onChanged }: { query: Ticket; onChanged: () => v
 
         {q.adminReply ? (
           <div className="mt-4">
-            <p className="text-[11px] font-semibold tracking-[0.14em] text-ink-400 uppercase">Administrator</p>
+            <p className="text-[11px] font-semibold tracking-[0.14em] text-ink-400 uppercase">{isChange ? "Outcome" : "Administrator"}</p>
             <div className="mt-2 rounded-[14px] bg-sage-100/70 p-4 text-[13.5px] leading-relaxed whitespace-pre-line text-ink-800 ring-1 ring-sage-500/15">
               {q.adminReply}
               {q.adminRepliedAt ? <p className="mt-1.5 text-[11.5px] text-stone-500">Answered {timeAgo(q.adminRepliedAt)}</p> : null}
@@ -238,7 +263,11 @@ function DetailPane({ query: q, onChanged }: { query: Ticket; onChanged: () => v
           </div>
         ) : null}
 
-        {isOpen ? (
+        {isChange && q.status === "open" ? (
+          <ChangeDecision query={q} side={q.targetFacultyId === me ? "target" : "current"} onChanged={onChanged} />
+        ) : null}
+
+        {isOpen && !isChange ? (
           <div className="mt-5">
             <p className="flex items-center gap-1.5 text-[13px] font-semibold text-ink-900">
               <Search className="hidden" />

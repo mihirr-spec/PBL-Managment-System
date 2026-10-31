@@ -1,23 +1,30 @@
 "use client";
 
 import { useState, type FormEvent, type ReactNode } from "react";
-import { ArrowRightLeft, Building2, Check, CheckCircle2, CornerDownRight, X } from "lucide-react";
+import { ArrowRight, ArrowRightLeft, Building2, Check, CheckCircle2, Clock, CornerDownRight, X } from "lucide-react";
 
+import { FileLink } from "@/components/shared/file-link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/field";
-import { replyTicket, reviewSupervisorChange } from "@/lib/data/repository";
+import {
+  adminApproveSupervisorChange,
+  adminDeclineSupervisorChange,
+  approveSupervisorChange,
+  declineSupervisorChange,
+  replyTicket,
+} from "@/lib/data/repository";
 import type { Ticket } from "@/lib/types";
 import { formatDateTime, timeAgo } from "@/lib/utils";
 
 /** Status wording depends on the kind of query. */
-function statusOf(q: Ticket): { tone: "gold" | "sage" | "clay" | "neutral"; label: string } {
+export function statusOf(q: Ticket): { tone: "gold" | "sage" | "clay" | "neutral"; label: string } {
   if (q.category === "supervisor_change") {
     switch (q.status) {
       case "open":
-        return { tone: "gold", label: "With the supervisor" };
+        return { tone: "gold", label: "Waiting for supervisors" };
       case "forwarded":
-        return { tone: "gold", label: "With the administrator" };
+        return { tone: "gold", label: "With the PBL office" };
       case "resolved":
         return { tone: "sage", label: "Supervisor changed" };
       default:
@@ -27,15 +34,21 @@ function statusOf(q: Ticket): { tone: "gold" | "sage" | "clay" | "neutral"; labe
   return q.status === "open" ? { tone: "gold", label: "Open" } : { tone: "sage", label: "Resolved" };
 }
 
-/** Query threads. The group's supervisor (`canReply`) answers and resolves. */
+/**
+ * Query threads. The group's supervisor (`canReply`) answers and resolves; on
+ * a change-of-supervisor request, the viewer approves for their own side.
+ */
 export function QueryList({
   queries,
   canReply = false,
+  viewerFacultyId,
   onChanged,
   action,
 }: {
   queries: Ticket[];
   canReply?: boolean;
+  /** The signed-in teacher, to tell the requested supervisor from the current one. */
+  viewerFacultyId?: string;
   onChanged?: () => void;
   /** Extra controls under a query (the PBL office's decision form). */
   action?: (query: Ticket) => ReactNode;
@@ -43,7 +56,7 @@ export function QueryList({
   return (
     <ul className="divide-y divide-sand-200/70">
       {queries.map((q) => (
-        <QueryRow key={q.id} query={q} canReply={canReply} onChanged={onChanged} action={action} />
+        <QueryRow key={q.id} query={q} canReply={canReply} viewerFacultyId={viewerFacultyId} onChanged={onChanged} action={action} />
       ))}
     </ul>
   );
@@ -52,11 +65,13 @@ export function QueryList({
 function QueryRow({
   query: q,
   canReply,
+  viewerFacultyId,
   onChanged,
   action,
 }: {
   query: Ticket;
   canReply: boolean;
+  viewerFacultyId?: string;
   onChanged?: () => void;
   action?: (query: Ticket) => ReactNode;
 }) {
@@ -87,16 +102,35 @@ function QueryRow({
         <p className="mt-2 text-[13.5px] leading-relaxed whitespace-pre-line text-stone-600">{q.body}</p>
       ) : null}
 
+      {q.attachments.length > 0 ? (
+        <ul className="mt-2.5 flex flex-wrap gap-2">
+          {q.attachments.map((a) => (
+            <li key={a.filePath}>
+              <FileLink bucket="submissions" path={a.filePath} name={a.fileName} />
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      {isChange ? <ChangeProgress query={q} /> : null}
       {q.reply ? (
         <Reply icon={<CornerDownRight className="size-4" />} who="Supervisor" when={q.repliedAt} text={q.reply} />
       ) : null}
       {q.adminReply ? (
-        <Reply icon={<Building2 className="size-4" />} who="Administrator" when={q.adminRepliedAt} text={q.adminReply} />
+        <Reply
+          icon={<Building2 className="size-4" />}
+          who={isChange ? "Outcome" : "Administrator"}
+          when={q.adminRepliedAt}
+          text={q.adminReply}
+        />
       ) : null}
 
       {canReply && q.status === "open" ? (
         isChange ? (
-          <ReviewChange query={q} onChanged={onChanged} />
+          <ChangeDecision
+            query={q}
+            side={viewerFacultyId && q.targetFacultyId === viewerFacultyId ? "target" : "current"}
+            onChanged={onChanged}
+          />
         ) : (
           <ReplyForm query={q} onChanged={onChanged} />
         )
@@ -165,11 +199,54 @@ function ReplyForm({ query, onChanged }: { query: Ticket; onChanged?: () => void
   );
 }
 
-/** Change of supervisor, step 1: the current supervisor approves or declines. */
-function ReviewChange({ query, onChanged }: { query: Ticket; onChanged?: () => void }) {
+/**
+ * Change of supervisor: where the group wants to go, and which of the two
+ * supervisors has approved so far.
+ */
+export function ChangeProgress({ query: q }: { query: Ticket }) {
+  return (
+    <div className="mt-3 space-y-1.5 rounded-[12px] bg-white/70 px-3 py-2.5 text-[12.5px] text-ink-800 ring-1 ring-sand-200/70">
+      <p className="flex flex-wrap items-center gap-1.5">
+        <span className="text-stone-500">Wants to move to</span>
+        <ArrowRight className="size-3.5 text-azure-600" aria-hidden />
+        <span className="font-semibold">{q.targetName ?? "another supervisor"}</span>
+      </p>
+      <ApprovalLine label="Current supervisor" at={q.currentApprovedAt} note={q.currentNote} />
+      <ApprovalLine label="Requested supervisor" at={q.targetApprovedAt} note={q.targetNote} />
+    </div>
+  );
+}
+
+/** One supervisor's side of a change: approved (when, with their note) or not yet. */
+function ApprovalLine({ label, at, note }: { label: string; at?: string; note?: string }) {
+  return (
+    <p className="flex flex-wrap items-center gap-1.5">
+      {at ? <Check className="size-3.5 text-sage-500" /> : <Clock className="size-3.5 text-stone-400" />}
+      <span className="font-medium">{label}:</span>
+      <span className={at ? "text-sage-500" : "text-stone-500"}>{at ? `approved ${timeAgo(at)}` : "not yet"}</span>
+      {note ? <span className="text-stone-600">- {note}</span> : null}
+    </p>
+  );
+}
+
+/**
+ * Change of supervisor: the current (`side="current"`) or requested
+ * (`side="target"`) supervisor approves or declines for their own side.
+ */
+export function ChangeDecision({
+  query,
+  side,
+  onChanged,
+}: {
+  query: Ticket;
+  side: "current" | "target";
+  onChanged?: () => void;
+}) {
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState<"approve" | "decline" | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const mine = side === "current" ? query.currentApprovedAt : query.targetApprovedAt;
+  const other = side === "current" ? query.targetApprovedAt : query.currentApprovedAt;
 
   async function decide(approve: boolean) {
     if (!approve && !note.trim()) {
@@ -179,7 +256,77 @@ function ReviewChange({ query, onChanged }: { query: Ticket; onChanged?: () => v
     setBusy(approve ? "approve" : "decline");
     setError(null);
     try {
-      await reviewSupervisorChange(query.id, approve, note.trim());
+      if (approve) await approveSupervisorChange(query.id, note.trim());
+      else await declineSupervisorChange(query.id, note.trim());
+      onChanged?.();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not save your decision.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  if (mine) {
+    return (
+      <p className="mt-3 flex items-center gap-1.5 text-[12.5px] text-stone-600">
+        <Clock className="size-3.5" />
+        You approved. Waiting for the {side === "current" ? "requested" : "current"} supervisor.
+      </p>
+    );
+  }
+
+  return (
+    <div className="mt-3 space-y-2 rounded-[14px] border border-azure-100 bg-white/70 p-3">
+      <p className="text-[12.5px] text-stone-600">
+        {side === "current"
+          ? `You are the current supervisor. The group wants to move to ${query.targetName ?? "another supervisor"}.`
+          : "The group wants to move to you."}{" "}
+        {other
+          ? "The other supervisor has approved, so your approval completes it."
+          : "The other supervisor is asked too; the move happens once you both approve."}{" "}
+        If the new supervisor is already at their limit, the PBL office makes the final call.
+      </p>
+      <Textarea
+        rows={2}
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
+        placeholder="Note for the group (required to decline)"
+        aria-label="Note"
+      />
+      {error ? <p role="alert" className="text-[12.5px] text-clay-500">{error}</p> : null}
+      <div className="flex flex-wrap gap-2">
+        <Button size="sm" loading={busy === "approve"} disabled={busy !== null} onClick={() => void decide(true)}>
+          <Check className="size-3.5" />
+          Approve
+        </Button>
+        <Button size="sm" variant="danger" loading={busy === "decline"} disabled={busy !== null} onClick={() => void decide(false)}>
+          <X className="size-3.5" />
+          Decline
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The PBL office's call on a request both supervisors approved while the new
+ * supervisor was already at their group limit.
+ */
+export function AdminChangeDecision({ query, onChanged }: { query: Ticket; onChanged?: () => void }) {
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState<"approve" | "decline" | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function decide(approve: boolean) {
+    if (!approve && !note.trim()) {
+      setError("Write why the request is declined - the group will see it.");
+      return;
+    }
+    setBusy(approve ? "approve" : "decline");
+    setError(null);
+    try {
+      if (approve) await adminApproveSupervisorChange(query.id);
+      else await adminDeclineSupervisorChange(query.id, note.trim());
       onChanged?.();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not save your decision.");
@@ -191,20 +338,21 @@ function ReviewChange({ query, onChanged }: { query: Ticket; onChanged?: () => v
   return (
     <div className="mt-3 space-y-2 rounded-[14px] border border-azure-100 bg-white/70 p-3">
       <p className="text-[12.5px] text-stone-600">
-        If you approve, the request goes to the administrator, who chooses the new supervisor.
+        Both supervisors approved, but {query.targetName ?? "the new supervisor"} already has their full number of
+        groups. Approve to let them take one more, or decline with a reason.
       </p>
       <Textarea
         rows={2}
         value={note}
         onChange={(e) => setNote(e.target.value)}
-        placeholder="Note for the group and the administrator (required to decline)"
-        aria-label="Note"
+        placeholder="Reason (required to decline)"
+        aria-label="Reason"
       />
       {error ? <p role="alert" className="text-[12.5px] text-clay-500">{error}</p> : null}
       <div className="flex flex-wrap gap-2">
         <Button size="sm" loading={busy === "approve"} disabled={busy !== null} onClick={() => void decide(true)}>
           <Check className="size-3.5" />
-          Approve & send to administrator
+          Approve the move
         </Button>
         <Button size="sm" variant="danger" loading={busy === "decline"} disabled={busy !== null} onClick={() => void decide(false)}>
           <X className="size-3.5" />

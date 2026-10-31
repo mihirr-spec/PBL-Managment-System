@@ -244,9 +244,17 @@ export interface Ticket {
   createdAt: string;
   repliedAt?: string;
   forwardedAt?: string;
-  /** The PBL office's answer to a change-of-supervisor request. */
+  /** The outcome of a change-of-supervisor request (who declined, or that it went through). */
   adminReply?: string;
   adminRepliedAt?: string;
+  /** Change of supervisor: the supervisor the group asked to move to. */
+  targetFacultyId?: string;
+  targetName?: string;
+  /** Change of supervisor: each side's approval, with an optional note. */
+  currentApprovedAt?: string;
+  currentNote?: string;
+  targetApprovedAt?: string;
+  targetNote?: string;
 }
 
 /** One move of a group from one supervisor to another, with the reason. */
