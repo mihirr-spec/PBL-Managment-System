@@ -507,21 +507,13 @@ function PhaseFiles({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // The PPT half of this phase: ppt15 holds the combined /15, so each phase
-  // contributes a /7.5 half that the supervisor enters as /15 and we average.
-  const otherPpt = (() => {
-    if (grade?.ppt15 == null) return null;
-    // Can't recover an individual half from the saved average, so the
-    // supervisor edits the whole /15 field during each phase; the latest value wins.
-    return grade.ppt15;
-  })();
-
+  const savedPpt = phase === "mid" ? grade?.pptMid : grade?.pptEnd;
   const [synopsis, setSynopsis] = useState<string>(
     phase === "mid"
       ? (grade?.synopsis1 != null ? String(grade.synopsis1) : "")
       : (grade?.synopsis2 != null ? String(grade.synopsis2) : ""),
   );
-  const [ppt, setPpt] = useState<string>(otherPpt != null ? String(otherPpt) : "");
+  const [ppt, setPpt] = useState<string>(savedPpt != null ? String(savedPpt) : "");
   const [design, setDesign] = useState<string>(grade?.design20 != null ? String(grade.design20) : "");
   const [ete, setEte] = useState<string>(grade?.ete40 != null ? String(grade.ete40) : "");
 
@@ -535,7 +527,8 @@ function PhaseFiles({
         synopsis1: phase === "mid" ? n(synopsis) : (grade?.synopsis1 ?? null),
         synopsis2: phase === "ete" ? n(synopsis) : (grade?.synopsis2 ?? null),
         weekly15: grade?.weekly15 ?? null,
-        ppt15: n(ppt) ?? grade?.ppt15 ?? null,
+        pptMid: phase === "mid" ? n(ppt) : (grade?.pptMid ?? null),
+        pptEnd: phase === "ete" ? n(ppt) : (grade?.pptEnd ?? null),
         design20: phase === "ete" ? n(design) : (grade?.design20 ?? null),
         ete40: phase === "ete" ? n(ete) : (grade?.ete40 ?? null),
       });
@@ -549,7 +542,7 @@ function PhaseFiles({
   }
 
   const synopsisSaved = phase === "mid" ? grade?.synopsis1 : grade?.synopsis2;
-  const anyScore = synopsisSaved != null || (phase === "ete" && (grade?.design20 != null || grade?.ete40 != null));
+  const anyScore = synopsisSaved != null || savedPpt != null || (phase === "ete" && (grade?.design20 != null || grade?.ete40 != null));
 
   return (
     <div className="rounded-[14px] bg-white/80 px-4 py-3.5 ring-1 ring-sand-200">

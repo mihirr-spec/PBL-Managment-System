@@ -16,19 +16,6 @@ function synopsisScore(s1: number | null, s2: number | null): number | null {
   return Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 10) / 10;
 }
 
-/** Every file of a phase (midterm or endterm), shown compactly next to a plan row. */
-export function FileTag({ ms }: { ms: Array<GroupMilestone | undefined> }) {
-  const files = ms.flatMap((m) => m?.files ?? []);
-  if (files.length === 0) return <span className="text-stone-400">not uploaded</span>;
-  return (
-    <span className="inline-flex flex-wrap gap-1 align-middle">
-      {files.map((f) => (
-        <FileLink key={f.path} bucket="submissions" path={f.path} name={f.name} variant="pill" />
-      ))}
-    </span>
-  );
-}
-
 /**
  * The group's 100-point assessment plan: internal (60) plus the end term exam
  * (40). Shown read-only on the group page, with a Final grading window the
@@ -55,31 +42,37 @@ export function GradingPlanCard({
 
   const synopsis = synopsisScore(grade?.synopsis1 ?? null, grade?.synopsis2 ?? null);
   const weekly = grade?.weekly15 ?? weeklyAverage;
+  const pptMid = grade?.pptMid ?? null;
+  const pptEnd = grade?.pptEnd ?? null;
+  const ppt = grade?.ppt15 ?? null;
   const components: Array<{ label: string; value: number | null; max: number; note?: ReactNode }> = [
     {
       label: "Updated synopsis",
       value: synopsis,
       max: 10,
       note: (
-        <span className="text-[11px] text-stone-400">
-          Midterm: <FileTag ms={mid} /> · Endterm: <FileTag ms={ete} />
+        <span className="text-[11.5px] text-stone-500">
+          Midterm synopsis {grade?.synopsis1 ?? "-"}/10 · Endterm synopsis {grade?.synopsis2 ?? "-"}/10 · averaged
         </span>
       ),
     },
     { label: "Weekly progress report", value: weekly, max: 15 },
     {
       label: "Analysis process PPT",
-      value: grade?.ppt15 ?? null,
+      value: ppt,
       max: 15,
       note: (
-        <span className="text-[11px] text-stone-400">
-          Midterm: <FileTag ms={mid} /> · Endterm: <FileTag ms={ete} />
+        <span className="text-[11.5px] text-stone-500">
+          Midterm PPT {pptMid ?? "-"}/15 · Endterm PPT {pptEnd ?? "-"}/15 · averaged
         </span>
       ),
     },
     { label: "Design & implementation", value: grade?.design20 ?? null, max: 20 },
     { label: "End term exam", value: grade?.ete40 ?? null, max: 40 },
   ];
+  // Phase files, shown once at the bottom (no longer duplicated on each row).
+  const midFiles = mid.flatMap((m) => m?.files ?? []);
+  const eteFiles = ete.flatMap((m) => m?.files ?? []);
 
   const values = components.map((c) => c.value);
   const complete = values.every((v) => v != null);
@@ -119,27 +112,56 @@ export function GradingPlanCard({
           </thead>
           <tbody className="divide-y divide-sand-200/70">
             <tr>
-              <td className="py-2.5 pr-4 text-[13px] font-medium text-ink-900">Internal assessment</td>
-              <td className="tnum py-2.5 pr-4 text-right text-[13px] text-stone-600">{internal != null ? internal : "-"}</td>
-              <td className="tnum py-2.5 text-right text-[13px] text-stone-500">60</td>
+              <td className="py-2.5 pr-4 text-[13.5px] font-semibold text-ink-900">Internal assessment</td>
+              <td className="tnum py-2.5 pr-4 text-right text-[13.5px] font-semibold text-ink-900">{internal != null ? internal : "-"}</td>
+              <td className="tnum py-2.5 text-right text-[13px] font-medium text-ink-700">60</td>
             </tr>
             {components.map((c, i) => (
               <tr key={i} className="pl-6">
                 <td className="py-2 pr-4">
-                  <p className="text-[12.5px] text-stone-600">{c.label}</p>
+                  <p className="text-[13px] font-semibold text-ink-800">{c.label}</p>
                   {c.note ? <div className="mt-1">{c.note}</div> : null}
                 </td>
-                <td className="tnum py-2 pr-4 text-right text-[13px] text-stone-600">{c.value != null ? c.value : "-"}</td>
-                <td className="tnum py-2 text-right text-[12px] text-stone-400">{c.max}</td>
+                <td className="tnum py-2 pr-4 text-right text-[13.5px] font-semibold text-ink-900">{c.value != null ? c.value : "-"}</td>
+                <td className="tnum py-2 text-right text-[12.5px] font-medium text-ink-700">{c.max}</td>
               </tr>
             ))}
             <tr className="bg-sage-50/60">
-              <td className="py-2.5 pr-4 text-[13.5px] font-semibold text-ink-900">Total</td>
-              <td className="tnum py-2.5 pr-4 text-right font-display text-[15px] font-semibold text-sage-500">{total != null ? total : "-"}</td>
-              <td className="tnum py-2.5 text-right text-[13px] font-semibold text-stone-500">100</td>
+              <td className="py-2.5 pr-4 text-[14px] font-bold text-ink-900">Total</td>
+              <td className="tnum py-2.5 pr-4 text-right font-display text-[15px] font-bold text-sage-500">{total != null ? total : "-"}</td>
+              <td className="tnum py-2.5 text-right text-[13.5px] font-bold text-ink-800">100</td>
             </tr>
           </tbody>
         </table>
+
+        {(midFiles.length || eteFiles.length) ? (
+          <div className="mt-4 grid gap-3 rounded-[12px] bg-ivory-200/40 p-3 ring-1 ring-sand-200 sm:grid-cols-2">
+            <div>
+              <p className="text-[11.5px] font-semibold tracking-[0.1em] text-ink-700 uppercase">Midterm files</p>
+              <div className="mt-1.5">
+                {midFiles.length ? (
+                  <span className="inline-flex flex-wrap gap-1">
+                    {midFiles.map((f) => (
+                      <FileLink key={f.path} bucket="submissions" path={f.path} name={f.name} variant="pill" />
+                    ))}
+                  </span>
+                ) : <span className="text-[12px] text-stone-400">not uploaded</span>}
+              </div>
+            </div>
+            <div>
+              <p className="text-[11.5px] font-semibold tracking-[0.1em] text-ink-700 uppercase">Endterm files</p>
+              <div className="mt-1.5">
+                {eteFiles.length ? (
+                  <span className="inline-flex flex-wrap gap-1">
+                    {eteFiles.map((f) => (
+                      <FileLink key={f.path} bucket="submissions" path={f.path} name={f.name} variant="pill" />
+                    ))}
+                  </span>
+                ) : <span className="text-[12px] text-stone-400">not uploaded</span>}
+              </div>
+            </div>
+          </div>
+        ) : null}
 
         {grade?.updatedAt ? (
           <p className="mt-3 flex items-center gap-1.5 text-[11.5px] text-stone-400">

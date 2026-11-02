@@ -1038,6 +1038,8 @@ export async function getGroupGrade(groupId: string): Promise<GroupGrade | null>
     synopsis1: data.synopsis1 == null ? null : Number(data.synopsis1),
     synopsis2: data.synopsis2 == null ? null : Number(data.synopsis2),
     weekly15: data.weekly15 == null ? null : Number(data.weekly15),
+    pptMid: data.ppt_mid == null ? null : Number(data.ppt_mid),
+    pptEnd: data.ppt_end == null ? null : Number(data.ppt_end),
     ppt15: data.ppt15 == null ? null : Number(data.ppt15),
     design20: data.design20 == null ? null : Number(data.design20),
     ete40: data.ete40 == null ? null : Number(data.ete40),
@@ -1062,14 +1064,15 @@ export async function updateStudentGrade(gradeId: string, score: number | null, 
   fail(error);
 }
 
-/** Saves the group's final grading. `weekly15` may be null to keep the average. */
+/** Saves the group's final grading. `weekly15` may be null to keep the average; `pptMid` and `pptEnd` average to the PPT /15. */
 export async function saveGroupGrades(
   groupId: string,
   marks: {
     synopsis1: number | null;
     synopsis2: number | null;
     weekly15: number | null;
-    ppt15: number | null;
+    pptMid: number | null;
+    pptEnd: number | null;
     design20: number | null;
     ete40: number | null;
   },
@@ -1079,7 +1082,8 @@ export async function saveGroupGrades(
     p_s1: marks.synopsis1,
     p_s2: marks.synopsis2,
     p_weekly: marks.weekly15,
-    p_ppt: marks.ppt15,
+    p_ppt_mid: marks.pptMid,
+    p_ppt_end: marks.pptEnd,
     p_design: marks.design20,
     p_ete: marks.ete40,
   });

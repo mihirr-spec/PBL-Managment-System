@@ -196,6 +196,10 @@ export interface GroupGrade {
   synopsis2: number | null;
   /** 0-15. May be null, in which case the average of the weekly grades is used. */
   weekly15: number | null;
+  /** The midterm PPT /15 and the endterm PPT /15; they average to the 15-point "Analysis process PPT" component. */
+  pptMid: number | null;
+  pptEnd: number | null;
+  /** The derived PPT /15: average of pptMid and pptEnd (or whichever is set). */
   ppt15: number | null;
   design20: number | null;
   ete40: number | null;

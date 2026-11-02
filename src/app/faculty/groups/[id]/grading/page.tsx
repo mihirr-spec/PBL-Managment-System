@@ -85,7 +85,8 @@ function GradingForm({
   const [s1, setS1] = useState(savedGrade?.synopsis1 != null ? String(savedGrade.synopsis1) : "");
   const [s2, setS2] = useState(savedGrade?.synopsis2 != null ? String(savedGrade.synopsis2) : "");
   const [w, setW] = useState(savedGrade?.weekly15 != null ? String(savedGrade.weekly15) : "");
-  const [ppt, setPpt] = useState(savedGrade?.ppt15 != null ? String(savedGrade.ppt15) : "");
+  const [pptMid, setPptMid] = useState(savedGrade?.pptMid != null ? String(savedGrade.pptMid) : "");
+  const [pptEnd, setPptEnd] = useState(savedGrade?.pptEnd != null ? String(savedGrade.pptEnd) : "");
   const [design, setDesign] = useState(savedGrade?.design20 != null ? String(savedGrade.design20) : "");
   const [ete, setEte] = useState(savedGrade?.ete40 != null ? String(savedGrade.ete40) : "");
   const [busy, setBusy] = useState(false);
@@ -96,13 +97,15 @@ function GradingForm({
   const [publishFlash, setPublishFlash] = useState(false);
 
   const num = (v: string): number | null => (v.trim() === "" ? null : Number(v));
-  const vals = { s1: num(s1), s2: num(s2), w: num(w), ppt: num(ppt), design: num(design), ete: num(ete) };
+  const vals = { s1: num(s1), s2: num(s2), w: num(w), pptMid: num(pptMid), pptEnd: num(pptEnd), design: num(design), ete: num(ete) };
   const synopsis = [vals.s1, vals.s2].filter((x): x is number => x != null);
   const synopsisScore = synopsis.length
     ? Math.round((synopsis.reduce((a, b) => a + b, 0) / synopsis.length) * 10) / 10
     : null;
   const weeklyScore = vals.w ?? weeklyAverage;
-  const internalParts = [synopsisScore, weeklyScore, vals.ppt, vals.design];
+  const pptParts = [vals.pptMid, vals.pptEnd].filter((x): x is number => x != null);
+  const pptScore = pptParts.length ? Math.round((pptParts.reduce((a, b) => a + b, 0) / pptParts.length) * 100) / 100 : null;
+  const internalParts = [synopsisScore, weeklyScore, pptScore, vals.design];
   const internal = internalParts.every((x) => x != null)
     ? Math.round((internalParts as number[]).reduce((a, b) => a + b, 0) * 10) / 10
     : null;
@@ -116,7 +119,8 @@ function GradingForm({
         synopsis1: vals.s1,
         synopsis2: vals.s2,
         weekly15: vals.w,
-        ppt15: vals.ppt,
+        pptMid: vals.pptMid,
+        pptEnd: vals.pptEnd,
         design20: vals.design,
         ete40: vals.ete,
       });
@@ -182,8 +186,11 @@ function GradingForm({
               placeholder={weeklyAverage != null ? String(weeklyAverage) : "auto"}
             />
           </Field>
-          <Field label="Analysis process PPT (out of 15)" htmlFor="fg-ppt">
-            <Input id="fg-ppt" type="number" min={0} max={15} step="0.5" value={ppt} onChange={(e) => setPpt(e.target.value)} />
+          <Field label="Midterm PPT (out of 15)" htmlFor="fg-ppt-mid" help="The analysis-process PPT at the midterm.">
+            <Input id="fg-ppt-mid" type="number" min={0} max={15} step="0.5" value={pptMid} onChange={(e) => setPptMid(e.target.value)} />
+          </Field>
+          <Field label="Endterm PPT (out of 15)" htmlFor="fg-ppt-end" help="The updated PPT at the endterm; this averages with the midterm PPT to the 15-point component.">
+            <Input id="fg-ppt-end" type="number" min={0} max={15} step="0.5" value={pptEnd} onChange={(e) => setPptEnd(e.target.value)} />
           </Field>
           <Field label="Design and implementation (out of 20)" htmlFor="fg-design">
             <Input id="fg-design" type="number" min={0} max={20} step="0.5" value={design} onChange={(e) => setDesign(e.target.value)} />
