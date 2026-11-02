@@ -32,7 +32,12 @@ export default function GradesPage() {
   const synopsis = synopsisVals.length
     ? Math.round((synopsisVals.reduce((a, b) => a + b, 0) / synopsisVals.length) * 10) / 10
     : undefined;
-  const weekly = g?.weekly15 ?? undefined;
+  /** When the supervisor hasn't overridden weekly15, use the average of the graded reports times 1.5, same as their view. */
+  const gradedWeekly = data.reports.map((r) => r.grade).filter((n): n is number => n != null);
+  const weeklyAuto = gradedWeekly.length
+    ? Math.round(((gradedWeekly.reduce((a, b) => a + b, 0) / gradedWeekly.length) * 1.5) * 10) / 10
+    : undefined;
+  const weekly = g?.weekly15 ?? weeklyAuto;
   const plan = g
     ? [
         { label: "Updated synopsis", value: synopsis, max: 10 },
