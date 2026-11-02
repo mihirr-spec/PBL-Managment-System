@@ -557,7 +557,7 @@ function WeekRow({
                 "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] font-medium ring-1 ring-inset transition-colors",
                 graded
                   ? "bg-azure-50 text-azure-600 ring-azure-100 hover:bg-azure-50/70"
-                  : "bg-ivory-200/80 text-stone-400 ring-sand-200",
+                  : "bg-clay-500 text-white ring-clay-500 shadow-sm hover:bg-clay-500/90 animate-pulse",
               )}
             >
               <Eye className="size-3.5" />
