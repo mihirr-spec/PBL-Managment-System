@@ -140,7 +140,7 @@ export default function GradesPage() {
       </Card>
 
       <Card>
-        <CardHeader title="Your individual grade" description="Your personal /100 for this project, with any supervisor adjustment and achievement bonus." />
+        <CardHeader title="Your final score" description="Your personal /100 for this project, with any supervisor adjustment and achievement bonus added on top." />
         <div className="divide-y divide-sand-200/70">
           <div className="flex flex-wrap items-center gap-4 px-5 py-4">
             <div className="min-w-0 flex-1">
