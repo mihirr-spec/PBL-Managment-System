@@ -171,6 +171,10 @@ export function GroupDetail({ groupId, isAdmin = false }: { groupId: string; isA
           weeks={group.reportCount}
           reports={reports}
           milestones={milestones}
+          grade={groupGrade}
+          groupId={group.id}
+          canGrade={!isAdmin}
+          onSaved={reload}
           row={(week, r) => <WeekRow key={week} week={week} report={r} canGrade={!isAdmin} onGraded={reload} />}
         />
       </Card>
@@ -403,11 +407,19 @@ function ReportTimeline({
   reports,
   milestones,
   row,
+  grade,
+  groupId,
+  canGrade,
+  onSaved,
 }: {
   weeks: number;
   reports: WeeklyReport[];
   milestones: GroupMilestone[];
   row: (week: number, report: WeeklyReport | undefined) => React.ReactNode;
+  grade: import("@/lib/types").GroupGrade | null;
+  groupId: string;
+  canGrade: boolean;
+  onSaved: () => void;
 }) {
   const files = (a: string, b: string) => milestones.filter((m) => m.slot === a || m.slot === b).flatMap((m) => m.files);
   const mid = files("mid_ppt", "mid_synopsis");
@@ -420,10 +432,40 @@ function ReportTimeline({
     const r = reports.find((x) => x.week === week);
     stops.push({ key: `w${week}`, state: !r ? "pending" : r.grade != null ? "evaluated" : "submitted", node: row(week, r) });
     if (week === 3) {
-      stops.push({ key: "mid", milestone: true, state: mid.length ? "submitted" : "pending", node: <PhaseFiles title="Midterm (MTE)" files={mid} /> });
+      stops.push({
+        key: "mid",
+        milestone: true,
+        state: grade?.synopsis1 != null ? "evaluated" : mid.length ? "submitted" : "pending",
+        node: (
+          <PhaseFiles
+            phase="mid"
+            title="Midterm (MTE)"
+            files={mid}
+            grade={grade}
+            groupId={groupId}
+            canGrade={canGrade}
+            onSaved={onSaved}
+          />
+        ),
+      });
     }
   }
-  stops.push({ key: "ete", milestone: true, state: ete.length ? "submitted" : "pending", node: <PhaseFiles title="Endterm (ETE)" files={ete} /> });
+  stops.push({
+    key: "ete",
+    milestone: true,
+    state: grade?.ete40 != null ? "evaluated" : ete.length ? "submitted" : "pending",
+    node: (
+      <PhaseFiles
+        phase="ete"
+        title="Endterm (ETE)"
+        files={ete}
+        grade={grade}
+        groupId={groupId}
+        canGrade={canGrade}
+        onSaved={onSaved}
+      />
+    ),
+  });
 
   return (
     <div className="space-y-3 p-4 sm:p-5">
@@ -437,8 +479,78 @@ function ReportTimeline({
   );
 }
 
-/** A midterm or endterm stop: the PPT, project report and synopsis the team uploaded. */
-function PhaseFiles({ title, files }: { title: string; files: Array<{ path: string; name: string }> }) {
+/**
+ * A midterm or endterm stop: the PPT, project report and synopsis the team
+ * uploaded, with an Evaluate panel the supervisor opens to score that phase.
+ * Midterm scores the synopsis (/10) and the midterm PPT half (saved as half of
+ * `ppt15`). Endterm scores the synopsis (/10), the endterm PPT half, Design &
+ * Implementation (/20) and the End Term Exam (/40).
+ */
+function PhaseFiles({
+  phase,
+  title,
+  files,
+  grade,
+  groupId,
+  canGrade,
+  onSaved,
+}: {
+  phase: "mid" | "ete";
+  title: string;
+  files: Array<{ path: string; name: string }>;
+  grade: import("@/lib/types").GroupGrade | null;
+  groupId: string;
+  canGrade: boolean;
+  onSaved: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // The PPT half of this phase: ppt15 holds the combined /15, so each phase
+  // contributes a /7.5 half that the supervisor enters as /15 and we average.
+  const otherPpt = (() => {
+    if (grade?.ppt15 == null) return null;
+    // Can't recover an individual half from the saved average, so the
+    // supervisor edits the whole /15 field during each phase; the latest value wins.
+    return grade.ppt15;
+  })();
+
+  const [synopsis, setSynopsis] = useState<string>(
+    phase === "mid"
+      ? (grade?.synopsis1 != null ? String(grade.synopsis1) : "")
+      : (grade?.synopsis2 != null ? String(grade.synopsis2) : ""),
+  );
+  const [ppt, setPpt] = useState<string>(otherPpt != null ? String(otherPpt) : "");
+  const [design, setDesign] = useState<string>(grade?.design20 != null ? String(grade.design20) : "");
+  const [ete, setEte] = useState<string>(grade?.ete40 != null ? String(grade.ete40) : "");
+
+  async function save(e: FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      const n = (s: string) => (s.trim() === "" ? null : Number(s));
+      await repo.saveGroupGrades(groupId, {
+        synopsis1: phase === "mid" ? n(synopsis) : (grade?.synopsis1 ?? null),
+        synopsis2: phase === "ete" ? n(synopsis) : (grade?.synopsis2 ?? null),
+        weekly15: grade?.weekly15 ?? null,
+        ppt15: n(ppt) ?? grade?.ppt15 ?? null,
+        design20: phase === "ete" ? n(design) : (grade?.design20 ?? null),
+        ete40: phase === "ete" ? n(ete) : (grade?.ete40 ?? null),
+      });
+      setOpen(false);
+      onSaved();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not save the evaluation.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const synopsisSaved = phase === "mid" ? grade?.synopsis1 : grade?.synopsis2;
+  const anyScore = synopsisSaved != null || (phase === "ete" && (grade?.design20 != null || grade?.ete40 != null));
+
   return (
     <div className="rounded-[14px] bg-white/80 px-4 py-3.5 ring-1 ring-sand-200">
       <div className="flex items-center justify-between gap-3">
@@ -449,6 +561,96 @@ function PhaseFiles({ title, files }: { title: string; files: Array<{ path: stri
       </div>
       <p className="mt-0.5 text-[12px] text-stone-500">PPT, project report and project synopsis.</p>
       {files.length ? <FileChips bucket="submissions" files={files} className="mt-2.5" /> : null}
+
+      {canGrade ? (
+        <div className="mt-3 flex items-center justify-between gap-3 border-t border-sand-200/70 pt-3">
+          <p className="text-[12.5px] text-stone-500">
+            {anyScore ? "Evaluation saved - open to edit." : "Enter the scores for this phase."}
+          </p>
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            disabled={!files.length && !anyScore}
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] font-medium ring-1 ring-inset transition-colors",
+              !files.length && !anyScore
+                ? "bg-ivory-200/70 text-stone-400 ring-sand-200"
+                : anyScore
+                  ? "bg-azure-50 text-azure-600 ring-azure-100 hover:bg-azure-50/70"
+                  : "bg-clay-500 text-white ring-clay-500 shadow-sm hover:bg-clay-500/90 animate-pulse",
+            )}
+          >
+            <Eye className="size-3.5" />
+            {anyScore ? "Review evaluation" : "Evaluate"}
+          </button>
+        </div>
+      ) : null}
+
+      {open && canGrade ? (
+        <form onSubmit={save} className="mt-3 rounded-[14px] bg-azure-50/60 p-4 ring-1 ring-azure-100">
+          <p className="text-[14px] font-semibold text-ink-900">Evaluate {phase === "mid" ? "midterm" : "endterm"} submission</p>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            <Field label="Synopsis (out of 10)" htmlFor={`syn-${phase}`}>
+              <Input
+                id={`syn-${phase}`}
+                type="number"
+                min={0}
+                max={10}
+                step="0.5"
+                value={synopsis}
+                onChange={(e) => setSynopsis(e.target.value)}
+              />
+            </Field>
+            <Field label="PPT (out of 15)" htmlFor={`ppt-${phase}`}>
+              <Input
+                id={`ppt-${phase}`}
+                type="number"
+                min={0}
+                max={15}
+                step="0.5"
+                value={ppt}
+                onChange={(e) => setPpt(e.target.value)}
+              />
+            </Field>
+            {phase === "ete" ? (
+              <>
+                <Field label="Design & implementation (out of 20)" htmlFor="design-ete">
+                  <Input
+                    id="design-ete"
+                    type="number"
+                    min={0}
+                    max={20}
+                    step="0.5"
+                    value={design}
+                    onChange={(e) => setDesign(e.target.value)}
+                  />
+                </Field>
+                <Field label="End Term Exam (out of 40)" htmlFor="ete-40">
+                  <Input
+                    id="ete-40"
+                    type="number"
+                    min={0}
+                    max={40}
+                    step="0.5"
+                    value={ete}
+                    onChange={(e) => setEte(e.target.value)}
+                  />
+                </Field>
+              </>
+            ) : null}
+          </div>
+          {error ? <p className="mt-2 text-[12.5px] text-clay-500">{error}</p> : null}
+          <div className="mt-3 flex items-center gap-2">
+            <Button type="submit" size="sm" disabled={busy}>
+              <Save className="size-3.5" />
+              {busy ? "Saving" : "Submit evaluation"}
+            </Button>
+            <Button type="button" size="sm" variant="secondary" onClick={() => setOpen(false)} disabled={busy}>
+              Cancel
+            </Button>
+          </div>
+        </form>
+      ) : null}
     </div>
   );
 }
