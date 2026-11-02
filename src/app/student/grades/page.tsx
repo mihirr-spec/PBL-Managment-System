@@ -42,10 +42,13 @@ export default function GradesPage() {
         { label: "End term exam", value: g.ete40 ?? undefined, max: 40 },
       ]
     : [];
-  const total =
+  const groupTotal =
     plan.length > 0 && plan.every((c) => c.value != null)
       ? Math.round(plan.reduce((a, c) => a + (c.value ?? 0), 0) * 10) / 10
       : null;
+  /** The supervisor's per-student override of the /100, if set. */
+  const myOverride = group?.members.find((m) => m.studentId === student.id)?.finalOverride ?? null;
+  const total = myOverride ?? groupTotal;
   /** Bonus marks from approved achievements; added on top with no cap. */
   const bonusMarks = data.achievements
     .filter((a) => a.status === "approved")
@@ -94,9 +97,20 @@ export default function GradesPage() {
                       <td className="tnum py-2 w-12" />
                     </tr>
                   ) : null}
+                  {myOverride != null ? (
+                    <tr>
+                      <td className="py-2 pl-4 text-[13px] text-stone-600">
+                        Supervisor adjustment{groupTotal != null ? ` (from ${groupTotal})` : ""}
+                      </td>
+                      <td className="tnum py-2 pr-4 text-right text-[13px] font-medium text-azure-600">
+                        {myOverride}
+                      </td>
+                      <td className="tnum py-2 w-12 text-right text-[12px] text-stone-400">/100</td>
+                    </tr>
+                  ) : null}
                   <tr className="bg-sage-50/60">
                     <td className="py-2.5 pl-4 text-[13.5px] font-semibold text-ink-900">
-                      Total{bonusMarks > 0 ? " (with bonus)" : ""}
+                      Your total{bonusMarks > 0 ? " (with bonus)" : ""}
                     </td>
                     <td className="tnum py-2.5 pr-4 text-right font-display text-[1.2rem] font-semibold text-sage-500">
                       {withBonus != null ? withBonus : total != null ? total : "-"}
@@ -107,6 +121,7 @@ export default function GradesPage() {
               </table>
               <p className="mt-3 text-[11.5px] text-stone-400">
                 Published by your supervisor {timeAgo(g.updatedAt)}.
+                {myOverride != null ? " Your supervisor adjusted the group's score for you individually." : ""}
                 {bonusMarks > 0 ? " Bonus marks from approved achievements are added on top, with no cap." : ""}
               </p>
             </>

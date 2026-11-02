@@ -1055,6 +1055,12 @@ export async function publishGroupGrades(groupId: string): Promise<void> {
   fail(error);
 }
 
+/** Overrides one student's final /100 (null clears the override, so the group's shared total is used). */
+export async function setStudentFinal(studentId: string, override: number | null): Promise<void> {
+  const { error } = await supabase.rpc("set_student_final", { p_student: studentId, p_override: override });
+  fail(error);
+}
+
 /** Corrects one student's existing mark and note. */
 export async function updateStudentGrade(gradeId: string, score: number | null, improvements: string): Promise<void> {
   const { error } = await supabase.rpc("update_student_grade", {

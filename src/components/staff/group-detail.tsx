@@ -19,7 +19,7 @@ import { ProgressBar } from "@/components/ui/progress";
 import { PageSkeleton } from "@/components/ui/skeleton";
 import { useSession } from "@/lib/auth/session";
 import * as repo from "@/lib/data/repository";
-import type { Group, GroupMilestone, StudentGrade, WeeklyReport } from "@/lib/types";
+import type { Achievement, Group, GroupGrade, GroupMilestone, StudentGrade, WeeklyReport } from "@/lib/types";
 import { useLoad } from "@/lib/use-load";
 import { RichText, plainText } from "@/components/shared/rich-text";
 import { cn, formatDateTime, timeAgo } from "@/lib/utils";
@@ -27,7 +27,7 @@ import { cn, formatDateTime, timeAgo } from "@/lib/utils";
 async function loadGroupDetail(groupId: string) {
   const group = await repo.getGroup(groupId);
   if (!group) throw new Error("This group does not exist or is not visible to you.");
-  const [mentor, reports, grades, tickets, changes, milestones, groupGrade, weeklyAverage] = await Promise.all([
+  const [mentor, reports, grades, tickets, changes, milestones, groupGrade, weeklyAverage, allAchievements] = await Promise.all([
     repo.getFaculty(group.mentorId),
     repo.listReports(group.id),
     repo.listGrades(group.members.map((m) => m.studentId)),
@@ -36,8 +36,11 @@ async function loadGroupDetail(groupId: string) {
     repo.listMilestones(group.id),
     repo.getGroupGrade(group.id),
     repo.weeklyAverage(group.id),
+    repo.listAchievements(),
   ]);
-  return { group, mentor, reports, grades, tickets, changes, milestones, groupGrade, weeklyAverage };
+  const studentIds = new Set(group.members.map((m) => m.studentId));
+  const achievements = allAchievements.filter((a) => studentIds.has(a.studentId));
+  return { group, mentor, reports, grades, tickets, changes, milestones, groupGrade, weeklyAverage, achievements };
 }
 
 /**
@@ -53,7 +56,7 @@ export function GroupDetail({ groupId, isAdmin = false }: { groupId: string; isA
   if (error) return <Card><EmptyState title="Could not load this group" description={error} /></Card>;
   if (!data) return <PageSkeleton />;
 
-  const { group, mentor, reports, grades, tickets, changes, milestones, groupGrade, weeklyAverage } = data;
+  const { group, mentor, reports, grades, tickets, changes, milestones, groupGrade, weeklyAverage, achievements } = data;
 
   return (
     <div className="space-y-6">
@@ -158,6 +161,14 @@ export function GroupDetail({ groupId, isAdmin = false }: { groupId: string; isA
         grade={groupGrade}
         weeklyAverage={weeklyAverage}
         canGrade={!isAdmin}
+      />
+      <PerStudentFinals
+        group={group}
+        grade={groupGrade}
+        weeklyAverage={weeklyAverage}
+        achievements={achievements}
+        canEdit={!isAdmin}
+        onSaved={reload}
       />
       <Card>
         <CardHeader
@@ -875,4 +886,164 @@ function scoreCaption(grade: number): string {
   if (grade >= 7) return "Strong progress";
   if (grade >= 5) return "Good work, keep it up";
   return "Needs attention - read the feedback";
+}
+
+/** The group's /100, taken as the sum of the plan's components. */
+function groupTotal(grade: GroupGrade | null, weeklyAverage: number | null): number | null {
+  if (!grade) return null;
+  const synopsisVals = [grade.synopsis1, grade.synopsis2].filter((v): v is number => v != null);
+  const synopsis = synopsisVals.length
+    ? Math.round((synopsisVals.reduce((a, b) => a + b, 0) / synopsisVals.length) * 10) / 10
+    : null;
+  const weekly = grade.weekly15 ?? weeklyAverage;
+  const parts = [synopsis, weekly, grade.ppt15, grade.design20, grade.ete40];
+  if (parts.some((p) => p == null)) return null;
+  return Math.round((parts as number[]).reduce((a, b) => a + b, 0) * 10) / 10;
+}
+
+/**
+ * One editable row per student: the group's shared /100 is the starting point,
+ * approved achievement bonuses are added on top, and the supervisor can override
+ * the final to reward or dock any individual contribution.
+ */
+function PerStudentFinals({
+  group,
+  grade,
+  weeklyAverage,
+  achievements,
+  canEdit,
+  onSaved,
+}: {
+  group: Group;
+  grade: GroupGrade | null;
+  weeklyAverage: number | null;
+  achievements: Achievement[];
+  canEdit: boolean;
+  onSaved: () => void;
+}) {
+  const groupScore = groupTotal(grade, weeklyAverage);
+  return (
+    <Card>
+      <CardHeader
+        title="Individual final scores"
+        description="Each student starts at the group's /100. Approved achievements add bonus marks on top. Override any student to reflect their individual contribution."
+      />
+      <div className="divide-y divide-sand-200/70">
+        {group.members.map((m) => {
+          const bonus = achievements
+            .filter((a) => a.studentId === m.studentId && a.status === "approved")
+            .reduce((n, a) => n + (a.bonusMarks ?? 0), 0);
+          const base = m.finalOverride ?? groupScore;
+          const total = base != null ? Math.round((base + bonus) * 10) / 10 : null;
+          return (
+            <StudentFinalRow
+              key={m.studentId}
+              studentId={m.studentId}
+              name={m.fullName}
+              reg={m.registrationNumber}
+              avatarUrl={m.avatarUrl}
+              groupScore={groupScore}
+              bonus={bonus}
+              override={m.finalOverride ?? null}
+              total={total}
+              canEdit={canEdit}
+              onSaved={onSaved}
+            />
+          );
+        })}
+      </div>
+    </Card>
+  );
+}
+
+function StudentFinalRow({
+  studentId,
+  name,
+  reg,
+  avatarUrl,
+  groupScore,
+  bonus,
+  override,
+  total,
+  canEdit,
+  onSaved,
+}: {
+  studentId: string;
+  name: string;
+  reg: string;
+  avatarUrl?: string;
+  groupScore: number | null;
+  bonus: number;
+  override: number | null;
+  total: number | null;
+  canEdit: boolean;
+  onSaved: () => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(override != null ? String(override) : "");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function save() {
+    setBusy(true);
+    setError(null);
+    try {
+      const n = value.trim() === "" ? null : Number(value);
+      await repo.setStudentFinal(studentId, n);
+      setEditing(false);
+      onSaved();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not save.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-wrap items-center gap-4 px-5 py-3.5">
+      <Avatar name={name} src={avatarUrl} size="sm" />
+      <div className="min-w-0 flex-1">
+        <p className="text-[13.5px] font-semibold text-ink-900">{name}</p>
+        <p className="text-[12px] text-stone-500">
+          {reg} · Group {groupScore ?? "-"}/100
+          {bonus > 0 ? <span className="text-sage-600"> + bonus {bonus}</span> : null}
+          {override != null ? <span className="text-azure-600"> · overridden</span> : null}
+        </p>
+      </div>
+      {editing && canEdit ? (
+        <div className="flex items-center gap-2">
+          <Input
+            type="number"
+            min={0}
+            max={150}
+            step="0.5"
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            placeholder={groupScore != null ? String(groupScore) : "auto"}
+            className="w-24"
+          />
+          <Button size="sm" onClick={() => void save()} loading={busy}>
+            <Save className="size-3.5" />
+            Save
+          </Button>
+          <Button size="sm" variant="secondary" onClick={() => setEditing(false)} disabled={busy}>
+            Cancel
+          </Button>
+        </div>
+      ) : (
+        <div className="flex items-center gap-3">
+          <p className="tnum font-display text-[1.4rem] leading-none text-ink-900">
+            {total != null ? total : "-"}
+            <span className="text-[0.9rem] text-stone-400">/100</span>
+          </p>
+          {canEdit ? (
+            <Button size="sm" variant="secondary" onClick={() => { setValue(override != null ? String(override) : ""); setEditing(true); }}>
+              Edit
+            </Button>
+          ) : null}
+        </div>
+      )}
+      {error ? <p className="w-full text-right text-[12px] text-clay-500">{error}</p> : null}
+    </div>
+  );
 }
