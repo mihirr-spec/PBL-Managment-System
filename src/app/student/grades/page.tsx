@@ -1,6 +1,6 @@
 "use client";
 
-import { Award, Lightbulb } from "lucide-react";
+import { Lightbulb } from "lucide-react";
 
 import { Card, CardHeader, EmptyState } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
@@ -140,33 +140,42 @@ export default function GradesPage() {
       </Card>
 
       <Card>
-        <CardHeader
-          title="Your individual grades"
-        />
-        {data.grades.length === 0 ? (
-          <EmptyState icon={<Award className="size-5" />} title="No grades yet" description="Your supervisor's grades appear here." />
-        ) : (
-          <ul className="divide-y divide-sand-200/70">
-            {data.grades.map((g) => (
-              <li key={g.id} className="flex flex-wrap items-start gap-4 px-5 py-4">
-                <div className="min-w-0 flex-1">
-                  <p className="text-[14.5px] font-semibold text-ink-900">{g.title}</p>
-                  <p className="text-[12px] text-stone-500">{formatDateTime(g.createdAt)}</p>
-                  {g.improvements ? (
-                    <p className="mt-2 flex gap-2 rounded-[12px] bg-gold-50/80 px-3 py-2 text-[13px] text-stone-700">
-                      <Lightbulb className="mt-0.5 size-4 shrink-0 text-gold-500" />
-                      <span><span className="font-semibold">To improve:</span> {g.improvements}</span>
-                    </p>
-                  ) : null}
-                </div>
-                <p className="tnum font-display text-[1.6rem] leading-none text-ink-900">
-                  {g.score}
-                  <span className="text-[1rem] text-stone-400">/{g.maxScore}</span>
-                </p>
-              </li>
-            ))}
-          </ul>
-        )}
+        <CardHeader title="Your individual grade" description="Your personal /100 for this project, with any supervisor adjustment and achievement bonus." />
+        <div className="divide-y divide-sand-200/70">
+          <div className="flex flex-wrap items-center gap-4 px-5 py-4">
+            <div className="min-w-0 flex-1">
+              <p className="text-[14.5px] font-semibold text-ink-900">Semester total</p>
+              <p className="text-[12px] text-stone-500">
+                {groupTotal != null ? `Group ${groupTotal}/100` : "Awaiting group grading"}
+                {myOverride != null && groupTotal != null && myOverride !== groupTotal
+                  ? ` · supervisor adjusted to ${myOverride}` : ""}
+                {bonusMarks > 0 ? ` · achievement bonus +${bonusMarks}` : ""}
+              </p>
+            </div>
+            <p className="tnum font-display text-[1.6rem] leading-none text-ink-900">
+              {withBonus != null ? withBonus : total != null ? total : "-"}
+              <span className="text-[1rem] text-stone-400">/100</span>
+            </p>
+          </div>
+          {data.grades.map((g) => (
+            <div key={g.id} className="flex flex-wrap items-start gap-4 px-5 py-4">
+              <div className="min-w-0 flex-1">
+                <p className="text-[14.5px] font-semibold text-ink-900">{g.title}</p>
+                <p className="text-[12px] text-stone-500">{formatDateTime(g.createdAt)}</p>
+                {g.improvements ? (
+                  <p className="mt-2 flex gap-2 rounded-[12px] bg-gold-50/80 px-3 py-2 text-[13px] text-stone-700">
+                    <Lightbulb className="mt-0.5 size-4 shrink-0 text-gold-500" />
+                    <span><span className="font-semibold">To improve:</span> {g.improvements}</span>
+                  </p>
+                ) : null}
+              </div>
+              <p className="tnum font-display text-[1.6rem] leading-none text-ink-900">
+                {g.score}
+                <span className="text-[1rem] text-stone-400">/{g.maxScore}</span>
+              </p>
+            </div>
+          ))}
+        </div>
       </Card>
 
       <Card>
