@@ -87,7 +87,7 @@ const toFaculty = (r: any): Faculty => ({
 });
 
 const GROUP_SELECT =
-  "*, group_members(student_id, team_role, students(full_name, registration_number, university_email, avatar_url, linkedin))";
+  "*, group_members(student_id, team_role, final_override, students(full_name, registration_number, university_email, avatar_url, linkedin))";
 
 const toGroup = (r: any): Group => ({
   id: r.id,
@@ -118,6 +118,7 @@ const toGroup = (r: any): Group => ({
         teamRole: m.team_role,
         avatarUrl: m.students?.avatar_url ?? undefined,
         linkedin: m.students?.linkedin ?? "",
+        finalOverride: m.final_override == null ? null : Number(m.final_override),
       }),
     )
     // Leader first, then alphabetical.

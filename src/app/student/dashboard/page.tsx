@@ -142,10 +142,23 @@ export default function DashboardPage() {
             ) : (
               <p className="text-[13px] text-stone-600">No weekly report submitted yet.</p>
             )}
-            <ButtonLink href={groupHref("/student/reports")} size="sm">
-              <FileText className="size-3.5" />
-              Submit week {latestReport ? latestReport.week + 1 : 1} report
-            </ButtonLink>
+            {(() => {
+              const nextWeek = latestReport ? latestReport.week + 1 : 1;
+              const total = group?.reportCount ?? 7;
+              if (nextWeek > total) {
+                return (
+                  <p className="text-[13px] text-sage-600">
+                    All {total} weekly reports are in. Endterm evaluation is next.
+                  </p>
+                );
+              }
+              return (
+                <ButtonLink href={groupHref("/student/reports")} size="sm">
+                  <FileText className="size-3.5" />
+                  Submit week {nextWeek} report
+                </ButtonLink>
+              );
+            })()}
           </CardBody>
         </Card>
 

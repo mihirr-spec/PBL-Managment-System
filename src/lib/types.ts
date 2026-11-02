@@ -77,6 +77,8 @@ export interface GroupMember {
   avatarUrl?: string;
   /** LinkedIn profile link, or "". */
   linkedin?: string;
+  /** The supervisor's per-student /100 override; null means the group's shared total is used. */
+  finalOverride?: number | null;
 }
 
 export interface Group {
